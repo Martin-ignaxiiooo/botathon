@@ -5,11 +5,16 @@ import {
 } from '../ui.js';
 import { getData } from '../api.js';
 import { hashPara } from '../router.js';
-import { num, pct, nombreMes, nombreArea, MESES_CORTOS } from '../formato.js';
+import { num, pct, nombreMes, MESES_CORTOS } from '../formato.js';
+import { dimensionArea } from '../dimension.js';
+import { cargoLegible } from '../textoCambios.js';
 import { resumenFiltros } from '../filtros.js';
 import { lecturaFacil } from '../lectura.js';
 
-const COLORES_AREA = ['#124a82', '#2f80c9', '#7b8794', '#b26b00', '#1b6e3c'];
+const COLORES_AREA = ['#124a82', '#2f80c9', '#7b8794', '#b26b00', '#1b6e3c', '#52606d'];
+const MAX_SERIES = 5; // con muchos cargos el gráfico apilado muestra los 5 mayores y «Otros»
+
+let dim = null; // dimensión de agrupación de esta pantalla (área o cargo), se fija en render
 const METRICAS = [
   { id: 'atenciones', texto: 'Atenciones directas', clave: 'ate', formato: num },
   { id: 'meta', texto: 'Meta de gestión', clave: 'meta', formato: num },
@@ -37,8 +42,9 @@ function armarMatriz(filas) {
   const totalMes = Array(12).fill(null);
   const totalGeneral = nuevoAcc();
   for (const f of filas) {
-    if (!porArea.has(f.area)) porArea.set(f.area, { area: f.area, meses: Array(12).fill(null), total: nuevoAcc() });
-    const a = porArea.get(f.area);
+    const clave = f[dim.campo] ?? '';
+    if (!porArea.has(clave)) porArea.set(clave, { area: clave, meses: Array(12).fill(null), total: nuevoAcc() });
+    const a = porArea.get(clave);
     const i = f.mes - 1;
     a.meses[i] ??= nuevoAcc();
     totalMes[i] ??= nuevoAcc();
@@ -58,6 +64,7 @@ function tituloInstituto(filtros, filas) {
 }
 
 export async function render(contenedor, filtros) {
+  dim = await dimensionArea();
   const filas = await getData('v_instituto_area_mes', filtros);
   const titulo = tituloInstituto(filtros, filas);
   contenedor.append(el('h1', { tabindex: '-1' }, `Instituto: ${titulo}`));
@@ -73,12 +80,12 @@ export async function render(contenedor, filtros) {
   lecturaFacil(contenedor, [
     `Estás viendo: ${titulo}.`,
     `La meta del período es ${num(totalGeneral.meta)} atenciones.`,
-    areas.length > 1 ? `El área con más meta es ${nombreArea(areas[0].area)}: ${num(areas[0].total.meta)}.` : null,
+    areas.length > 1 ? `El ${dim.singular} con más meta es ${dim.nombre(areas[0].area)}: ${num(areas[0].total.meta)}.` : null,
     `El mes con más meta es ${nombreMes(mayorMes)}.`,
     totalGeneral.hc ? `El % FOJA es ${pct(totalGeneral.hd / totalGeneral.hc)}.` : null,
   ]);
 
-  // ---- Gráfico de meta mensual (apilado por área) ----
+  // ---- Gráfico de meta mensual (apilado por área o cargo) ----
   contenedor.append(graficoMetaMensual(areas, totalMes).elemento);
 
   // ---- Tabla área × mes ----
@@ -90,7 +97,7 @@ export async function render(contenedor, filtros) {
   const botonSimple = botonVerDatos(zonaSimple, 'Ver como tabla simple');
   const nota = el('p', { class: 'nota-grafico' },
     'Haga clic en un encabezado para ordenar (con teclado: Tab hasta el encabezado y Enter). ',
-    'Elija un área, con clic o con Enter sobre su nombre, para ver sus profesionales.');
+    `Elija un ${dim.singular}, con clic o con Enter sobre su nombre, para ver sus profesionales.`);
   zonaTabla.append(el('div', { class: 'cab-grafico' }, tituloTabla, botonSimple), selector.elemento, nota, contenedorTabla, zonaSimple);
   contenedor.append(zonaTabla);
 
@@ -103,11 +110,11 @@ export async function render(contenedor, filtros) {
 
   function dibujarTabla(metrica) {
     tabla?.destroy();
-    tituloTabla.textContent = `Detalle por área y mes: ${metrica.texto}`;
+    tituloTabla.textContent = `Detalle por ${dim.singular} y mes: ${metrica.texto}`;
     const fmt = (v) => (v === null || v === undefined ? '—' : metrica.formato(v));
     const datos = areas.map((a) => ({
       area: a.area,
-      nombre: nombreArea(a.area),
+      nombre: dim.nombre(a.area),
       ...Object.fromEntries(MESES.map((m) => [`m${m}`, valorMetrica(a.meses[m - 1], metrica)])),
       total: valorMetrica(a.total, metrica),
     }));
@@ -124,7 +131,7 @@ export async function render(contenedor, filtros) {
       layout: 'fitDataFill',
       columns: [
         {
-          title: 'Área', field: 'nombre', frozen: true, minWidth: 210, sorter: 'string',
+          title: dim.etiqueta, field: 'nombre', frozen: true, minWidth: 260, sorter: 'string',
           formatter: (c) => {
             const boton = el('button', { type: 'button', class: 'boton-area', 'aria-pressed': 'false' }, c.getValue());
             return boton;
@@ -147,7 +154,7 @@ export async function render(contenedor, filtros) {
     zonaSimple.replaceChildren(tablaDatos({
       caption: tituloTabla.textContent,
       columnas: [
-        { titulo: 'Área', campo: 'nombre' },
+        { titulo: dim.etiqueta, campo: 'nombre' },
         ...MESES.map((m) => ({ titulo: nombreMes(m, true), campo: `m${m}`, numerica: true, formato: fmt })),
         { titulo: 'Total', campo: 'total', numerica: true, formato: fmt },
       ],
@@ -158,7 +165,7 @@ export async function render(contenedor, filtros) {
   function marcarActiva() {
     contenedorTabla.querySelectorAll('.tabulator-row').forEach((fila) => {
       const boton = fila.querySelector('.boton-area');
-      const activa = boton && boton.textContent === (areaActiva ? nombreArea(areaActiva) : null);
+      const activa = boton && boton.textContent === (areaActiva ? dim.nombre(areaActiva) : null);
       fila.classList.toggle('fila-activa', Boolean(activa));
       boton?.setAttribute('aria-pressed', String(Boolean(activa)));
     });
@@ -170,7 +177,7 @@ export async function render(contenedor, filtros) {
     if (!areaActiva) { zonaProfesionales.hidden = true; return; }
     zonaProfesionales.hidden = false;
     zonaProfesionales.replaceChildren(el('p', { role: 'status' }, 'Cargando profesionales…'));
-    const profesionales = await getData('v_profesional_mes', { ...filtros, area: [area] });
+    const profesionales = await getData('v_profesional_mes', { ...filtros, [dim.campo]: [area] });
     if (areaActiva !== area) return; // el usuario eligió otra área mientras cargaba
     dibujarProfesionales(zonaProfesionales, area, profesionales, nombreInstituto, filtros, () => seleccionarArea(area));
   }
@@ -192,9 +199,16 @@ function selectorMetrica(alElegir) {
   };
 }
 
-function graficoMetaMensual(areas, totalMes) {
+function graficoMetaMensual(todas, totalMes) {
   const meses = MESES.map((m) => MESES_CORTOS[m - 1]);
   const metaDe = (a, i) => a.meses[i]?.meta ?? 0;
+  // Con muchos cargos se agrupan los menores en «Otros» para que la leyenda y los colores se entiendan.
+  const areas = todas.length > MAX_SERIES + 1 ? todas.slice(0, MAX_SERIES) : todas;
+  const resto = todas.length > MAX_SERIES + 1 ? todas.slice(MAX_SERIES) : [];
+  const nombreSerie = (a) => (a.otros ? `Otros ${dim.plural} (${resto.length})` : dim.nombre(a.area));
+  if (resto.length) {
+    areas.push({ otros: true, meses: MESES.map((m, i) => ({ meta: resto.reduce((t, r) => t + metaDe(r, i), 0) })) });
+  }
   const opcion = opcionBase({
     color: COLORES_AREA,
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, valueFormatter: (v) => num(v) },
@@ -203,7 +217,7 @@ function graficoMetaMensual(areas, totalMes) {
     xAxis: { type: 'category', data: meses },
     yAxis: { type: 'value', axisLabel: { formatter: (v) => num(v) } },
     series: areas.map((a) => ({
-      name: nombreArea(a.area), type: 'bar', stack: 'meta', data: MESES.map((m, i) => metaDe(a, i)),
+      name: nombreSerie(a), type: 'bar', stack: 'meta', data: MESES.map((m, i) => metaDe(a, i)),
       itemStyle: { borderColor: '#ffffff', borderWidth: 1 }, barMaxWidth: 48,
     })),
   });
@@ -211,14 +225,14 @@ function graficoMetaMensual(areas, totalMes) {
   const maximo = conDatos.reduce((a, b) => (totalMes[b - 1].meta > totalMes[a - 1].meta ? b : a), conDatos[0]);
   return tarjetaGrafico({
     titulo: 'Meta de gestión por mes',
-    ariaLabel: `Gráfico de barras apiladas con la meta de gestión de cada mes, dividida por área. `
+    ariaLabel: `Gráfico de barras apiladas con la meta de gestión de cada mes, dividida por ${dim.singular}. `
       + `El mes con mayor meta es ${nombreMes(maximo)} con ${num(totalMes[maximo - 1].meta)} atenciones.`,
     opcion,
     tabla: {
-      caption: 'Meta de gestión por mes y área',
+      caption: `Meta de gestión por mes y ${dim.singular}`,
       columnas: [
         { titulo: 'Mes', campo: 'mes', formato: (m) => nombreMes(m) },
-        ...areas.map((a) => ({ titulo: nombreArea(a.area), valor: (r) => metaDe(a, r.mes - 1), numerica: true, formato: num })),
+        ...todas.map((a) => ({ titulo: dim.nombre(a.area), valor: (r) => metaDe(a, r.mes - 1), numerica: true, formato: num })),
         { titulo: 'Total', valor: (r) => totalMes[r.mes - 1]?.meta ?? 0, numerica: true, formato: num },
       ],
       filas: MESES.map((mes) => ({ mes })),
@@ -239,17 +253,17 @@ function dibujarProfesionales(zona, area, filas, nombreInstituto, filtros, alCer
     p.pctPond += f.pct_dir_final * f.horas_contratadas;
   }
   const lista = [...porPersona.values()].sort((a, b) => b.acc.meta - a.acc.meta);
-  const encabezado = el('h2', { tabindex: '-1' }, `Profesionales de ${nombreArea(area)}`);
+  const encabezado = el('h2', { tabindex: '-1' }, `Profesionales: ${dim.nombre(area)}`);
   const cerrar = el('button', { type: 'button', onclick: alCerrar }, 'Ocultar profesionales');
   zona.replaceChildren(
     el('div', { class: 'cab-grafico' }, encabezado, cerrar),
     lista.length
       ? tablaDatos({
-        caption: `Profesionales de ${nombreArea(area)} · ${resumenFiltros({ ...filtros, area: [] })} (${lista.length})`,
+        caption: `Profesionales: ${dim.nombre(area)} · ${resumenFiltros({ ...filtros, area: [] })} (${lista.length})`,
         columnas: [
           { titulo: 'Profesional', valor: (p) => p, formato: (p) => el('a', { href: hashPara('profesional', { persona: [p.persona_id] }) }, String(p.persona_id)) },
           { titulo: 'Instituto', valor: (p) => [...p.its].map((it) => nombreInstituto.get(it) ?? `IT ${it}`).join(', ') },
-          { titulo: 'Cargo', valor: (p) => [...p.cargos].join(', ') },
+          { titulo: 'Cargo', valor: (p) => [...p.cargos].map((c) => cargoLegible(c)).join(', ') },
           { titulo: 'Horas contratadas', valor: (p) => p.acc.hc, numerica: true, formato: num },
           { titulo: '% directo final', valor: (p) => (p.acc.hc ? p.pctPond / p.acc.hc : null), numerica: true, formato: (v) => pct(v, 1) },
           { titulo: 'Atenciones directas', valor: (p) => p.acc.ate, numerica: true, formato: num },
@@ -258,6 +272,6 @@ function dibujarProfesionales(zona, area, filas, nombreInstituto, filtros, alCer
         ],
         filas: lista,
       })
-      : el('p', { class: 'estado-vacio' }, 'No hay profesionales para esta área con los filtros elegidos.'));
+      : el('p', { class: 'estado-vacio' }, `No hay profesionales para este ${dim.singular} con los filtros elegidos.`));
   encabezado.focus(); // lleva el foco a la nueva sección para quien navega con teclado o lector de pantalla
 }

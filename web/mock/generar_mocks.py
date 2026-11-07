@@ -350,17 +350,19 @@ def v_parametros_vigentes():
     f1, f2 = "2026-01-01", "2026-05-01"
     g = "param.general"
     filas = [
-        (g, "meta_gestion", "0.9", 1, f1),
-        (g, "jornada_legal_horas_hasta_abril", "44", 1, f1),
-        (g, "jornada_legal_horas_desde_mayo", "42", 2, f2),
-        (g, "mes_cambio_jornada", "5", 2, f2),
-        (g, "tramo_1_horas_minimas", "40", 1, f1),
-        (g, "tramo_2_horas_minimas", "22", 1, f1),
-        (g, "pausa_saludable_pct_jornada_completa", "0.10", 1, f1),
-        (g, "pausa_saludable_pct_jornada_parcial", "0.06", 1, f1),
-        (g, "minutos_atencion_indirecta", "30", 1, f1),
-        (g, "dias_por_semana", "5", 1, f1),
-        (g, "redondeo_epsilon", "1e-9", 1, f1),
+        # Claves reales de param.general en la base de Andrés
+        (g, "meta", "0.9", 1, f1),
+        (g, "jornada_ene_abr", "44", 1, f1),
+        (g, "jornada_may_dic", "42", 2, f2),
+        (g, "pausa_pct_alta", "0.10", 1, f1),
+        (g, "pausa_pct_baja", "0.06", 1, f1),
+        (g, "colacion_h_dia", "0.25", 1, f1),
+        (g, "tramo_limite_bajo", "22", 1, f1),
+        (g, "tramo_limite_alto", "40", 1, f1),
+        (g, "max_asignaciones", "2", 1, f1),
+        (g, "horas_min_para_max", "30", 1, f1),
+        (g, "min_indirecta", "30", 1, f1),
+        (g, "dia_en_semanas", "0.2", 1, f1),
     ]
     for (cargo, tramo), (pd, pi, pn) in sorted(PARAM_CARGO.items()):
         filas.append(("param.cargo", f"{cargo}|tramo_{tramo}",

@@ -230,6 +230,7 @@ table.tabla td.num, table.tabla th.num { text-align: right; font-variant-numeric
   background: var(--blanco); border: 1px solid var(--gris-200); border-radius: var(--radio);
   box-shadow: var(--sombra); padding: .8rem 1rem;
 }
+.campo[hidden] { display: none; }
 .campo { display: grid; gap: .2rem; min-width: 9rem; position: relative; }
 .campo label, .campo .etiqueta { font-size: .85rem; font-weight: 600; color: var(--gris-700); }
 .campo select {

@@ -3,7 +3,8 @@ import config from '../config.js';
 import { el, tarjetaKpi, tarjetaGrafico, opcionBase, vacio, avisar } from '../ui.js';
 import { getData } from '../api.js';
 import { hashPara, irA } from '../router.js';
-import { num, pct, fecha, fechaHora, hora, nombreMes, nombreArea } from '../formato.js';
+import { num, pct, fecha, fechaHora, hora, nombreMes, MESES_CORTOS } from '../formato.js';
+import { dimensionArea } from '../dimension.js';
 import { hayFiltros } from '../filtros.js';
 import { lecturaFacil } from '../lectura.js';
 
@@ -63,11 +64,9 @@ export async function render(contenedor, filtros) {
   const porMes = filtrado ? mensualDerivado(porInstArea) : mensual;
 
   // Constantes de negocio: se leen de los parámetros vigentes, no se escriben en el código.
-  // Se busca por el nombre esperado y, si la base usa otro, por un patrón parecido.
-  const param = (clave, patron) => (parametros.find((p) => p.clave === clave) ?? parametros.find((p) => patron.test(p.clave)))?.valor;
-  const metaPct = Number(param('meta_gestion', /meta.*gesti/i)) || (kpi?.atenciones_plan ? kpi.meta / kpi.atenciones_plan : null);
-  const mesJornada = Number(param('mes_cambio_jornada', /mes.*jornada|jornada.*mes/i)) || null;
-  const horasJornada = Number(param('jornada_legal_horas_desde_mayo', /jornada.*(desde|nueva|vigente)|horas.*desde/i)) || null;
+  const { metaPct: metaParam, mesJornada, horasJornada } = leerParametros(parametros);
+  const metaPct = metaParam || (kpi?.atenciones_plan ? kpi.meta / kpi.atenciones_plan : null);
+  const dim = await dimensionArea();
 
   // Solo sin filtros se compara con la carga anterior: así el efecto de una carga nueva se ve en las tarjetas.
   const anterior = kpi && !filtrado ? cargaAnterior(kpi) : null;
@@ -77,9 +76,28 @@ export async function render(contenedor, filtros) {
   contenedor.append(graficos);
   if (porMes.length) graficos.append(graficoMensual(porMes, mesJornada, horasJornada));
   if (porInstArea.length) {
-    graficos.append(graficoInstitutos(porInstArea, filtros), graficoAreas(porInstArea, filtros.tipo || []));
+    graficos.append(graficoInstitutos(porInstArea, filtros), graficoAreas(porInstArea, filtros.tipo || [], dim));
   }
   lecturaFacil(contenedor, frasesNacional({ kpi, porMes, porInstArea, filtrado }));
+}
+
+/**
+ * Constantes de param.general. Claves reales: `meta` (0.9) y `jornada_<mes inicial>_<mes final>` con las horas
+ * de cada período (jornada_ene_abr = 44, jornada_may_dic = 42): la marca del gráfico es el inicio del último
+ * período. Se aceptan también los nombres antiguos (`meta_gestion`, `mes_cambio_jornada`, ...) como respaldo.
+ */
+function leerParametros(parametros) {
+  const valor = (...claves) => claves.map((c) => parametros.find((p) => p.clave === c)).find(Boolean)?.valor;
+  const periodos = parametros.map((p) => {
+    const m = /^jornada_([a-z]{3})_([a-z]{3})$/.exec(p.clave);
+    return m ? { inicio: MESES_CORTOS.indexOf(m[1]) + 1, horas: Number(p.valor) } : null;
+  }).filter((p) => p && p.inicio > 0).sort((a, b) => a.inicio - b.inicio);
+  const ultimo = periodos.length > 1 ? periodos.at(-1) : null;
+  return {
+    metaPct: Number(valor('meta', 'meta_gestion')) || null,
+    mesJornada: ultimo?.inicio ?? (Number(valor('mes_cambio_jornada')) || null),
+    horasJornada: ultimo?.horas ?? (Number(valor('jornada_legal_horas_desde_mayo')) || null),
+  };
 }
 
 function frasesNacional({ kpi, porMes, porInstArea, filtrado }) {
@@ -236,6 +254,7 @@ function graficoInstitutos(filas, filtros) {
 
   return tarjetaGrafico({
     titulo: 'Meta anual por instituto',
+    alto: Math.max(320, porIt.length * 30 + 70),
     ariaLabel: `Gráfico de barras horizontales con la meta anual de cada instituto, de mayor a menor. `
       + porIt.map((r) => `${r.instituto}: ${num(r.meta)}`).join('; ') + `. Total: ${num(total)}.`,
     nota: 'Haga clic en una barra, o use «Ver datos», para abrir el detalle del instituto.',
@@ -257,7 +276,7 @@ function graficoInstitutos(filas, filtros) {
   }).elemento;
 }
 
-function graficoAreas(filas, tipos) {
+function graficoAreas(filas, tipos, dim) {
   const todas = [
     { nombre: 'Horas directas', campo: 'horas_dir', tipo: 'directa', corto: 'directas' },
     { nombre: 'Horas indirectas', campo: 'horas_ind', tipo: 'indirecta', corto: 'indirectas' },
@@ -266,36 +285,48 @@ function graficoAreas(filas, tipos) {
   const series = todas.filter((t) => !tipos.length || tipos.includes(t.tipo));
   const colores = todas.map((t, i) => [t, COLORES_HORAS[i]]).filter(([t]) => series.includes(t)).map(([, c]) => c);
   const total = (r) => series.reduce((t, s) => t + r[s.campo], 0);
-  const porArea = agrupar(filas, 'area', series.map((s) => s.campo)).sort((a, b) => total(b) - total(a));
+  const grupos = agrupar(filas.map((f) => ({ ...f, grupo: f[dim.campo] ?? '' })), 'grupo', series.map((s) => s.campo))
+    .sort((a, b) => total(b) - total(a));
   const lista = series.map((s) => s.corto).join(', ').replace(/, ([^,]*)$/, ' y $1');
+  const horizontal = grupos.length > 6; // con muchos cargos las barras van en horizontal para leer los nombres
+  const nombres = grupos.map((r) => dim.nombre(r.grupo));
 
-  const opcion = opcionBase({
+  const base = {
     color: colores,
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, valueFormatter: (v) => `${num(v)} h` },
     legend: { top: 0 },
-    grid: { left: 8, right: 8, top: 40, bottom: 8, containLabel: true },
-    xAxis: { type: 'category', data: porArea.map((r) => nombreArea(r.area)), axisLabel: { interval: 0, width: 90, overflow: 'break', formatter: (v) => v.replace(' (', '\n(') } },
-    yAxis: { type: 'value', axisLabel: { formatter: (v) => num(v) } },
     series: series.map((s) => ({
-      name: s.nombre, type: 'bar', stack: 'horas', data: porArea.map((r) => Math.round(r[s.campo])),
-      itemStyle: { borderColor: '#ffffff', borderWidth: 1 }, barMaxWidth: 64,
+      name: s.nombre, type: 'bar', stack: 'horas', data: grupos.map((r) => Math.round(r[s.campo])),
+      itemStyle: { borderColor: '#ffffff', borderWidth: 1 }, barMaxWidth: horizontal ? 22 : 64,
     })),
+  };
+  const opcion = opcionBase(horizontal ? {
+    ...base,
+    grid: { left: 8, right: 16, top: 40, bottom: 8, containLabel: true },
+    xAxis: { type: 'value', axisLabel: { formatter: (v) => num(v) } },
+    yAxis: { type: 'category', inverse: true, data: nombres, axisLabel: { width: 190, overflow: 'truncate' } },
+  } : {
+    ...base,
+    grid: { left: 8, right: 8, top: 40, bottom: 8, containLabel: true },
+    xAxis: { type: 'category', data: nombres, axisLabel: { interval: 0, width: 90, overflow: 'break', formatter: (v) => v.replace(' (', '\n(') } },
+    yAxis: { type: 'value', axisLabel: { formatter: (v) => num(v) } },
   });
 
   return tarjetaGrafico({
-    titulo: 'Horas por área',
-    ariaLabel: `Gráfico de barras apiladas con las horas ${lista} de cada área en el período. `
-      + porArea.map((r) => `${nombreArea(r.area)}: ${series.map((s) => `${num(r[s.campo])} ${s.corto}`).join(', ')}`).join('; ') + '.',
+    titulo: `Horas por ${dim.singular}`,
+    alto: horizontal ? Math.max(320, grupos.length * 30 + 80) : 320,
+    ariaLabel: `Gráfico de barras apiladas con las horas ${lista} de cada ${dim.singular} en el período. `
+      + grupos.map((r) => `${dim.nombre(r.grupo)}: ${series.map((s) => `${num(r[s.campo])} ${s.corto}`).join(', ')}`).join('; ') + '.',
     nota: tipos.length ? `Filtro de tipo de atención activo: solo horas ${lista}.` : null,
     opcion,
     tabla: {
-      caption: 'Horas del período por área, según tipo de hora',
+      caption: `Horas del período por ${dim.singular}, según tipo de hora`,
       columnas: [
-        { titulo: 'Área', campo: 'area', formato: nombreArea },
+        { titulo: dim.etiqueta, campo: 'grupo', formato: (v) => dim.nombre(v) },
         ...series.map((s) => ({ titulo: s.nombre, campo: s.campo, numerica: true, formato: num })),
         ...(series.length > 1 ? [{ titulo: 'Total', valor: total, numerica: true, formato: num }] : []),
       ],
-      filas: porArea,
+      filas: grupos,
     },
   }).elemento;
 }

@@ -6,7 +6,7 @@ import { lecturaFacil, plural } from '../lectura.js';
 import { listarEscenarios, decidirEscenario } from '../escenarios.js';
 import { abrirDialogoDecision } from '../dialogo.js';
 
-const ORDEN_TABLAS = ['param.general', 'param.cargo', 'param.asignacion', 'param.calendario', 'param.grupal'];
+const ORDEN_TABLAS = ['param.general', 'param.cargo_distribucion', 'param.cargo', 'param.asignacion_catalogo', 'param.asignacion', 'param.calendario_mes', 'param.calendario', 'param.grupal'];
 
 const ESTADOS = {
   pendiente: { texto: 'Pendiente de aprobación', icono: '!', tipo: 'alerta' },
@@ -19,7 +19,16 @@ const estadoDe = (e) => ESTADOS[e] ?? { texto: String(e ?? 'Sin estado'), icono:
 const puedeDecidir = (e) => e === 'pendiente' || e === 'borrador';
 
 /** "0.65 · 40 min" -> "0,65 · 40 min" (decimales a la chilena; no toca fechas ni códigos). */
-const valorLegible = (v) => String(v ?? '—').replace(/(\d)\.(\d)/g, '$1,$2');
+/** `valor` puede ser texto/número ("0.9") o un objeto JSON (param.cargo_distribucion, calendario, etc.). */
+const valorLegible = (v) => {
+  if (v === null || v === undefined) return '—';
+  if (typeof v === 'string' && /^\s*[{[]/.test(v)) { // en la base real el jsonb llega como texto JSON
+    try { return valorLegible(JSON.parse(v)); } catch { /* no era JSON: se muestra como texto */ }
+  }
+  if (Array.isArray(v)) return v.map(valorLegible).join(', ');
+  if (typeof v === 'object') return Object.entries(v).map(([k, x]) => `${k}: ${valorLegible(x)}`).join(' · ');
+  return String(v).replace(/(\d)\.(\d)/g, '$1,$2');
+};
 const sinTildes = (t) => String(t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const con = (n) => (n > 0 ? `+${num(n)}` : n < 0 ? `−${num(Math.abs(n))}` : '0');
 
@@ -28,7 +37,7 @@ export async function render(contenedor) {
   contenedor.append(el('h1', { tabindex: '-1' }, 'Parámetros y escenarios'));
 
   const pendientes = resultado.escenarios.filter((e) => puedeDecidir(e.estado));
-  const metaGestion = Number(reglas.find((r) => r.clave === 'meta_gestion')?.valor);
+  const metaGestion = Number((reglas.find((r) => r.clave === 'meta') ?? reglas.find((r) => r.clave === 'meta_gestion'))?.valor);
   const tablas = new Set(reglas.map((r) => r.tabla));
   const primero = pendientes[0];
   const efecto = primero?.impacto.reduce((s, i) => s + Number(i.diferencia_meta || 0), 0);
@@ -58,7 +67,7 @@ function seccionReglas(reglas) {
 
   const dibujar = () => {
     const consulta = sinTildes(buscador.value.trim());
-    const visibles = reglas.filter((r) => !consulta || sinTildes(`${r.tabla} ${r.clave} ${r.valor}`).includes(consulta));
+    const visibles = reglas.filter((r) => !consulta || sinTildes(`${r.tabla} ${r.clave} ${valorLegible(r.valor)}`).includes(consulta));
     const porTabla = new Map();
     visibles.forEach((r) => porTabla.set(r.tabla, [...(porTabla.get(r.tabla) ?? []), r]));
     const nombres = [...porTabla.keys()].sort((a, b) => {

@@ -5,7 +5,7 @@ import { el, tablaDatos, vacio } from '../ui.js';
 import { getData } from '../api.js';
 import { hashPara } from '../router.js';
 import { num, fecha, nombreMes } from '../formato.js';
-import { tipoCambio, etiquetaCampo, describirObjeto } from '../textoCambios.js';
+import { tipoCambio, etiquetaCampo, describirObjeto, registrarInstitutos } from '../textoCambios.js';
 import { lecturaFacil } from '../lectura.js';
 
 let renderizadaAntes = false;
@@ -58,6 +58,7 @@ export async function render(contenedor, filtros) {
   // Sin carga en la dirección se abre la más reciente (es la que se quiere ver tras procesar un archivo).
   const elegida = cargas.find((c) => c.id === filtros.carga?.[0]) ?? (filtros.carga?.length ? null : cargas[0]);
   const nombreInstituto = new Map(institutos.map((f) => [f.it, f.instituto]));
+  registrarInstitutos(nombreInstituto);
 
   const conErrores = cargas.filter((c) => c.errores > 0).length;
   lecturaFacil(contenedor, [
