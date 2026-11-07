@@ -10,6 +10,8 @@ import hashlib
 import json
 import math
 import unicodedata
+import zipfile
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import pandas as pd
@@ -269,6 +271,137 @@ def leer_plan(path):
     return d[KEY + ['calculado']]
 
 
+def leer_asistencial(path):
+    """Lee solo columnas del diagnóstico y solo el cuerpo de Dot_Asistencial."""
+    from openpyxl import load_workbook
+    from openpyxl.utils.cell import range_boundaries
+    with zipfile.ZipFile(path) as z:
+        tablas = [ET.fromstring(z.read(n)) for n in z.namelist()
+                  if n.startswith('xl/tables/') and n.endswith('.xml')]
+    tablas = [t for t in tablas if t.get('name') == 'Dot_Asistencial']
+    if len(tablas) != 1:
+        raise ValueError('No se encontró una única tabla Dot_Asistencial')
+    tabla = tablas[0]
+    _, cabecera, _, fin = range_boundaries(tabla.get('ref'))
+    if cabecera != 4:
+        raise ValueError('La cabecera de Dot_Asistencial debe estar en fila 4')
+    fin -= int(tabla.get('totalsRowCount', '0'))
+    wb = load_workbook(path, read_only=True, data_only=True)
+    try:
+        headers = {normalizar(' '.join(str(c.value).split())): c.column - 1
+                   for c in next(wb['Dotacion_Asistencial'].iter_rows(min_row=4, max_row=4)) if c.value is not None}
+    finally:
+        wb.close()
+    campos = {
+        'persona_id': 'PersonaId', 'it': 'IT', 'cargo': 'Cargo', 'area': 'Area',
+        'horas_semana_dic': 'H/S dic', 'prom_pond_horas': 'Prom_Pond Horas Semanales',
+        'dias_semana': 'N° Días Semana Contrato', 'colacion_contrato': 'Horas Colación en Contrato',
+        'horas_nas_total': 'H/Sem NAS Total', 'horas_asignacion': 'Total Hrs. Asignación',
+        'asignacion_1': 'Asignación 1 (seleccionar de lista desplegable)', 'horas_asig_1': 'Hrs. Asignación 1',
+        'asignacion_2': 'Asignación 2 (seleccionar de lista desplegable)', 'horas_asig_2': 'Hrs. Asignación 2',
+        'pct_dir_base': '%Directo', 'pct_ind_base': '%Indirecto', 'pct_nas_base': '% NAS',
+        'min_directa': 'Estándar Minutos Atención Directa', 'min_indirecta': 'Estándar Minutos Atención Indirecta',
+        'disponible_antes_nas': 'H/Sem Disponible antes NAS dic', 'pct_nas_asignaciones': '%NAS + Asig. Especiales',
+        'pct_dir_final': '%Directo Final', 'pct_ind_final': '%Indirecto Final',
+        'ate_dir_semana': 'N° Ate Directas (minutos estándar) - Semana may - dic',
+        'ate_ind_semana': 'N° Ate Indirectas (30 min) - Semana may - dic',
+        'pct_grupal': '% Atención Grupal Estándar', 'cambio_grupal': 'Cambio %Ate. Grupal V°B° DMN y VP',
+        'pacientes_grupo': 'N° Pacientes por Grupo', 'ate_dir_grupal': 'Atención Semanal Directa + Grupal',
+    }
+    for m in range(1, 13):
+        campos[f'semhab_{m}'] = f'SemHab{m}'
+    for m in MONTHS:
+        campos[f'plan_{m}'] = f'PlanAteDir{m}'
+        campos[f'meta_{m}'] = f'MG_AteDir{m}'
+    indices = {c: headers[normalizar(h)] for c, h in campos.items()}
+    orden = sorted(indices.values())
+    df = pd.read_excel(path, sheet_name='Dotacion_Asistencial', header=3,
+                       nrows=fin - cabecera, usecols=orden, engine='openpyxl')
+    inversa = {i: c for c, i in indices.items()}
+    df.columns = [inversa[i] for i in orden]
+    df['fila_excel'] = df.index + cabecera + 1
+    for c in ['persona_id', 'it']:
+        df[c] = pd.to_numeric(df[c], errors='coerce')
+    df = df[df['persona_id'].notna() & df['it'].notna()].copy()
+    df[['persona_id', 'it']] = df[['persona_id', 'it']].astype('int64')
+    for c in set(campos) - {'persona_id', 'it', 'cargo', 'area', 'asignacion_1', 'asignacion_2'}:
+        df[c] = pd.to_numeric(df[c], errors='raise')
+    return df
+
+
+def capas_asistencial(df, params, reglas):
+    """Diagnóstico por fila física: las dos claves repetidas no se mezclan."""
+    resultados = []
+    def registrar(capa, campo, referencia, calculado, mes=0, mascara=None, hipotesis=''):
+        for i, r in df.iterrows():
+            if mascara is not None and not mascara.loc[i]:
+                continue
+            ref, calc = referencia.loc[i], calculado.loc[i]
+            comparable = pd.notna(ref) and pd.notna(calc) and math.isfinite(ref) and math.isfinite(calc)
+            tol = 0 if campo in {'ate_dir_semana', 'ate_ind_semana', 'plan_ate_dir', 'meta'} else 1e-9
+            resultados.append(dict(capa=capa, campo=campo, fila_excel=r['fila_excel'], persona_id=r['persona_id'], it=r['it'], mes=mes,
+                                   referencia=ref, calculado=calc, comparable=comparable,
+                                   coincide=comparable and abs(calc - ref) <= tol,
+                                   diferencia=calc-ref if comparable else math.nan, hipotesis=hipotesis))
+    def fl(s):
+        return s.map(lambda n: abajo(n) if pd.notna(n) and math.isfinite(n) else math.nan)
+    for contextual in [False, True]:
+        for base in ['prom_pond_horas', 'horas_semana_dic']:
+            seleccion = []
+            for _, r in df.iterrows():
+                valor = r[base]
+                tramo = 1 if valor >= params['tramo_limite_alto'] else 2 if valor >= params['tramo_limite_bajo'] else 3
+                cargo = normalizar(r['cargo'])
+                candidato = normalizar(str(r['cargo']) + ' ' + str(r['area']))
+                # Variante declarada; no ajusta por valores objetivo ni por persona.
+                if contextual and (candidato, tramo) in reglas:
+                    cargo = candidato
+                seleccion.append(reglas.get((cargo, tramo), {}))
+            for destino, param in [('pct_dir_base', 'pct_dir'), ('pct_ind_base', 'pct_ind'), ('pct_nas_base', 'pct_nas')]:
+                pred = pd.Series([r.get(param, math.nan) for r in seleccion], index=df.index)
+                registrar(('a_cargo_area_tramo_' if contextual else 'a_tramo_') + base, destino, df[destino], pred,
+                          hipotesis='Cargo+área es homologación candidata cuando existe en param_cargo; revisar excepción residual')
+    disponibles = df['horas_semana_dic'] - df['colacion_contrato']
+    registrar('b_insumos', 'disponible_antes_nas', df['disponible_antes_nas'], disponibles)
+    nas = (df['horas_nas_total'] + df['horas_asignacion']) / disponibles.where(disponibles > 0)
+    registrar('b_nas_reconstruido', 'pct_nas_asignaciones', df['pct_nas_asignaciones'], nas,
+              hipotesis='Jornada cambiante: revisar denominador/ponderación; no sustituir por H/S dic sin evidencia')
+    suma = df['pct_dir_base'] + df['pct_ind_base']
+    predicciones = {}
+    for modo, pct_nas in [('pct_nas_excel', df['pct_nas_asignaciones']), ('nas_reconstruido', nas)]:
+        pred_dir = df['pct_dir_base'] * (1-pct_nas) / suma.where(suma != 0)
+        pred_ind = df['pct_ind_base'] * (1-pct_nas) / suma.where(suma != 0)
+        registrar('b_' + modo, 'pct_dir_final', df['pct_dir_final'], pred_dir)
+        registrar('b_' + modo, 'pct_ind_final', df['pct_ind_final'], pred_ind)
+        directas = fl(df['disponible_antes_nas'] * pred_dir * params['minutos_hora'] / df['min_directa'].where(df['min_directa'] > 0))
+        indirectas = fl(df['disponible_antes_nas'] * pred_ind * params['minutos_hora'] / df['min_indirecta'].where(df['min_indirecta'] > 0))
+        for sufijo, mascara in [('_todas', None), ('_activas', df['horas_semana_dic'] > 0)]:
+            registrar('b_' + modo + sufijo, 'ate_dir_semana', df['ate_dir_semana'], directas, mascara=mascara,
+                      hipotesis='H/S dic=0 puede conservar semanal histórico; en activas revisar jornada/estándar aplicado')
+            registrar('b_' + modo + sufijo, 'ate_ind_semana', df['ate_ind_semana'], indirectas, mascara=mascara)
+        predicciones[modo] = directas
+    pct_grupal = df['cambio_grupal'].fillna(df['pct_grupal']).fillna(0)
+    factor = 1-pct_grupal+pct_grupal*df['pacientes_grupo'].fillna(1)
+    registrar('c_grupal_desde_semanal_excel', 'ate_dir_grupal', df['ate_dir_grupal'], df['ate_dir_semana']*factor,
+              hipotesis='Revisar override individual de grupo/pacientes y reglas de redondeo')
+    variantes = {'c_aislada_semanal_grupal_excel': df['ate_dir_grupal'],
+                 'c_encadenada_pct_nas_excel': predicciones['pct_nas_excel']*factor,
+                 'c_encadenada_nas_reconstruido': predicciones['nas_reconstruido']*factor}
+    for capa, semana in variantes.items():
+        for m in MONTHS:
+            plan = fl(semana * df[f'semhab_{m}'])
+            registrar(capa, 'plan_ate_dir', df[f'plan_{m}'], plan, m,
+                      hipotesis='Aislada verifica fórmula mensual; encadenada propaga diferencias semanales/grupales')
+            registrar(capa, 'meta', df[f'meta_{m}'], fl(plan * params['meta']), m,
+                      hipotesis='Frontera de floor/epsilon o diferencia propagada del plan')
+    detalle = pd.DataFrame(resultados)
+    resumen = detalle.groupby(['capa', 'campo'], sort=True).agg(referencias=('fila_excel', 'size'), comparables=('comparable', 'sum'), coinciden=('coincide', 'sum')).reset_index()
+    resumen['sin_comparar'] = resumen['referencias'] - resumen['comparables']
+    resumen['pct_comparables'] = 100*resumen['coinciden']/resumen['comparables'].replace(0, math.nan)
+    resumen['pct_total'] = 100*resumen['coinciden']/resumen['referencias']
+    return resumen, detalle
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--buk', type=Path, default=ROOT / 'data/excel/Nac - Base contratos x mes.xlsx')
@@ -279,6 +412,8 @@ def main(argv=None):
     parser.add_argument('--colacion', action='store_true', help='Sensibilidad: aplicar 0.25 h × Ndias; base predeterminada sin colación')
     parser.add_argument('--grupal-hipotesis', action='store_true', help='Sensibilidad, NO regla confirmada: factor mensual 1-pct_grupal+pct_grupal*pacientes_grupo por cod_esp BUK')
     parser.add_argument('--salida', type=Path, default=Path(__file__).parent / 'resultados')
+    parser.add_argument('--capas', action='store_true', help='Además, diagnosticar capas A/B/C contra Dot_Asistencial por fila Excel')
+    parser.add_argument('--planificacion', type=Path, default=ROOT / 'data/excel/Nac - Planificacion Asistencial x mes.xlsx')
     args = parser.parse_args(argv)
     buk, descartadas = leer_buk(args.buk)
     p, reglas, cal, grupos, n_asig = parametros(args.csv, args.param_generales)
@@ -327,9 +462,21 @@ def main(argv=None):
     args.salida.mkdir(parents=True, exist_ok=True)
     for name, table in [('calculo', calc), ('resumen', resumen), ('comparaciones', todas), ('top20_por_campo', top)]:
         table.to_csv(args.salida / (name + '.csv'), index=False, encoding='utf-8')
+    if args.capas:
+        asistencial = leer_asistencial(args.planificacion)
+        resumen_capas, detalle_capas = capas_asistencial(asistencial, p, reglas)
+        resumen_capas.to_csv(args.salida / 'capas_resumen.csv', index=False)
+        detalle_capas.to_csv(args.salida / 'capas_detalle.csv', index=False)
+        errores_capas = detalle_capas[detalle_capas['comparable'] & ~detalle_capas['coincide']].copy()
+        errores_capas['abs_diferencia'] = errores_capas['diferencia'].abs()
+        errores_capas.sort_values('abs_diferencia', ascending=False).groupby(['capa', 'campo']).head(20).to_csv(args.salida / 'capas_top20.csv', index=False)
+        asistencial[asistencial.duplicated(['persona_id', 'it'], keep=False)].to_csv(args.salida / 'capas_claves_repetidas.csv', index=False)
+        print('\nCAPAS A/B/C (diagnóstico condicionado a insumos Excel; no es BUK independiente):\n' + resumen_capas.to_string(index=False))
     fuentes = [args.buk, args.param_generales, *sorted(args.csv.glob('param_*.csv')), args.csv / 'esperado.csv']
     if args.plan:
         fuentes.append(args.plan)
+    if args.capas:
+        fuentes.append(args.planificacion)
     info = dict(filas_buk=len(buk), descartadas_buk=descartadas,
                 pares_buk=int(buk[['persona_id', 'it']].drop_duplicates().shape[0]),
                 meses_buk=sorted(int(x) for x in buk['mes'].unique()),

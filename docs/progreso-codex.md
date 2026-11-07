@@ -1,8 +1,13 @@
 # Progreso Codex · César
 
-Rama: `codex/trabajo`. Solo commits locales, sin push. Última actualización: 2026-11-07.
+Rama: `codex/trabajo`. Tareas 1–9 con commits locales; Tarea 10 autoriza push a `origin/codex/trabajo`. Última actualización: 2026-11-07.
 
 ## Hecho
+
+- Tarea 10.1: --capas lee solo columnas del cuerpo Dot_Asistencial (filas 5–475), con clave fila_excel. A: cargo exacto + promedio 98.938/99.151/99.151 % en bases; candidato cargo+área + promedio 470/471 = 99.788 % en las tres. H/S dic empeora tramo. B: usando %NAS individual, 456/456 = 100 % de ambos finales; directas 441/447 activas = 98.658 %, indirectas 444/447 = 99.329 %. NAS reconstruido desde horas alcanza 438/447 = 97.987 %, con nueve residuos de jornada cambiante.
+- Tarea 10.1 C: plan mensual aislado con semanal directa+grupal y SemHab Excel 3768/3768 = 100 %; meta 3763/3768 = 99.867 %. Cadena completa desde B/grupos ~98 %, sin afirmar 100 % independiente. Residuo A: jefe TO 71613/131; meta: 136947/131 julio y 72458/51 agosto–noviembre. Detalles, denominadores y fórmulas en docs/verificacion.md.
+- Tarea 10.2: extractor genera data/csv/insumos.csv, 471 filas/31 columnas exactamente pedidas, con asignaciones y semhab_1..12. Regenerados CSV anteriores sin cambios de contenido. Cotejo independiente de todas las columnas con la tabla Excel; 12 pruebas en verde y git diff --check correcto. Se conserva fielmente el origen: 469 pares únicos, dos contratos repetidos sin agregación (aviso del extractor y documentación).
+- Remoto origin existente detectado; el push solicitado para esta entrega se realiza sobre codex/trabajo, sin forzar ni modificar main.
 
 - Tarea 9: tools/verificar_calculo.py (pandas, sin BD), parámetros generales reconstruidos con procedencia, dependencias y siete pruebas. Lee solo nueve columnas BUK, elimina fecha de nacimiento tras derivar mes, y compara %Dir, directas semanales y plan mayo–diciembre con esperado.csv. Incluye modelo estricto y continuidad explícita, cobertura/conflictos, top 20 por campo, manifiesto de huellas y --plan para comparar base/Excel/cálculo propio. Documentado en docs/verificacion.md.
 - Tarea 9 ejecutada: BUK 3.123 filas/465 pares, enero–julio. Continuidad independiente: 4.232 % de %Dir, 21.875 % semanal y 2.376 % mensual entre comparables; no se reproduce 98–100 % con entradas incompletas. Hay 35 claves conflictivas en campos analizados. Diagnóstico NO independiente con semana/semhab Excel y factor grupal hipotético explica 99.134 % comparable (97.655 % total); faltan asignaciones, novedades, horizonte anual y confirmar fórmula grupal. Sensibilidad colación/grupos no resuelve el déficit. Adaptador --plan probado con una fila de ensayo, sin atribuir resultados a Andrés.
@@ -25,6 +30,9 @@ Rama: `codex/trabajo`. Solo commits locales, sin push. Última actualización: 2
 
 ## Siguiente
 
+- Acordar cómo consolidar/identificar los contratos repetidos 137356/22 y 72190/41 antes de exigir unicidad persona/IT en insumos. Se consultó a César; se conservaron las 471 filas para no perder información de origen.
+- Validar homologación cargo+área y la excepción 71613/131 con Andrés; revisar nueve residuos NAS, seis semanales activas y cinco metas. El CSV de 31 campos no incluye %NAS+asignaciones ni overrides grupales/BF: no sustituye todos los insumos de las capas aisladas.
+
 - Entregar a Andrés docs/verificacion.md: resolver claves ambiguas, fórmula grupal y datos individuales; recibir export real de calc.plan_mes y ejecutar --plan.
 
 - Ensayar pitch (395 palabras) y demo (cinco minutos) con el release real; completar tiempos y evidencia humana antes del jurado.
@@ -40,3 +48,4 @@ Rama: `codex/trabajo`. Solo commits locales, sin push. Última actualización: 2
 - Validar Dotacion entrega fechas ISO; convertir a DateTime en datosCarga antes de ODBC según el LEEME. En producción usar catálogos aprobados, no los derivados de la entrada usados en el ensayo. Textos de motivos no están fijados por contrato; comprobar semántica en integración.
 - web\js ya fue integrado por el trabajo paralelo; lint local en verde. No se ha ejecutado GitHub Actions (sin push por instrucción).
 - Verificador: proyección de continuidad no es dotación observada; el promedio parcial/colación/pausa/grupos no están completamente definidos con estas fuentes. Los diagnósticos que usan esperado como predictor están separados y no certifican el cálculo independiente. No se recibió CSV real de la base de Andrés.
+- insumos.csv conserva dos pares repetidos porque 471 registros fuente no equivalen a 471 claves únicas. No cargarlo con una PK persona/IT ni descartar históricos sin resolver la vigencia; no se cambió ningún contrato SQL.

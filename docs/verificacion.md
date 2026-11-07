@@ -2,7 +2,124 @@
 
 Ejecución: **7 de noviembre de 2026**, Windows/Python 3.12, pandas 3.1.1 y openpyxl 3.1.5. Código: [tools/verificar_calculo.py](../tools/verificar_calculo.py). No consulta PostgreSQL ni lee código de `database\`, `api\`, `web\` o `scripts\`. El cálculo independiente se ejecuta **antes** de abrir esperado.csv; no se ajustan sus parámetros para maximizar coincidencias.
 
-**Resultado:** con las fuentes disponibles y los supuestos explícitos siguientes **no se reproduce el 98–100 %** anunciado en reglas.md. El escenario de continuidad coincide en 4.232 % del %Dir final, 21.875 % de las atenciones directas semanales y 2.376 % del plan mensual comparable. Esto no demuestra un error del SQL de Andrés: faltan entradas individuales, el año BUK está incompleto y existe una fórmula grupal abierta. El resultado del SQL real aún no se ha recibido.
+**Actualización Tarea 10:** al incorporar los insumos individuales del Excel se confirma la hipótesis: **A: 99.788 %** por cargo+área y tramo por promedio (variante de homologación candidata); **B: 100 % de ambos porcentajes finales, 98.658 % de directas semanales en 447 filas activas; C: 100 % del plan mensual aislado y 99.867 % de meta**. Los resultados están condicionados a los insumos explícitos de cada capa, no son la exactitud de un cálculo alimentado solo por BUK ni de la base de Andrés. Detalle y exportación de insumos a continuación.
+
+## Tarea 10 · Diagnóstico por capas
+
+```powershell
+python tools\verificar_calculo.py --capas --salida tools\resultados\capas
+python data\extraer.py "data\excel\Nac - Planificacion Asistencial x mes.xlsx" data\csv
+python -m unittest discover -s tools -p test_*.py
+```
+
+El diagnóstico lee directamente las columnas necesarias de **Dotacion_Asistencial, tabla Dot_Asistencial, encabezados fila 4**. El rango de tabla es A4:GW476, con una fila de totales: se usan **471 registros de las filas 5–475**, nunca el total. Se compara por **fila_excel**, manteniendo separados contratos con el mismo persona_id/IT. Así los conflictos del CSV largo de Tarea 9 no se convierten en cruces muchos-a-muchos ni se pierde la correspondencia con el objetivo.
+
+Se generan `capas_resumen.csv`, `capas_detalle.csv`, `capas_top20.csv` y `capas_claves_repetidas.csv` en la salida (excluidos de Git). Las discrepancias incluyen persona_id, IT, fila Excel, mes, referencia, cálculo y diferencia. Tolerancia 1e-9 en porcentajes e intermedios fraccionarios; igualdad exacta en conteos, con floor(x+1e-9). El manifiesto de fuentes incluye la huella del Excel de planificación cuando se usa --capas.
+
+### A · Distribución base, homologación y tramo
+
+Se contrastan `%Directo`, `%Indirecto` y `% NAS` con param_cargo. Se prueban ambos criterios de tramo con los umbrales de parámetros, sin ajustar las cifras objetivo.
+
+| Homologación / criterio de tramo | Directo | Indirecto | NAS | Denominador |
+|---|---:|---:|---:|---:|
+| Nombre normalizado / Prom_Pond Horas Semanales | 466 · 98.938 % | 467 · 99.151 % | 467 · 99.151 % | 471 |
+| Nombre normalizado / H/S dic | 449 · 95.329 % | 456 · 96.815 % | 450 · 95.541 % | 471 |
+| Cargo+área candidato / Prom_Pond Horas Semanales | 470 · **99.788 %** | 470 · **99.788 %** | 470 · **99.788 %** | 471 |
+| Cargo+área candidato / H/S dic | 453 · 96.178 % | 459 · 97.452 % | 453 · 96.178 % | 471 |
+
+La variante contextual utiliza `Cargo + " " + Area` únicamente cuando ese nombre existe en param_cargo para el tramo; en caso contrario conserva el nombre original. No consulta porcentajes objetivo para elegir, ni contiene excepciones por persona. Es una **propuesta de homologación a validar por Andrés**, no una modificación del catálogo SQL.
+
+Resuelve cuatro casos concretos: 74761 y 111842 (TO del área ULAB), 71926 (EDUCADOR del área UTA) y 137147 (TO del área UTA). El quinto residuo, **71613/131, fila 382**, tiene JEFE TERAPIA OCUPACIONAL con base Excel 0.10/0.00/0.90, frente a 0.30/0.10/0.60 del cargo general. Existe un cargo especial AC en parámetros compatible con esa distribución, pero el código no lo asigna sin una regla de homologación aprobada. El promedio ponderado explica mejor el tramo que la jornada de diciembre.
+
+### B · NAS, porcentajes finales y atención semanal
+
+Dos rutas separadas evitan confundir una identidad con una reconstrucción de todos sus insumos:
+
+```text
+disponible = H/S dic − Horas Colación en Contrato
+pct_NAS_reconstruido = (H/Sem NAS Total + Total Hrs. Asignación) / disponible
+pct_dir_final = %Directo × (1 − pct_NAS) / (%Directo + %Indirecto)
+pct_ind_final = %Indirecto × (1 − pct_NAS) / (%Directo + %Indirecto)
+directas_semana = floor(disponible_antes_NAS_Excel × pct_dir_final × 60 / min_directa + 1e-9)
+```
+
+La primera ruta usa el `%NAS + Asig. Especiales` ya calculado en Excel para aislar los porcentajes finales y la atención. La segunda lo reconstruye desde NAS/asignaciones/colación y expone sus diferencias. No se utiliza `%Directo Final` ni la atención semanal objetivo como predictor de la atención recalculada.
+
+| Prueba | Aciertos / comparables | % comparables | Sin comparar / universo |
+|---|---:|---:|---:|
+| Disponible H/S dic − colación vs H/Sem Disponible antes NAS dic | 471/471 | 100.000 | 0/471 |
+| NAS reconstruido vs %NAS + Asig. Especiales | 438/447 | 97.987 | 24/471 |
+| Final directo usando %NAS Excel | 456/456 | **100.000** | 15/471 |
+| Final indirecto usando %NAS Excel | 456/456 | **100.000** | 15/471 |
+| Final directo/indirecto con NAS reconstruido | 438/447 cada uno | 97.987 | 24/471 |
+| Directas semanales con %NAS Excel, H/S dic > 0 | 441/447 | **98.658** | 0/447 |
+| Indirectas semanales con %NAS Excel, H/S dic > 0 | 444/447 | 99.329 | 0/447 |
+| Directas semanales con NAS reconstruido, activas | 439/447 | 98.210 | 0/447 |
+| Indirectas semanales con NAS reconstruido, activas | 443/447 | 99.105 | 0/447 |
+
+Se muestra explícitamente la población activa de **447 filas con H/S dic > 0**, coherente con las reglas documentadas. Al incluir históricos con diciembre cero, la primera ruta semanal da **441/456 = 96.711 %** de directas comparables (93.631 % sobre las 471 filas). Algunas filas guardan atención semanal histórica distinta de cero pese a H/S dic = 0; no se borran ni se presentan como prueba de fallo de la fórmula de diciembre. Los porcentajes finales nulos tampoco se convierten en cero. Denominadores disponibles <= 0 no se usan para reconstruir NAS.
+
+Los nueve residuos del NAS reconstruido corresponden a jornadas cambiantes: **72365/41, 126057/51, 73206/81, 119621/91, 72721/131, 125926/131, 79740/131, 73258/131 y 72210/141**. Revisar qué jornada/ponderación usa allí el Excel; no se ajustó el denominador para forzar coincidencia.
+
+Las seis discrepancias semanales directas activas con %NAS Excel son **134744/11** (15 vs 14), **72365/41** (16 vs 17), **73206/81** (29 vs 30), **79740/131** (30 vs 29), **73258/131** (31 vs 29) y **72210/141** (33 vs 32), en orden objetivo vs recalculado. Salvo la primera, son jornadas cambiantes. Validar estándar, vigencia de horas y posibles ajustes manuales.
+
+### C · Plan mensual y meta, mayo–diciembre
+
+Para aislar la fórmula mensual se utiliza **Atención Semanal Directa + Grupal** de Excel (BF), no solo las directas individuales BA:
+
+```text
+plan_mes = floor(semana_directa_grupal_Excel × SemHabMes + 1e-9)
+meta_mes = floor(plan_mes × meta_parametrizada + 1e-9)
+```
+
+| Variante | Plan | Meta | Sin comparar |
+|---|---:|---:|---:|
+| Mensual aislada, usando BF Excel | **3.768/3.768 = 100.000 %** | **3.763/3.768 = 99.867 %** | 0 |
+| Encadenada desde %NAS Excel y grupos reconstruidos | 3.575/3.648 = 97.999 % | 3.570/3.648 = 97.862 % | 120/3.768 |
+| Encadenada desde NAS reconstruido y grupos | 3.504/3.576 = 97.987 % | 3.499/3.576 = 97.847 % | 192/3.768 |
+
+La reconstrucción de BF a partir de la atención individual, porcentaje grupal (override individual si existe; si no, estándar) y pacientes por grupo coincide en **462/471 = 98.089 %**, con tolerancia para números fraccionarios. Por eso **no se afirma 100 % de extremo a extremo**: la capa C aislada confirma la fórmula del plan con BF y SemHab correctos, mientras la cadena completa conserva los residuos semanales y grupales.
+
+Los cinco residuos de meta aislada son **136947/131, julio** (Excel 289 vs 297) y **72458/51, agosto–noviembre** (86/84/86/86 vs 85/83/85/85). Investigar referencia/redondeo intermedio o ajustes, sin cambiar los valores objetivo. La meta usa 0.9 del archivo de parámetros generales, no una constante dentro de la función.
+
+### Tarea 10.2 · Exportación insumos.csv
+
+Las capas confirman el efecto de los insumos faltantes y permiten generar [data/csv/insumos.csv](../data/csv/insumos.csv). Se regeneraron todos los CSV con el extractor; los seis archivos anteriores conservan su contenido. Conteos: param_cargo 258, param_asignacion 33, param_calendario 12, param_grupal 10, excepciones 177, esperado 31.527; **insumos 471 filas × 31 columnas**. No incluye nombres, RUT ni fechas de nacimiento; los textos de asignación son categorías de la planilla.
+
+**Límite de unicidad que no debe ocultarse:** la tabla tiene 471 registros pero **469 pares persona_id/IT únicos**. Se consultó a César sobre esta contradicción entre «471 filas» y «una por par». La exportación de revisión conserva las 471 filas, en orden de tabla y sin inventar una agregación; queda pendiente definir una clave de contrato/versión o la consolidación antes de usar persona_id/IT como clave única.
+
+| Par repetido | Filas Excel | H/S dic | Promedio | Horas asignación |
+|---|---|---|---|---|
+| 137356 / 22 | 59 y 60 | 0 y 30 | 20 y 30 | 0 y 0 |
+| 72190 / 41 | 112 y 113 | 0 y 35 | 32 y 35 | 0.25 y 18.25 |
+
+No usar `drop_duplicates`, sumar todas las horas ni elegir el máximo sin revisar la vigencia. El registro n del CSV (contando desde 1 después de la cabecera) corresponde a fila Excel n+4; el diagnóstico aporta fila_excel para resolver estos casos sin cambiar las 31 columnas pedidas. El extractor imprime un aviso explícito de duplicidad. **insumos.csv es un artefacto auxiliar nuevo, no un CSV de un contrato stg existente: no se crea ni modifica una tabla SQL.**
+
+| Columna(s) | Origen / unidad |
+|---|---|
+| persona_id, it | PersonaId e IT; enteros |
+| cargo, area | Cargo y Area; texto con espacios exteriores recortados |
+| horas_semana_dic | H/S dic; horas por semana |
+| prom_pond_horas | Prom_Pond Horas Semanales; horas |
+| dias_semana | N° Días Semana Contrato; número de días |
+| colacion_contrato | Horas Colación en Contrato; horas semanales, no indicador sí/no |
+| horas_nas_total | H/Sem NAS Total; horas semanales |
+| horas_asignacion | Total Hrs. Asignación; total, puede incluir asignaciones 3/4 |
+| asignacion_1, horas_asig_1 | Asignación 1 y Hrs. Asignación 1 |
+| asignacion_2, horas_asig_2 | Asignación 2 y Hrs. Asignación 2 |
+| pct_dir_base, pct_ind_base, pct_nas_base | %Directo, %Indirecto y % NAS; fracciones, no porcentaje ×100 |
+| min_directa, min_indirecta | Estándar Minutos Atención Directa/Indirecta |
+| semhab_1 … semhab_12 | SemHab1 … SemHab12; semanas individuales por mes |
+
+Vacíos numéricos se conservan como NULL/celda CSV vacía, no se convierten en 0. Los blancos de texto también quedan vacíos. Se conserva precisión decimal sin redondear a efectos de visualización.
+
+**Suficiencia del archivo:** las 31 columnas solicitadas no incluyen `%NAS + Asig. Especiales`, BF ni los overrides grupales/pacientes. Por tanto permiten reconstruir la ruta B de NAS y obtener aproximadamente 98 % en activas, pero no garantizan por sí solas el 100 % condicionado ni la ruta C aislada. Cualquier ampliación futura de insumos/contratos debe acordarse expresamente. No deben sustituirse faltantes con resultados finales del esperado para afirmar independencia.
+
+Pruebas: **12 en verde**, incluyendo lectura acotada de tabla, 471 registros sin totales, cotejo independiente de las 31 columnas CSV frente a la hoja, mantenimiento de los contratos repetidos, denominador activo separado, resultados por capa y las siete pruebas anteriores. No se ejecutó scripts/test.ps1 porque no está en este clon.
+
+## Resultado histórico de Tarea 9 · Solo BUK y parámetros
+
+Con esas fuentes y supuestos **no se reprodujo el 98–100 %** anunciado en reglas.md: continuidad coincidió en 4.232 % del %Dir final, 21.875 % semanal y 2.376 % mensual comparable. La tarea 10 explica por qué: los insumos individuales son necesarios. Estos números históricos no describen las capas condicionadas anteriores ni la base de Andrés, cuyo export real sigue pendiente.
 
 ## Ejecutar y reproducir
 

@@ -14,8 +14,57 @@ from pathlib import Path
 
 import openpyxl
 from openpyxl.utils import column_index_from_string as col
+from openpyxl.utils.cell import range_boundaries
 
 warnings.filterwarnings("ignore")
+
+
+# Archivo auxiliar independiente: no modifica ningún contrato stg.*.
+INSUMOS_CAMPOS = {
+    "persona_id": "PersonaId", "it": "IT", "cargo": "Cargo", "area": "Area",
+    "horas_semana_dic": "H/S dic", "prom_pond_horas": "Prom_Pond Horas Semanales",
+    "dias_semana": "N° Días Semana Contrato", "colacion_contrato": "Horas Colación en Contrato",
+    "horas_nas_total": "H/Sem NAS Total", "horas_asignacion": "Total Hrs. Asignación",
+    "asignacion_1": "Asignación 1 (seleccionar de lista desplegable)", "horas_asig_1": "Hrs. Asignación 1",
+    "asignacion_2": "Asignación 2 (seleccionar de lista desplegable)", "horas_asig_2": "Hrs. Asignación 2",
+    "pct_dir_base": "%Directo", "pct_ind_base": "%Indirecto", "pct_nas_base": "% NAS",
+    "min_directa": "Estándar Minutos Atención Directa", "min_indirecta": "Estándar Minutos Atención Indirecta",
+    **{f"semhab_{m}": f"SemHab{m}" for m in range(1, 13)},
+}
+
+
+def insumos(wbv):
+    """Copia fiel del cuerpo de Dot_Asistencial; no consolida contratos repetidos."""
+    ws = wbv["Dotacion_Asistencial"]
+    tabla = ws.tables["Dot_Asistencial"]
+    _, primera, _, ultima = range_boundaries(tabla.ref)
+    if primera != 4:
+        raise ValueError("La cabecera Dot_Asistencial debe estar en la fila 4")
+    ultima -= tabla.totalsRowCount or 0
+    cabeceras = {" ".join(str(c.value).split()): c.column for c in ws[primera] if c.value is not None}
+    indices = {campo: cabeceras[encabezado] for campo, encabezado in INSUMOS_CAMPOS.items()}
+    textos = {"cargo", "area", "asignacion_1", "asignacion_2"}
+    filas = []
+    for r in range(primera + 1, ultima + 1):
+        persona, it = ws.cell(r, indices["persona_id"]).value, ws.cell(r, indices["it"]).value
+        if not isinstance(persona, (int, float)) or not isinstance(it, (int, float)):
+            continue
+        valores = []
+        for campo, ci in indices.items():
+            valor = ws.cell(r, ci).value
+            if campo in {"persona_id", "it"}:
+                if int(valor) != valor:
+                    raise ValueError(f"Identificador no entero en fila {r}")
+                valor = int(valor)
+            elif campo in textos:
+                valor = "" if valor is None else str(valor).strip()
+            else:
+                if valor is not None and valor != "" and num(valor) is None:
+                    raise ValueError(f"Insumo no numérico: {campo}, fila {r}")
+                valor = num(valor)  # Mantener NULL, no inventar un cero.
+            valores.append(valor)
+        filas.append(valores)
+    return filas
 
 
 def num(v, default=None):
@@ -173,6 +222,12 @@ def main():
     escribir(destino / "param_grupal.csv", ["cod_esp", "grupo_it", "pct_grupal", "pacientes_grupo"], param_grupal(wbv))
     escribir(destino / "excepciones.csv", ["persona_id", "it", "mes", "horas"], excepciones(wbv))
     escribir(destino / "esperado.csv", ["persona_id", "it", "campo", "mes", "valor"], esperado(wbv))
+    filas_insumos = insumos(wbv)
+    escribir(destino / "insumos.csv", list(INSUMOS_CAMPOS), filas_insumos)
+    pares_insumos = {(f[0], f[1]) for f in filas_insumos}
+    if len(pares_insumos) != len(filas_insumos):
+        print(f"Aviso insumos: {len(filas_insumos)} filas fuente, {len(pares_insumos)} pares persona/IT. "
+              "Se conservan los contratos repetidos sin agregarlos; revisar diagnóstico por fila Excel.")
     if alertas:
         print(f"Alertas ({len(alertas)}) cargos cuyo %dir+%ind+%nas no suma 1:")
         for a in alertas:
