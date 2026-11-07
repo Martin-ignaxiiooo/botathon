@@ -38,7 +38,7 @@ BEGIN
     SELECT valor INTO v_meta FROM param.general WHERE vigente_hasta IS NULL AND clave = 'meta';
     IF v_meta IS NULL THEN RAISE EXCEPTION 'cuadratura: falta param.general meta'; END IF;
 
-    DROP TABLE IF EXISTS cuad_cmp;
+    IF to_regclass('pg_temp.cuad_cmp') IS NOT NULL THEN DROP TABLE pg_temp.cuad_cmp; END IF;
     CREATE TEMP TABLE cuad_cmp ON COMMIT DROP AS
     WITH esp AS (
         SELECT e.persona_id, e.it, e.campo, e.mes, e.valor

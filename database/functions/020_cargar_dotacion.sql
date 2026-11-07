@@ -3,6 +3,7 @@
 -- * mes = month(periodo); dias_semana = length(dias_jornada) o ndias; cargo -> param.cargo_homologado.
 -- * Fila sin persona/IT/periodo, horas <= 0 o fecha_termino < fecha_ingreso -> stg.error_fila. Cargo sin homologar -> core.alerta y se omite.
 --   Duplicado (persona, it, mes) en la misma carga -> core.alerta y se toma el de más horas.
+--   area distinta a la sede de su IT (traslado sin actualizar area) -> se usa la del IT y core.alerta 'area_distinta_it'.
 -- * Cada carga BUK es una foto completa: core.dotacion_mes queda igual a lo real de esta carga + proyección.
 -- * Proyección ago-dic (docs\progreso-back.md): cada persona-IT presente en el último mes de la carga
 --   mantiene las condiciones de ese mes hasta el mes de fecha_termino (incluido) o diciembre. origen = 'proyectado'.
@@ -33,10 +34,10 @@ BEGIN
     END IF;
 
     -- Re-ejecutable: se limpian las alertas y errores propios de esta carga
-    DELETE FROM core.alerta a WHERE a.carga_id = p_carga_id AND a.tipo IN ('cargo_sin_homologar', 'duplicado');
+    DELETE FROM core.alerta a WHERE a.carga_id = p_carga_id AND a.tipo IN ('cargo_sin_homologar', 'duplicado', 'area_distinta_it');
     DELETE FROM stg.error_fila e WHERE e.carga_id = p_carga_id AND e.motivo LIKE 'cargar_dotacion:%';
 
-    DROP TABLE IF EXISTS t_fila, t_real, t_proy;
+    DROP TABLE IF EXISTS t_fila, t_real, t_proy, t_sede;
     CREATE TEMP TABLE t_fila ON COMMIT DROP AS
     SELECT b.*, extract(month FROM b.periodo)::smallint AS mes, row_number() OVER () AS fila,
            upper(regexp_replace(trim(b.cargo), '\s+', ' ', 'g')) AS cargo_norm
@@ -104,6 +105,23 @@ BEGIN
     JOIN param.cargo_homologado h ON upper(h.cargo_origen) = f.cargo_norm
     ORDER BY f.persona_id, f.it, f.mes, f.horas_semanales DESC, f.fila;
     SELECT count(*) INTO v_filas FROM t_real;
+
+    -- Sede (area) coherente con el IT: en el BUK la area es la sede y depende solo del IT. Si una fila trae otra
+    -- (p. ej. un traslado de IT que no actualizó la area), se usa la area más frecuente de ese IT en esta carga y
+    -- queda una alerta 'area_distinta_it' por persona-IT (detalle: area del BUK, area usada, meses).
+    CREATE TEMP TABLE t_sede ON COMMIT DROP AS
+    SELECT DISTINCT ON (s.it) s.it, s.area
+    FROM (SELECT r.it, r.area, count(*) AS n FROM t_real r WHERE nullif(trim(r.area), '') IS NOT NULL GROUP BY 1, 2) s
+    ORDER BY s.it, s.n DESC, s.area;
+    INSERT INTO core.alerta (carga_id, tipo, persona_id, it, mes, detalle)
+    SELECT p_carga_id, 'area_distinta_it', r.persona_id, r.it, min(r.mes),
+           jsonb_build_object('area_buk', r.area, 'area_usada', t.area, 'meses', array_agg(r.mes ORDER BY r.mes))
+    FROM t_real r JOIN t_sede t ON t.it = r.it
+    WHERE nullif(trim(r.area), '') IS NOT NULL AND r.area <> t.area
+    GROUP BY r.persona_id, r.it, r.area, t.area;
+    GET DIAGNOSTICS v_n = ROW_COUNT;
+    v_alertas := v_alertas + v_n;
+    UPDATE t_real r SET area = t.area FROM t_sede t WHERE t.it = r.it AND r.area IS DISTINCT FROM t.area;
 
     -- Proyección: último mes de la carga -> hasta fecha_termino o diciembre
     SELECT max(r.mes) INTO v_ult_mes FROM t_real r;
