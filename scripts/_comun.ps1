@@ -43,9 +43,13 @@ function Resolver-Modo([string]$Modo) {
 }
 
 function Ruta-Psql($Cfg) {
-    foreach ($nombre in 'psql.exe', 'psql') {
-        $p = Join-Path $Cfg['PG_BIN'] $nombre
-        if (Test-Path $p) { return $p }
+    # Sin Join-Path: en Linux (CI) Join-Path falla si PG_BIN trae una unidad 'C:' que no existe
+    $bin = [string] $Cfg['PG_BIN']
+    if ($bin) {
+        foreach ($nombre in 'psql.exe', 'psql') {
+            $p = $bin.TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar + $nombre
+            if (Test-Path -LiteralPath $p -ErrorAction SilentlyContinue) { return $p }
+        }
     }
     $cmd = Get-Command psql -ErrorAction SilentlyContinue
     if ($cmd) { return $cmd.Source }
