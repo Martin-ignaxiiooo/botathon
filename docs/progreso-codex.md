@@ -7,11 +7,12 @@ Rama: `codex/trabajo`. Solo commits locales, sin push. Última actualización: 2
 - Tarea 1 / A-02/A-03: código ODBC, carga por lotes, SHA-256 y guía de configuración para Lucas.
 - Dos compilaciones independientes con el compilador .NET Framework disponible, sintaxis C# 5 (subconjunto de C# 7.3); segunda con warnings como errores. Ambas correctas. `git diff --check` correcto.
 - Tarea 3 / D-06: CI para main con PostgreSQL 16, pwsh, omisión explícita de scripts ausentes y ESLint 9/Node 20. Configuración JS comprobada con Node y `git diff --check` correcto. Jobs limitados a tres minutos; duración real pendiente de GitHub.
+- Tarea 4 / D-07: guion de seis pasos, comparación exacta de cambios, invariancia mensual, errores, repetidos, escenario y lista de respaldo. Revisado contra contratos; ejecución integrada pendiente de la VM y del back.
 
 ## Siguiente
 
 - Tarea 2 pendiente de decisión de César: fuente solo contiene enero–julio (431 personas con 7 filas); ninguna persona tiene 12 meses. Generador creado con validación previa y fallo explícito; aún no produce archivos ni se considera terminado.
-- Tareas 4 y 5: guion E2E, README e instalación.
+- Tarea 5: README e instalación.
 
 ## Errores conocidos
 
