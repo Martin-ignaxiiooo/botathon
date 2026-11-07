@@ -1,0 +1,6 @@
+persona_id,campo,motivo
+71027,horas_semanales,Horas semanales debe ser mayor que cero
+71132,fecha_termino,Fecha término anterior a fecha ingreso
+71146,cargo,Cargo sin homologar
+71232,persona_id,"Fila duplicada (persona_id, it, periodo)"
+71247,horas_semanales,Horas semanales debe ser numérico
