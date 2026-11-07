@@ -2,6 +2,8 @@
 
 Guion único para la exposición. Integra las «Notas para la demo» de docs\progreso-front.md contrastadas con el código de origin/main en **3829f23** (7-nov). Lucas opera Control Room; César conduce el dashboard; Andrés confirma cálculo/consultas si hace falta. Objetivo: ver Blue Prism procesar BUK, observar su efecto en Nacional y localizar errores por fila. Ensayar tiempos con el release real: este documento no certifica que el recorrido BP esté aprobado.
 
+**Blue Prism es el camino principal.** tools\vm\simular_robot.ps1 es solo contingencia, usa psql y los mismos C# de limpieza/validación; no demuestra una sesión BP, Excel VBO ni su cola. Si se utiliza, avisar al jurado «esta carga usa el script de contingencia», conservar resumen.json/carga_id y no presentarlo como ejecución del robot. La alternativa preferida ante una falla de BP durante los cinco minutos sigue siendo el video de un ensayo identificado.
+
 ## Direcciones listas para el jurado
 
 Son locales a la VM proyectada; no hay una URL pública confirmada. Conservar **?modo=api antes de #** en todos los enlaces:

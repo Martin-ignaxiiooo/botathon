@@ -4,6 +4,24 @@ Rama actual: `codex/trabajo`, integrada con main/d0cea06 mediante pull solicitad
 
 ## Hecho
 
+- Cola punto 1 (contingencia): tools/vm/simular_robot.ps1 registra SHA/carga, lee solo Dotacion_2026 con openpyxl, compila y llama los C# originales de limpieza/validación/preparación, carga CSV por COPY cliente en lotes transaccionales de 500, llama cargar_dotacion/detectar_cambios/mínimo, recalcula solo si no es NULL, cierra conteos por fila y llama cuadratura. Claves de entorno o -EnvArchivo, catálogos aprobados por JSON o consulta READ ONLY del propietario; nunca se amplía bot_carga. Excluye valores DOB/campos ajenos del XML, conservando solo presencia para reproducir filas vacías. Registra hash del Excel y C#; no mueve el archivo ni simula cola/Runtime BP.
+- tests/e2e/e2e.ps1 congela back/seed de HEAD, crea cluster propio loopback, 01→snapshot→02, duplicado y misma foto con otra huella (NULL); restaura 01 en segunda base nueva y carga 03. Sin DROP ni servicios activos. Resultado: **7 casos OK y 1 FALLA estricta por vigencia individual**; 5/5 eventos CSV y 5/5 errores CSV exactos, conteos 01=3123/3123/0 y 03=3124/3119/5, duplicado sin nueva carga, mínimo NULL sin recálculo, cero diferencias antes del corte global 3. Trece SQL de Andrés verdes sobre 01. Cuadratura: 01 95.55 %, 02 95.08 %, 03 restaurado 95.55 %. No se ocultó la falla ni se presenta ejecución del script como Blue Prism; docs/demo.md aclara camino principal/contingencia.
+- Evidencia del punto 1: %TEMP%\PlanBot_E2E_160145c2ee844e5880680c23afa351b3\ (backend 72cc3a4), resultados.json, ejecucion.json (cluster_detenido=true), dump01, resúmenes/CSV. Repetición independiente del lector minimizado produce exactamente los mismos CSV. Datos de la diferencia se conservan en tests/e2e/para_andres_71555.csv (20 campos con precisión PostgreSQL). Todos los servidores propios de prueba detenidos.
+
+### Para Andrés · diferencia del back/criterio de vigencia individual
+
+Tras 02, mes_minimo_afectado=3 (por el cargo de otra persona). Para **71555, IT 131**, la jornada cambia desde mayo (5); el chequeo más estricto del guion espera conservar marzo/abril como en 01, pero cambian:
+
+| persona_id / IT | mes | campo | esperado (snapshot 01) | obtenido tras 02 |
+|---|---:|---|---:|---:|
+| 71555 / 131 | 3 | ate_dir | 141 | 162 |
+| 71555 / 131 | 3 | meta | 126 | 145 |
+| 71555 / 131 | 4 | ate_dir | 138 | 159 |
+| 71555 / 131 | 4 | meta | 124 | 143 |
+| 71555 / 131 | 3 y 4 | ate_dir_semana | 34 | 39 |
+
+El corte **global** sí se respeta (enero/febrero intactos). Revisar con Andrés/Teletón si estas diferencias se aceptan por promedios/tramo anual o si se exige conservar la vigencia individual del guion: no se afirma un defecto de fórmula demostrado ni se cambian reglas para llegar a verde. El CSV incluye horas, porcentajes y FOJA además de esos valores. El e2e conserva exit 1/FALLA de ese chequeo mientras esté pendiente; no introduce excepción por persona_id. No se investigaron de nuevo B/AX/134744.
+
 - Corrección urgente previa a la cola: pull de main/d0cea0617482cdb8eaa21896aba89cc35b7008b2 (JWT y área). levantar_demo importa PGRST_JWT_SECRET y lo entrega al hijo; conserva ajustes jwt-* de la plantilla y restaura variables del llamador, sin borrar todos los PGRST_*. Siempre llama instalar_sin_docker.ps1 -SinPruebas y reinicia solo su API registrada para cargar esquema/JWT nuevos. Registro de proceso obtenido fresco del SO (Start-Process podía cachear Path vacío); hora comparada como ticks UTC, sin depender del formato regional.
 - Versión única en tools/vm/postgrest-version.json: 12.2.3, comprobada ejecutando el binario de César en C:\tools\postgrest\artifacts\postgrest-windows-x64\postgrest.exe. Asset oficial confirmado y descargado; SHA-256 del EXE descargado idéntico al instalado. No se usa latest ni una versión distinta por parámetro. API/secretos en entorno del hijo; ningún secreto/token en salida ni conf local.
 - verificar_vm añade listar_escenarios, cuadratura y permisos JWT: sonda inválida deliberada llega al cuerpo de decidir_escenario con JWT (HTTP 400 P0001 de validación) y obtiene 401 sin token, sin cambiar escenarios. Además ensayo real aislado: escenario nuevo rechazado con JWT HTTP 200; sin JWT HTTP 401. Token generado por scripts/token_planificador.ps1 capturado solo en memoria. Listado/vistas/CORS/KPI contra SQL correctos. Repetir arranque sobre base existente aplicó migraciones y renovó API propia. Trece SQL en verde; 23 pruebas Python y parser PS5.1 verdes. Único rojo del verificador local: ODBC x64 aún ausente, no ocultado.
