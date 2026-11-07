@@ -124,3 +124,7 @@ Crear Parametros evita rellenar a mano colecciones dinámicas de tipos mixtos: l
 
 
 Actualización PR #14: la fuente SQL vigente es [llamadas_robot.sql](../../database/demo/llamadas_robot.sql). El antiguo UPDATE Q08 de cierre se retira: cargar_dotacion ya fija estado/contadores y P05 solo los lee. Q09 cambia únicamente estado='error' con permiso V009; P06 es opcional porque recalcular rehace cuadratura. Usar los mapeos del apartado 7 de la guía.
+
+## 7. Ruta mínima para la demo (objeto nuevo)
+
+`PlanBot_Odbc.cs` (objeto «PlanBot - PostgreSQL»: Conectar, Ejecutar, Consultar, Insertar Tabla, Desconectar, con la clave de la credencial en tipo Password y la conexión guardada en el objeto) y `PlanBot_LeerExcel.cs` (objeto «PlanBot - Excel»: Leer Excel, lee el .xlsx sin Excel instalado). Se usan en un solo proceso, «PlanBot - Cargar BUK»; la construcción etapa por etapa está en [guia_procesos.md](guia_procesos.md), sección «Ruta mínima para la demo». Compilar para comprobar: `C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe -target:library PlanBot_Odbc.cs` (y `-r:System.IO.Compression.dll -r:System.Xml.dll` para PlanBot_LeerExcel.cs).

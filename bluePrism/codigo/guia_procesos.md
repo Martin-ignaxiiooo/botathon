@@ -6,6 +6,88 @@ Las acciones C# van en **Object Studio**, nunca en Process Studio. Preparar los 
 
 Fuente de las sentencias ODBC: [database/demo/llamadas_robot.sql](../../database/demo/llamadas_robot.sql), publicada en main por el PR #14 (60fb288), y su ensayo tests/sql/100_llamadas_robot.sql. Usar las sentencias de los comentarios **ODBC:** con `?`, no las variables `:carga_id`/`\gset` de psql ni los valores de ejemplo. La tabla del apartado 7 vincula cada llamada de esta guía con el paso exacto de ese archivo.
 
+## Ruta mínima para la demo · UN proceso «PlanBot - Cargar BUK»
+
+Es el camino más corto para mostrar Blue Prism cargando un BUK: **un solo proceso, sin P04 ni maestro, sin cola**. Todo el código para copiar y pegar está en esta carpeta; esta sección dice qué objeto crear, qué etapa poner y qué pasar. Las sentencias SQL son las de [database/demo/llamadas_robot.sql](../../database/demo/llamadas_robot.sql) (pasos 1 a 9, texto de los comentarios **ODBC:**). Las secciones 1 a 8 de abajo describen la versión completa (P01–P05 + maestro) y siguen vigentes; esta ruta reutiliza sus acciones C# sin cambiar sus nombres de entradas y salidas.
+
+### A. Objetos (Object Studio) y de dónde sale el código
+
+Code Options de todos: Language **C#**. Pegar solo el interior de la región *Global Code* en el Global Code, y solo el **cuerpo** del método (sin firma ni llaves exteriores) en cada Code stage. Cada acción = una página Start → Code → End, publicada. Ejecutar **Check Code** en cada objeto.
+
+| Objeto BP | Archivo | References | Namespaces | Acciones |
+|---|---|---|---|---|
+| **PlanBot - PostgreSQL** | [PlanBot_Odbc.cs](PlanBot_Odbc.cs) (Global Code + 5 acciones) y, para 3 auxiliares, [PlanBot_PostgreSQL.cs](PlanBot_PostgreSQL.cs) | System.dll, System.Data.dll, System.Xml.dll | System, System.Data, System.Data.Odbc, System.Security, System.Runtime.InteropServices, System.Text, System.Text.RegularExpressions | Conectar, Ejecutar, Consultar, Insertar Tabla, Desconectar (de PlanBot_Odbc.cs) + **Crear Parametros, Leer Numero Resultado, Preparar Carga** (cuerpos de PlanBot_PostgreSQL.cs; no usan Global Code; **no** pegar las demás acciones de ese archivo) |
+| **PlanBot - Excel** | [PlanBot_LeerExcel.cs](PlanBot_LeerExcel.cs) | System.dll, System.Data.dll, System.Xml.dll, **System.IO.Compression.dll** | System, System.Collections.Generic, System.Data, System.Globalization, System.IO, System.IO.Compression, System.Xml | Leer Excel |
+| PlanBot_Archivos_Hash | [PlanBot_Archivos_Hash.cs](PlanBot_Archivos_Hash.cs) | System.dll | System, System.IO, System.Security.Cryptography | Calcular Hash |
+| PlanBot_Limpieza | [PlanBot_Limpieza.cs](PlanBot_Limpieza.cs) | System.dll, System.Data.dll | System, System.Data, System.Globalization, System.Text | Limpiar Dotacion |
+| PlanBot_Validador | [PlanBot_Validador.cs](PlanBot_Validador.cs) | System.dll, System.Data.dll | System, System.Data, System.Globalization, System.Collections.Generic | Validar Dotacion |
+
+(El nombre «PlanBot - PostgreSQL» reemplaza al `PlanBot_PostgreSQL` de las secciones 1–8: en esta ruta **no** se usan connStr, Armar Conexion ni la variable ConnStrSinClave.)
+
+**Entradas y salidas de las acciones nuevas** (nombre exacto = Data Item del mismo nombre en la página):
+
+| Acción | Entradas | Salidas |
+|---|---|---|
+| Conectar | usuario **Text**; clave **Password**; servidor Text; puerto Text; baseDatos Text (los tres últimos vacíos = `localhost`, `5432`, `planbot`) | conectado **Flag** |
+| Ejecutar | sql **Text** (con `?`); parametros **Collection** (nombre Text, valor, tipo Text opcional) | filasAfectadas **Number** |
+| Consultar | sql **Text** (con `?`); parametros **Collection** | resultado **Collection** (sin campos prefijados); filasResultado **Number** |
+| Insertar Tabla | tabla **Text** (`stg.buk_fila` o `stg.error_fila`); datos **Collection**; tamanoLote **Number** (500) | filasInsertadas **Number** |
+| Desconectar | — | desconectado **Flag** |
+| Leer Excel | ruta **Text**; hoja **Text** | datos **Collection** (sin campos prefijados); filasLeidas **Number** |
+
+Las acciones auxiliares (Crear Parametros, Leer Numero Resultado, Preparar Carga, Calcular Hash, Limpiar Dotacion, Validar Dotacion) conservan las entradas/salidas de la tabla del [LEEME](LEEME.md).
+
+**Cómo se maneja la clave (tipo Password).** Nunca se escribe en un Data Item Text, en un archivo ni en el código.
+1. Credential Manager: credencial **PlanBot_Postgres**, usuario `bot_carga`, clave asignada por el administrador; autorizar el proceso «PlanBot - Cargar BUK» y el Runtime Resource.
+2. En el proceso: etapa **Credentials › Get Login** (credencial `PlanBot_Postgres`) → `usuario` (Text) y `clave` (**Password**). Crear `clave` como Data Item de tipo Password, con *Exponer globalmente* desactivado.
+3. Pasar `clave` a la acción Conectar con **tipo Password** en su input. En el Code stage de Conectar declarar `clave` de tipo Password (Blue Prism lo entrega como `SecureString`; el método `TextoClave` del Global Code la convierte en memoria, la usa solo para armar la conexión dentro de Conectar y libera el búfer; si alguien la declara Text también funciona). La cadena de conexión **nunca** sale de Conectar: las demás acciones usan la conexión abierta que guarda el objeto.
+4. Apagar el logging de las etapas Get Login y Conectar (Stage Properties → *Log: Disabled*) y de todo Data Item con `clave`. Los mensajes de error de Conectar solo incluyen el texto del driver, sin la clave ni la cadena.
+5. Cerrar siempre con Desconectar (también en la página Error). Al terminar, vaciar `clave` y `usuario` (Calculation `""`).
+
+### B. Excel en la VM: cómo se lee
+
+La VM tiene Python 3.12 con openpyxl, pero **no se sabe si tiene Excel**, y el robot no debe depender de ninguno de los dos. Por eso la ruta usa **Leer Excel** (`PlanBot_LeerExcel.cs`): lee el `.xlsx` directamente con bibliotecas del framework (el archivo es un ZIP con XML), sin Excel, sin Python y sin COM. Probado contra `01_original.xlsx` y `03_errores.xlsx`: entrega la hoja desde A1 (4.003 filas, 20 columnas; la fila 1 vacía y la cabecera en la fila 2, como espera Limpiar Dotacion). Con `01` → 3.123 filas limpias, 3.123 válidas, 0 errores; con `03` → 3.124 leídas y errores con su fila Excel. Los números y fechas llegan como double (una fecha de Excel es un serial; Validar Dotacion lo convierte a fecha).
+- **Si en la VM hay Excel**, también sirve el MS Excel VBO (etapas 1–5 de P02, sección 4) en lugar de Leer Excel. Es una alternativa, no un requisito.
+- **No usar** `scripts\buk_a_csv.py` ni `openpyxl` en el robot: son herramientas de prueba del repositorio.
+- La hoja se llama `Dotacion_2026` (en los tres archivos de `data\buk`).
+
+### C. Proceso «PlanBot - Cargar BUK»
+
+Páginas **Main** y **Error**. Main: Start → Block *Trabajo* (todas las etapas) → End; Recover del bloque → página Error. Colecciones sin campos prefijados y sin datos entre ejecuciones.
+
+**Start (inputs):** `ruta` Text (archivo ya completo, p. ej. `C:\PlanBot\entrada\buk\02_cambios.xlsx`); `institutos` Collection (campo `it` Number) y `cargos` Collection (campo `cargo_origen` Text), los catálogos aprobados de la sección 1 punto 5 (filas en *Initial Values*; no derivarlos del archivo).
+**End (outputs):** `cargaId` Number; `leidas`, `filasValidas`, `filasConError` Number; `mesMinimo` Number; `recalculado` Flag.
+
+**Data Items locales:** `usuario` Text; `clave` Password; `hash` Text; `cargaId` Number=0; `datosExcel`, `limpias`, `validas`, `errores`, `datosCarga`, `parametros`, `resultado` Collection; `filasLeidas`, `filasDescartadas`, `filasResultado`, `insertadas`, `filasCore`, `alertas`, `leidas`, `filasValidas`, `filasConError`, `mensajesError`, `mesMinimo`, `leidasBD`, `validasBD`, `conErrorBD` Number=0; `esNulo`, `conectado`, `desconectado`, `recalculado` Flag=False; `estadoBD`, `errorTipo`, `errorDetalle` Text="". Atajos: **P(modo; valores)** = acción *Crear Parametros* (los 8 inputs siempre: modo; texto1/texto2 = "" y numero1..4 = 0 salvo los indicados) → `parametros`; **L(columna→item)** = acción *Leer Numero Resultado* (resultado=[resultado], columna → numero=[item], esNulo=[esNulo], filasResultado=[filasResultado]).
+
+| # | Etapa | Objeto / acción (o tipo) | Qué le pasas → qué sale |
+|---|---|---|---|
+| 1 | Credencial | Credentials › Get Login | credencial `PlanBot_Postgres` → `usuario`, `clave` (Password) |
+| 2 | Conectar | PlanBot - PostgreSQL / Conectar | usuario=[usuario], clave=[clave], servidor="", puerto="", baseDatos="" → conectado |
+| 3 | Huella | PlanBot_Archivos_Hash / Calcular Hash | ruta=[ruta] → hash |
+| 4 | ¿Duplicado? | P(T1; texto1=[hash]) y PlanBot - PostgreSQL / Consultar | sql: `SELECT carga_id FROM stg.carga WHERE hash = ?` → resultado, filasResultado. Decision [filasResultado]>0 → Exception «Archivo ya cargado (hash repetido); no se vuelve a procesar» (paso 1 de llamadas_robot.sql) |
+| 5 | Registrar carga | P(T2; texto1=nombre del archivo, texto2=[hash]) y Consultar | sql: `INSERT INTO stg.carga (tipo, archivo, hash, estado) VALUES ('buk', ?, ?, 'recibida') ON CONFLICT (hash) DO NOTHING RETURNING carga_id`. Si `filasResultado`=0 → Exception «Otro proceso registró este archivo». Si no, L(carga_id→cargaId). El nombre del archivo es `ruta` sin la carpeta (Calculation: `Right([ruta], Len([ruta]) - InStrRev([ruta], "\"))`). Paso 2 |
+| 6 | Leer el Excel | PlanBot - Excel / Leer Excel | ruta=[ruta], hoja="Dotacion_2026" → datosExcel, filasLeidas (ver B) |
+| 7 | Limpiar | PlanBot_Limpieza / Limpiar Dotacion | datos=[datosExcel] → limpias, filasDescartadas |
+| 8 | Validar | PlanBot_Validador / Validar Dotacion | limpias, institutos, cargos, cargaId → validas, errores |
+| 9 | Tipar y contar | PlanBot - PostgreSQL / Preparar Carga | validas, limpias, errores → datosCarga, leidas, filasValidas, filasConError, mensajesError (las fechas quedan DateTime) |
+| 10 | Guardar errores | PlanBot - PostgreSQL / Insertar Tabla | tabla="stg.error_fila", datos=[errores], tamanoLote=500 → insertadas. Omitir con Decision [mensajesError]=0. Paso 4 |
+| 11 | ¿Hay válidas? | Decision | [filasValidas]>0; si no, Exception «Sin filas válidas; no se reemplaza la dotación» |
+| 12 | Guardar válidas | PlanBot - PostgreSQL / Insertar Tabla | tabla="stg.buk_fila", datos=[datosCarga], tamanoLote=500 → insertadas. Paso 3 (`datosCarga` ya incluye `carga_id`) |
+| 13 | **api.cargar_dotacion** | P(N1; numero1=[cargaId]) y Consultar | sql: `SELECT * FROM api.cargar_dotacion(CAST(? AS bigint))`. L(filas→filasCore) y L(alertas→alertas). Paso 5 |
+| 14 | **api.mes_minimo_afectado** | P(N1; numero1=[cargaId]) y Consultar | sql: `SELECT api.mes_minimo_afectado(CAST(? AS bigint)) AS mes_minimo`. L(mes_minimo→mesMinimo) deja `esNulo` en True si es NULL (sin cambios). Paso 6 |
+| 15 | ¿Recalcular? | Decision | [esNulo]=False → etapa 16; True → saltar a 17 (`recalculado`=False). **Nunca** llamar recalcular con NULL ni con 0 |
+| 16 | **api.recalcular** | P(N2; numero1=[cargaId], numero2=[mesMinimo]) y Consultar | sql (una sola sentencia; el motivo queda en la auditoría): `WITH contexto AS MATERIALIZED (SELECT set_config('planbot.motivo', 'PlanBot Cargar BUK; carga=' || CAST(CAST(? AS bigint) AS text), true) AS motivo) SELECT r.filas, r.ms FROM contexto c CROSS JOIN LATERAL api.recalcular(CASE WHEN c.motivo IS NOT NULL THEN CAST(? AS integer) END) r`. Calculation `recalculado`=True. Paso 7 |
+| 17 | Conciliar contadores | P(N1; numero1=[cargaId]) y Consultar | sql: `SELECT leidas, validas, con_error, estado FROM stg.carga WHERE carga_id = CAST(? AS bigint)`. L(leidas→leidasBD), L(validas→validasBD), L(con_error→conErrorBD) (exigir una fila y números no NULL); Calculation `estadoBD`=[resultado.estado]. Paso 5 |
+| 18 | ¿Cuadran? | Decision | `estadoBD`="cargada" **y** leidasBD=[leidas] **y** validasBD=[filasValidas] **y** conErrorBD=[filasConError]. Si no → Exception «BD y BP difieren: conciliar la carga [cargaId]» (no corregir por UPDATE) |
+| 19 | Desconectar | PlanBot - PostgreSQL / Desconectar | → desconectado. Luego Calculation `clave`="" y `usuario`="" → End |
+
+Notas de datos: Number de BP llega a PostgreSQL como decimal; por eso **siempre** `CAST(? AS bigint)` / `CAST(? AS integer)` en las llamadas a funciones (sin CAST responde «la función no existe»). Los INSERT de Insertar Tabla no necesitan CAST. Las fechas de `stg.buk_fila` salen como **OdbcType.Date** (también `fecha_termino` vacía como DBNull); Insertar Tabla rechaza una columna de fecha que no sea DateTime antes de abrir el primer lote, por eso se pasa `datosCarga` y no `validas`. Las filas rechazadas van a `stg.error_fila` con el motivo del Validador (sin el prefijo `cargar_dotacion:`, que es de la base).
+
+**Página Error (Recover del bloque *Trabajo*):** (1) captura ExceptionType()/ExceptionDetail() en `errorTipo`/`errorDetalle` (logging desactivado); (2) si `cargaId`>0 y `conectado`=True, **marcar error** con *Ejecutar* (en un Recover propio): P(N1; numero1=[cargaId]) y sql `UPDATE stg.carga SET estado = 'error' WHERE carga_id = CAST(? AS bigint)` (paso 9; el robot solo puede cambiar `estado`; los contadores no se tocan); (3) **Desconectar** (otro Recover propio, también si falló la conexión); (4) Resume y Exception con los valores capturados. No repetir las etapas 10–16 automáticamente: puede haber lotes confirmados (cada lote de 500 filas es una transacción). Conciliar con Andrés antes de reintentar.
+
+**Primera prueba (antes del BUK):** etapas 1–2 + Consultar `SELECT 1 AS prueba` (parametros vacía, con sus columnas nombre y valor) + Desconectar: una fila con `prueba`=1. Después, el **ensayo de una fila** (periodo/fecha_ingreso DateTime y fecha_termino vacía) descrito en la sección 6 antes de los lotes completos. **No certificado:** este PC no tiene el driver *PostgreSQL Unicode(x64)*, así que `PlanBot_Odbc.cs` está compilado (csc de .NET Framework 4.x, C# 5) pero no probado contra la base real; la lectura de Excel, la limpieza, la validación y el tipado de fechas sí se probaron con los archivos de `data\buk`.
+
 ## 1. Preparación común
 
 1. Confirmar las cinco RPC en api: cargar_parametros, cargar_dotacion, detectar_cambios, mes_minimo_afectado y recalcular. El mínimo es NULL cuando no hay cambios; la primera carga pide mes 1. No llamar funciones sin api ni inventar funciones nuevas. Confirmar también V009 para Q09: el robot puede marcar estado='error'; los contadores los deja cargar_dotacion y **no se actualizan desde BP**.
