@@ -1,11 +1,23 @@
 // Punto de entrada: menú responsive y arranque del router.
 import { iniciarRouter } from './router.js';
 import { iniciarFiltros } from './filtros.js';
+import { iniciarHerramientas } from './herramientas.js';
+import { vigilarDesbordes } from './ui.js';
 
 const menu = document.getElementById('menu-principal');
 const botonMenu = document.getElementById('boton-menu');
 const contenedor = document.getElementById('contenido');
 const pantallaChica = window.matchMedia('(max-width: 860px)');
+
+// Botones de accesibilidad (se aplican antes de dibujar para que no haya parpadeo)
+iniciarHerramientas(document.getElementById('herramientas'));
+
+// La altura del encabezado cambia con «Letra grande»: el menú pegajoso se ajusta a ella.
+const encabezado = document.querySelector('.encabezado');
+new ResizeObserver(() => requestAnimationFrame(() => {
+  document.documentElement.style.setProperty('--alto-encabezado', `${encabezado.offsetHeight}px`);
+})).observe(encabezado);
+vigilarDesbordes(document.getElementById('principal'));
 
 function ajustarMenu() {
   menu.hidden = pantallaChica.matches;

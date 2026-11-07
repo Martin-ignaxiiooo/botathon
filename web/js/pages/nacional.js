@@ -4,6 +4,7 @@ import { getData } from '../api.js';
 import { hashPara, irA } from '../router.js';
 import { num, pct, fecha, fechaHora, nombreMes, nombreArea } from '../formato.js';
 import { hayFiltros } from '../filtros.js';
+import { lecturaFacil } from '../lectura.js';
 
 const COLORES_HORAS = ['#124a82', '#2f80c9', '#7b8794']; // directas, indirectas, NAS
 
@@ -74,6 +75,26 @@ export async function render(contenedor, filtros) {
   if (porInstArea.length) {
     graficos.append(graficoInstitutos(porInstArea, filtros), graficoAreas(porInstArea, filtros.tipo || []));
   }
+  lecturaFacil(contenedor, frasesNacional({ kpi, porMes, porInstArea, filtrado }));
+}
+
+function frasesNacional({ kpi, porMes, porInstArea, filtrado }) {
+  const frases = [];
+  if (kpi) frases.push(`${filtrado ? 'En el período elegido' : 'Este año'}, la meta es ${num(kpi.meta)} atenciones.`);
+  const institutos = agrupar(porInstArea, 'it', ['meta']);
+  if (institutos.length > 1) {
+    const mayor = institutos.reduce((a, b) => (b.meta > a.meta ? b : a));
+    frases.push(`${porInstArea.find((f) => f.it === mayor.it).instituto} tiene la meta más alta: ${num(mayor.meta)}.`);
+  }
+  if (porMes.length > 1) {
+    const mayor = porMes.reduce((a, b) => (b.atenciones_dir > a.atenciones_dir ? b : a));
+    const menor = porMes.reduce((a, b) => (b.atenciones_dir < a.atenciones_dir ? b : a));
+    frases.push(`El mes con más atenciones es ${nombreMes(mayor.mes)}.`, `El mes con menos atenciones es ${nombreMes(menor.mes)}.`);
+  }
+  if (kpi?.foja !== null && kpi?.foja !== undefined) {
+    frases.push(`El % FOJA es ${pct(kpi.foja)}. Es la parte de las horas contratadas para atender pacientes.`);
+  }
+  return frases;
 }
 
 function tarjetas(kpi, metaPct) {
@@ -204,7 +225,7 @@ function graficoAreas(filas, tipos) {
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, valueFormatter: (v) => `${num(v)} h` },
     legend: { top: 0 },
     grid: { left: 8, right: 8, top: 40, bottom: 8, containLabel: true },
-    xAxis: { type: 'category', data: porArea.map((r) => nombreArea(r.area)), axisLabel: { interval: 0, width: 90, overflow: 'break' } },
+    xAxis: { type: 'category', data: porArea.map((r) => nombreArea(r.area)), axisLabel: { interval: 0, width: 90, overflow: 'break', formatter: (v) => v.replace(' (', '\n(') } },
     yAxis: { type: 'value', axisLabel: { formatter: (v) => num(v) } },
     series: series.map((s) => ({
       name: s.nombre, type: 'bar', stack: 'horas', data: porArea.map((r) => Math.round(r[s.campo])),

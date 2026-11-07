@@ -6,6 +6,7 @@ import { getData } from '../api.js';
 import { hashPara } from '../router.js';
 import { num, fecha, nombreMes } from '../formato.js';
 import { tipoCambio, etiquetaCampo, describirObjeto } from '../textoCambios.js';
+import { lecturaFacil } from '../lectura.js';
 
 let renderizadaAntes = false;
 let cargaAnterior = null;
@@ -57,6 +58,16 @@ export async function render(contenedor, filtros) {
   const elegida = cargas.find((c) => c.id === filtros.carga?.[0]) ?? null;
   const nombreInstituto = new Map(institutos.map((f) => [f.it, f.instituto]));
 
+  const conErrores = cargas.filter((c) => c.errores > 0).length;
+  lecturaFacil(contenedor, [
+    `Hay ${plural(cargas.length, 'carga procesada', 'cargas procesadas')}.`,
+    conErrores ? `${plural(conErrores, 'carga tiene', 'cargas tienen')} errores.` : 'Ninguna carga tiene errores.',
+    `En total hay ${plural(cambios.length, 'cambio', 'cambios')} y ${plural(errores.length, 'error', 'errores')}.`,
+    elegida
+      ? `La carga ${elegida.id} trajo ${plural(elegida.cambios, 'cambio', 'cambios')} y ${plural(elegida.errores, 'error', 'errores')}.`
+      : 'Elige una carga de la lista para ver el detalle.',
+    'Cada error indica la fila y el motivo.',
+  ]);
   contenedor.append(listaDeCargas(cargas, elegida));
   const detalle = el('section', { class: 'seccion' });
   contenedor.append(detalle);

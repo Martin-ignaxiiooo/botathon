@@ -1,20 +1,21 @@
-# Cómo arrancar
+# Prompts por IA (versión vigente)
 
-## César (ahora)
-1. Pausa OneDrive o mueve la carpeta a C:\dev\bothaton.
-2. En esta carpeta: git init; git add .; git commit -m "chore: contexto y datos iniciales"; git branch -M main
-3. gh repo create planbot --private --source . --push   (o crea el repo en GitHub y haz git remote add + git push)
-4. Agrega a Andrés y Lucas como colaboradores. Protege main (PR obligatorio, 1 aprobación).
-5. Abre claude en esta carpeta y pega 02-cesar-front.md.
+| Archivo | Quién | Herramienta | Carpeta |
+|---|---|---|---|
+| 10-cesar-claude-sonnet.md | César | Claude Code · Sonnet | bothaton (front: web\) |
+| 11-cesar-codex-gptsol.md | César | Codex · GPT Sol alto | bothaton-codex (C#, bases de prueba, CI, README) |
+| 12-andres-claude.md | Andrés | Claude Code · Sonnet (Opus/alto en B-05 y B-06) | C:\dev\planbot (base de datos) |
+| 13-lucas-chatgpt.md | Lucas | ChatGPT | VM de Blue Prism |
+| 03-traspaso.md | Quien se quede sin cuota | Codex | la misma carpeta |
 
-## Andrés (en su computador)
-1. Instala Git, Node LTS, GitHub CLI, Docker Desktop (o PostgreSQL 16) y Claude Code (npm install -g @anthropic-ai/claude-code).
-2. gh repo clone <usuario>/planbot C:\dev\planbot ; cd C:\dev\planbot ; copy .env.example .env (y pon claves)
-3. Abre claude y pega 00-andres-fase0-back.md. Al fusionar su PR, sigue con 01-andres-back.md.
+Cada archivo trae un ARRANQUE (se pega una vez al inicio) y un prompt por historia (se pega al empezar cada una, después de /clear).
 
-## Revisión cruzada
-- César revisa los PR de Andrés (SQL); Andrés revisa los PR de César (front). Máximo 30 minutos por revisión.
-- Si a alguien se le acaba la cuota de Claude Code: 03-traspaso.md con Codex.
+## Arranque de César (PowerShell)
+1. Pausa OneDrive. 2. En bothaton: git init; git add .; git commit -m "chore: contexto"; git branch -M main; git worktree add ..\bothaton-codex -b codex/trabajo main
+3. Pestaña 1: cd bothaton; claude → ARRANQUE de 10. Pestaña 2: cd ..\bothaton-codex; codex → ARRANQUE de 11.
+4. Comprime la carpeta bothaton en .zip y mándasela a Andrés (y 13-lucas-chatgpt.md a Lucas).
 
-## Lucas
-Recibe de César bluePrism\codigo\*.cs para los objetos de Blue Prism (antes de la hora 3) y usa su prompt de ChatGPT.
+## Juntar el trabajo (sin GitHub)
+- Codex → main: en bothaton, git merge codex/trabajo
+- Andrés → César: Andrés manda .zip de database\, api\, scripts\, docker-compose.yml; César los copia en bothaton y hace commit.
+- Cuando exista GitHub: git remote add origin <url>; git push -u origin --all
