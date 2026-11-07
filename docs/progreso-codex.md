@@ -8,11 +8,12 @@ Rama: `codex/trabajo`. Solo commits locales, sin push. Última actualización: 2
 - Dos compilaciones independientes con el compilador .NET Framework disponible, sintaxis C# 5 (subconjunto de C# 7.3); segunda con warnings como errores. Ambas correctas. `git diff --check` correcto.
 - Tarea 3 / D-06: CI para main con PostgreSQL 16, pwsh, omisión explícita de scripts ausentes y ESLint 9/Node 20. Configuración JS comprobada con Node y `git diff --check` correcto. Jobs limitados a tres minutos; duración real pendiente de GitHub.
 - Tarea 4 / D-07: guion de seis pasos, comparación exacta de cambios, invariancia mensual, errores, repetidos, escenario y lista de respaldo. Revisado contra contratos; ejecución integrada pendiente de la VM y del back.
+- Tarea 5 / D-08: README e instalación Windows con/sin Docker, ODBC, secretos, PostgREST, release, Control Room y ensayo. Se explicitan componentes aún ausentes; revisión documental y enlaces locales correctos.
 
 ## Siguiente
 
 - Tarea 2 pendiente de decisión de César: fuente solo contiene enero–julio (431 personas con 7 filas); ninguna persona tiene 12 meses. Generador creado con validación previa y fallo explícito; aún no produce archivos ni se considera terminado.
-- Tarea 5: README e instalación.
+- Resolver Tarea 2 con la respuesta de César; después generar, reabrir, comprobar CSV y guardar commit de datos.
 
 ## Errores conocidos
 
