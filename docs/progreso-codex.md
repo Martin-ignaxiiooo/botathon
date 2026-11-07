@@ -4,6 +4,9 @@ Rama: `codex/trabajo`. Solo commits locales, sin push. Última actualización: 2
 
 ## Hecho
 
+- Tarea 9: tools/verificar_calculo.py (pandas, sin BD), parámetros generales reconstruidos con procedencia, dependencias y siete pruebas. Lee solo nueve columnas BUK, elimina fecha de nacimiento tras derivar mes, y compara %Dir, directas semanales y plan mayo–diciembre con esperado.csv. Incluye modelo estricto y continuidad explícita, cobertura/conflictos, top 20 por campo, manifiesto de huellas y --plan para comparar base/Excel/cálculo propio. Documentado en docs/verificacion.md.
+- Tarea 9 ejecutada: BUK 3.123 filas/465 pares, enero–julio. Continuidad independiente: 4.232 % de %Dir, 21.875 % semanal y 2.376 % mensual entre comparables; no se reproduce 98–100 % con entradas incompletas. Hay 35 claves conflictivas en campos analizados. Diagnóstico NO independiente con semana/semhab Excel y factor grupal hipotético explica 99.134 % comparable (97.655 % total); faltan asignaciones, novedades, horizonte anual y confirmar fórmula grupal. Sensibilidad colación/grupos no resuelve el déficit. Adaptador --plan probado con una fila de ensayo, sin atribuir resultados a Andrés.
+
 - Tarea 6: Code stages independientes Limpiar Dotacion, Validar Dotacion y Transformar Distribucion, más programa de consola y guía BP. Preservan fila Excel, eliminan datos ajenos al contrato, acumulan errores, validan catálogos/duplicados y generan tres tramos por cargo.
 - Tarea 6 verificada: exportación temporal de 01_original/03_errores a CSV; programa C# detecta los 5/5 errores esperados por persona/campo. Pasan conversión decimal, NULL, fecha ISO/DateTime, múltiples errores y alertas por tramo. Dos compilaciones finales con /langversion:5 y /warnaserror (EXE y biblioteca), sintaxis subconjunto de C# 7.3. git diff --check correcto.
 - Tarea 7: arquitectura para lámina y flujo/escalamiento; pitch hablado de 395 palabras, ocho preguntas y hoja de medición; uso de IA con revisión humana pendiente explícita; protección de datos con fuentes oficiales BCN y distinción entre Ley 19.628 vigente y reforma 21.719 desde 01-12-2026. Revisión documental y git diff --check correctos; sin inventar ahorros ni resultados de integración.
@@ -22,6 +25,8 @@ Rama: `codex/trabajo`. Solo commits locales, sin push. Última actualización: 2
 
 ## Siguiente
 
+- Entregar a Andrés docs/verificacion.md: resolver claves ambiguas, fórmula grupal y datos individuales; recibir export real de calc.plan_mes y ejecutar --plan.
+
 - Ensayar pitch (395 palabras) y demo (cinco minutos) con el release real; completar tiempos y evidencia humana antes del jurado.
 
 - Ensayar D-07 en la VM con Blue Prism y el back integrado: contrastar api.v_cambios y api.v_errores_carga con los CSV, y verificar recálculo desde cada vigencia.
@@ -34,3 +39,4 @@ Rama: `codex/trabajo`. Solo commits locales, sin push. Última actualización: 2
 - Carga Masiva confirma por lote: ante error puede haber lotes anteriores confirmados; conciliar antes de reintentar.
 - Validar Dotacion entrega fechas ISO; convertir a DateTime en datosCarga antes de ODBC según el LEEME. En producción usar catálogos aprobados, no los derivados de la entrada usados en el ensayo. Textos de motivos no están fijados por contrato; comprobar semántica en integración.
 - web\js ya fue integrado por el trabajo paralelo; lint local en verde. No se ha ejecutado GitHub Actions (sin push por instrucción).
+- Verificador: proyección de continuidad no es dotación observada; el promedio parcial/colación/pausa/grupos no están completamente definidos con estas fuentes. Los diagnósticos que usan esperado como predictor están separados y no certifican el cálculo independiente. No se recibió CSV real de la base de Andrés.
