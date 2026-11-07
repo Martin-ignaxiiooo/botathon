@@ -23,8 +23,11 @@ AS $$
            b.persona_id, b.it, extract(month FROM b.periodo)::int, b.horas_semanales,
            upper(trim(b.cargo)), b.fecha_ingreso, b.fecha_termino, extract(year FROM b.periodo)::int
     FROM stg.buk_fila b
+    -- mismas filas válidas que cargar_dotacion: un error de la carga (cargo sin homologar, fechas incoherentes)
+    -- no es un cambio de la persona
+    JOIN param.cargo_homologado h ON upper(h.cargo_origen) = upper(regexp_replace(trim(b.cargo), '\s+', ' ', 'g'))
     WHERE b.carga_id = p_carga_id AND b.persona_id IS NOT NULL AND b.it IS NOT NULL AND b.periodo IS NOT NULL
-      AND b.horas_semanales > 0
+      AND b.horas_semanales > 0 AND NOT coalesce(b.fecha_termino < b.fecha_ingreso, false)
     ORDER BY b.persona_id, b.it, extract(month FROM b.periodo)::int, b.horas_semanales DESC
 $$;
 
