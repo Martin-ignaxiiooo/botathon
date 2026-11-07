@@ -1,0 +1,53 @@
+# PlanBot · postgres + postgrest + nginx. Variables desde .env (copiar .env.example).
+# Levantar: docker compose up -d   ·   Migrar: .\scripts\migrar.ps1
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: America/Santiago
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Código y datos de prueba, solo lectura, para psql -f y \copy (cwd /planbot)
+      - ./database:/planbot/database:ro
+      - ./tests:/planbot/tests:ro
+      - ./data/csv:/planbot/data/csv:ro
+    working_dir: /planbot
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  postgrest:
+    image: postgrest/postgrest:v12.2.3
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # web_lectura se crea en V000; hasta migrar, postgrest reintenta solo.
+      PGRST_DB_URI: postgres://web_lectura:${WEB_LECTURA_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      PGRST_DB_SCHEMAS: api
+      PGRST_DB_ANON_ROLE: web_lectura
+      PGRST_SERVER_PORT: 3000
+      PGRST_JWT_SECRET: ${PGRST_JWT_SECRET}
+      PGRST_SERVER_CORS_ALLOWED_ORIGINS: http://localhost:8080
+    ports:
+      - "3000:3000"
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./web:/usr/share/nginx/html:ro
+
+volumes:
+  pgdata:
