@@ -1,8 +1,15 @@
 # Progreso Codex · César
 
-Rama: `codex/trabajo`. Revisión desde `aaa6d56`: commit local y **sin push**, por instrucción de César. Última actualización: 2026-11-07.
+Rama: `codex/trabajo`. Revisión de integración desde `a259e78`: commit local y **sin push**, por instrucción de César. Última actualización: 2026-11-07.
 
 ## Hecho
+
+- Integración revisada desde a259e78 con árbol limpio; fetch sin merge ni checkout. Contraste por snapshots: back origin/feat/B-05-semanal=9f172cc625c9be8e69044ac17d70ba8f26894765; front origin/main=4b6b1c4f903088ba55b7ae831ead06b9f0608ea8; contrato v1.1=0fb3a93. No son un despliegue conjunto. Sin cambios a web, database, api, scripts, contratos, reglas, CSV ni cálculo B/AX.
+- Ensayo real PostgreSQL 16.15 en cluster temporal loopback, puerto 50565, detenido al terminar; servicios existentes 5432 sin cargas ni migraciones. Snapshot remoto exportado fuera del worktree: migrar, pruebas db, cargar 01_original con script Python/psql del back y pruebas db posteriores, todos con salida 0. Tres archivos SQL pasan: humo/parámetros/dotación. Conteos reales: stg.buk_fila=3123, core.dotacion_mes=5338 (2215 proyectadas por el back), calc.v_semanal=912 y calc.plan_mes=0. El aviso de promedio 456/466=97,9 % no acredita cálculo semanal ni E2E. Evidencia local: %TEMP%\PlanBot_Integracion_5e95a7782f724f1a880f10c492c02735\, logs/resultado.json/catalogo_bot.json/conteos.json/sonda_conteos.log; harness reproducible tools/probar_back_aislado.ps1.
+- Diez stg coinciden con columnas/orden v1.1 y permisos INSERT de bot_carga. Disponibles api.cargar_parametros(bigint)→integer y api.cargar_dotacion(bigint)→TABLE(filas integer, alertas integer), ambas ejecutables por bot. Seis RPC y ocho vistas faltantes; catálogo devuelve bloqueo, no aprobación. Nuevos snapshot contractual, inspección SQL solo lectura, comparador Python y tres pruebas de rechazo de incompatibilidades.
+- Cliente real api.js/config.js de main comprobado con Node 26.13.0 y fetch simulado: ocho endpoints/fixtures, filtros it/área/mes/persona/carga, modo API explícito, mock predeterminado y error HTTP visible. Las cuatro horas v1.1 están presentes en mocks de main y consumidas por Nacional; la prueba sobre a259e78 falla por horas_contratadas ausente (front atrasado). No se modificó front ni se certificó DOM/PostgREST. Verificador GET para ocho vistas/CORS preparado: 127.0.0.1:3000 rechaza las ocho conexiones; HTTP 8080 tampoco disponible.
+- Defecto de integración demostrado sin alterar SQL: cargar_dotacion deja con_error=0 con un error previo de BP registrado; sonda aislada en transacción y ROLLBACK. LEEME y guion explican coordinación P05, casts bigint, fechas DateTime y sesión compartida para motivo. Diferencias de tolerancia de distribución y claves de param.general documentadas, sin cambiar políticas. Guion incluye 01/02/03 independientes, consultas v1.1, EXCEPT ALL, contadores, evidencias, responsables y todas las pruebas de VM pendientes.
+- Validación final: 23 pruebas Python verdes (20 existentes + 3 de catálogo), cliente de main con fetch simulado correcto, parsing PowerShell y git diff --check correctos. Resultados/data del cálculo sin cambios. El test deliberado del front a259e78 y el catálogo incompleto fallan como corresponde; no se ocultaron esos bloqueos. No se completó recorrido hasta dashboard real.
 
 - Rastreo desde aaa6d56: árbol inicialmente limpio. Contrato v1.1 localizado en 0fb3a930da5a58516dd9a6bb2b0af455c6351d1a:docs/contratos.md, contenido en main/origin/main; agrega cuatro columnas de horas a v_instituto_area_mes. No se fusionó ni editó el contrato; se corrigió su referencia documental pendiente.
 - Auditoría del paquete original Excel: hoja xl/worksheets/sheet8.xml y tabla xl/tables/table5.xml. AX usa duración [h]:mm en días. Ninguna fórmula en filas 5–475 ni en metadata de tabla; las 105 fórmulas de la hoja están en filas 1, 3 y 476. El historial del libro solo contiene 4e164da: no se recuperó una versión con las fórmulas de AX/BA.
@@ -40,6 +47,9 @@ Rama: `codex/trabajo`. Revisión desde `aaa6d56`: commit local y **sin push**, p
 
 ## Siguiente
 
+- Andrés: entregar cambios/mes mínimo, cálculo mensual/recálculo y ocho vistas API con GRANT a web_lectura; resolver contadores BP y verificar claves de parámetros/tolerancia con César/Lucas. Publicar SHA integrado antes del ensayo. Escenarios/cuadratura completos pendientes adicionales.
+- Lucas: facilitar release/versiones de objetos, VM y driver ODBC 64 bits; Check Code y probar llamadas Number→bigint/fechas. César: desplegar front main validado, acordar mapeo de parámetros y aportar URL PostgREST/origen del dashboard. Falta respuesta sobre acceso y ventana coordinada. Ejecutar primero catálogo y GET; solo después, con snapshot y responsables disponibles, P00 + 01 → snapshot → 02 y restaurar 01 → 03 según tests/e2e/guion.md. No se enviaron mensajes al equipo ni se usaron servicios compartidos.
+
 - Resolver con César qué disponibilidad/vigencia rige B: mensual, promedio may–dic o AX autorizado. Se necesita regla confirmada o Excel con las fórmulas originales. Revisar si BA18=15 de 134744/11 es excepción aprobada o se debe corregir la fuente a 14. La mejora AX es diagnóstica; v1.1 ya está localizada en 0fb3a93 y no se modifica.
 
 - Acordar cómo consolidar/identificar los contratos repetidos 137356/22 y 72190/41 antes de exigir unicidad persona/IT en insumos. Se consultó a César; se conservaron las 471 filas para no perder información de origen.
@@ -53,11 +63,11 @@ Rama: `codex/trabajo`. Revisión desde `aaa6d56`: commit local y **sin push**, p
 
 ## Errores conocidos
 
-- Este clon aún no contiene `scripts\migrar.ps1` ni `scripts\test.ps1`: no se pueden ejecutar las pruebas generales.
-- No hay Blue Prism ni servidor PostgreSQL/driver ODBC preparados aquí: queda pendiente Check Code y prueba de integración en el Runtime de Lucas. La compilación local no certifica el entorno BP.
+- Este worktree aún no contiene scripts\migrar.ps1 ni scripts\test.ps1. Los del back remoto sí se ejecutaron en snapshot/cluster aislados; el despliegue completo sigue pendiente.
+- Hay PostgreSQL nativo instalado y servicios activos, sin tocar; no hay PostgREST/dashboard disponibles en 3000/8080 ni driver PostgreSQL ODBC 64 bits encontrado. Blue Prism listo es reporte de Lucas; falta observar release, Runtime, colas y carga real. No declarar E2E aprobado.
 - Compilador local .NET Framework, sin SDK Roslyn C# 7.3 ni reference assemblies 4.7 verificados; se evitó toda sintaxis posterior a C# 5 y API posterior a Framework 4.7.
 - Carga Masiva confirma por lote: ante error puede haber lotes anteriores confirmados; conciliar antes de reintentar.
 - Validar Dotacion entrega fechas ISO; convertir a DateTime en datosCarga antes de ODBC según el LEEME. En producción usar catálogos aprobados, no los derivados de la entrada usados en el ensayo. Textos de motivos no están fijados por contrato; comprobar semántica en integración.
-- web\js ya fue integrado por el trabajo paralelo; lint local en verde. No se ha ejecutado GitHub Actions (sin push por instrucción).
+- El front más reciente está en origin/main (Parámetros/simulación aún pendiente); web\ de este worktree conserva una revisión anterior. No se fusionó ni modificó durante esta tarea. Lint anterior no implica despliegue integrado; GitHub Actions sin ejecutar.
 - Verificador: proyección de continuidad no es dotación observada; el promedio parcial/colación/pausa/grupos no están completamente definidos con estas fuentes. Los diagnósticos que usan esperado como predictor están separados y no certifican el cálculo independiente. No se recibió CSV real de la base de Andrés.
 - insumos.csv conserva dos pares repetidos porque 471 registros fuente no equivalen a 471 claves únicas. No cargarlo con una PK persona/IT ni descartar históricos sin resolver la vigencia; no se cambió ningún contrato SQL.

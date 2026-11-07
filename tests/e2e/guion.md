@@ -1,15 +1,69 @@
 # D-07 · Ensayo de punta a punta
 
-Ejecutar en la VM Windows con Blue Prism 7.5.1, PostgreSQL preparado y dashboard en modo API. Registrar hora, archivo, hash y carga_id de cada ensayo. **No marcar OK antes de observar el resultado.** Usar una base de demo restaurable; no mezclar cargas anteriores. Los casos BUK usan enero–julio: cargo desde marzo, alta desde abril, jornada 40 → 30 desde mayo, baja desde junio y traslado desde julio.
+Ejecutar en la VM Windows con Blue Prism 7.5.1, PostgreSQL preparado y dashboard en modo API. Registrar hora, archivo, SHA-256, carga_id y commits/release de cada ensayo. **No marcar OK antes de observar el resultado.** Acordar primero con Lucas y Andrés una ventana y una base restaurable; pausar otras cargas durante capturas, recálculos o restauraciones. No ejecutar estos pasos sobre su trabajo activo sin coordinación. Los casos BUK usan enero–julio: cargo desde marzo, alta desde abril, jornada 40 → 30 desde mayo, baja desde junio y traslado desde julio.
 
-| Paso | Acción | Resultado esperado | Resultado real | OK |
-|---|---|---|---|---|
-| 1 | Dejar la planilla de reglas en `C:\PlanBot\entrada\planificacion`; ejecutar P00. | Carga registrada sin errores; `param.cargo_distribucion` tiene reglas y una versión vigente. | Pendiente | ☐ |
-| 2 | Dejar `data\buk\01_original.xlsx` en `C:\PlanBot\entrada\buk`; ejecutar P01–P05 y abrir Nacional. | Archivo cargado, dotación y planificación visibles en Nacional; KPI coinciden con SQL. | Pendiente | ☐ |
-| 3 | Antes de cargar, capturar `calc.plan_mes`; dejar `02_cambios.xlsx` y ejecutar P01–P05. | Exactamente los cinco cambios del CSV; meses previos de cada persona intactos y recálculo desde cada vigencia. | Pendiente | ☐ |
-| 4 | Restaurar la base posterior al paso 2; dejar `03_errores.xlsx`. | Los cinco errores intencionales figuran en `api.v_errores_carga`, con persona, campo y motivo correspondientes; filas inválidas no pasan al cálculo. | Pendiente | ☐ |
-| 5 | Volver a dejar el mismo archivo, con otro nombre si hace falta. | Blue Prism informa «archivo repetido» por SHA-256; no duplica carga ni filas ni recalcula. | Pendiente | ☐ |
-| 6 | Restaurar base limpia del paso 2; crear escenario con meta 0.85, simular, revisar y aprobar. | La simulación no cambia el plan vigente. La aprobación crea versión y aplica meta 85 %; atenciones y horas se conservan si solo varió meta. | Pendiente | ☐ |
+## Estado comprobado · 7 de noviembre de 2026
+
+Inspección iniciada en `codex/trabajo` / `a259e78`, árbol limpio, sin merge ni push. `git fetch origin` solo actualizó referencias. Estas referencias **son snapshots distintos**, no una versión integrada desplegada:
+
+| Componente | Evidencia observada | Dependencia / responsable |
+|---|---|---|
+| Contrato v1.1 | `0fb3a930da5a58516dd9a6bb2b0af455c6351d1a:docs/contratos.md`; copia de columnas/firmas en contrato_v1_1.json. El contrato local es anterior. | César y Andrés: seleccionar v1.1 para el despliegue; no se editó el contrato. |
+| Back `9f172cc625c9be8e69044ac17d70ba8f26894765` | Snapshot de origin/feat/B-05-semanal probado en PostgreSQL 16.15 **aislado**. Diez tablas stg coinciden; bot_carga puede insertar. Dos RPC api disponibles con firmas/retornos correctos: cargar_parametros(bigint) → integer; cargar_dotacion(bigint) → TABLE(filas integer, alertas integer). | Andrés: entregar resto del back y publicar versión integrada. |
+| Cálculo y API | Hay calc.v_semanal y tabla calc.plan_mes, pero plan_mes queda vacío. Faltan detectar_cambios, mes_minimo_afectado, recalcular, simular, aplicar_escenario y cuadratura; no hay ninguna de las ocho vistas api del contrato. cargar_asignaciones es auxiliar adicional, no sustituye las RPC faltantes. | Andrés: B-06–B-09 y funciones opcionales de escenarios/cuadratura. |
+| Dashboard `4b6b1c4f903088ba55b7ae831ead06b9f0608ea8` | origin/main: cliente y ocho fixtures compatibles con v1.1, incluidos horas_contratadas, horas_dir, horas_ind y horas_nas de v_instituto_area_mes. Nacional consume esas horas. Prueba Node del módulo real con fetch simulado; **no es una prueba del navegador/API**. | César: desplegar ese front o una revisión posterior validada. Esta rama aún tiene pantallas iniciales y mocks sin las cuatro horas. |
+| Blue Prism | Lucas reporta robot listo. El repositorio contiene .cs de referencia, sin release exportado que permita comprobar versión importada, procesos o colas. | Lucas: Check Code, driver y ensayo del release real en Runtime Resource. |
+| Entorno | Servicios PostgreSQL locales activos en 5432, sin consultar sus datos. Docker no disponible; HTTP 3000/8080 sin servicio; driver PostgreSQL ODBC 64 bits no encontrado en este PC. No hay URL/acceso a VM aportados. | César/Lucas: acceso y ventana; Andrés: PostgREST, permisos y base de ensayo. |
+
+El ensayo aislado ejecutó migrar.ps1, test.ps1 -Modulo db, cargar_buk_prueba.ps1 con 01_original y nuevamente las pruebas SQL: todos terminaron en 0 (000_humo, 001_parametros y 002_dotacion). Conteos: **stg.buk_fila 3.123, core.dotacion_mes 5.338, calc.v_semanal 912, calc.plan_mes 0**. Las 2.215 filas adicionales son proyección del back, no meses añadidos al archivo BUK. La prueba de promedio informa 456/466 = 97,9 %; su salida verde no certifica el umbral semanal ni un E2E completo. El cargador de prueba usa Python/psql, **no Blue Prism ni ODBC**. Se detuvo la instancia propia al terminar; ningún servicio compartido se migró o cargó.
+
+## Diferencias que deben resolverse antes del recorrido real
+
+- **Contadores, demostrado en SQL:** insertar un error de BP en stg.error_fila y una fila válida en stg.buk_fila, y llamar cargar_dotacion, deja con_error=0 con un error presente. El back recalcula sus contadores desde las filas que recibe y omite los rechazos previos de BP. Andrés y Lucas deben acordar el cierre P05; medir filas originales con error, no cantidad de mensajes. Sonda aislada con ROLLBACK en tools/probar_back_aislado.ps1. No se modificó SQL ni contrato.
+- **Tipos y llamadas BP:** usar esquema api. Para Number → bigint, probar Ejecutar Consulta con `SELECT * FROM api.cargar_dotacion(CAST(? AS bigint))` y cargaId posicional. La acción genérica Ejecutar Función no fuerza bigint; binding ODBC real pendiente. Convertir fechas ISO de validas a DateTime antes de Carga Masiva según el LEEME; no insertar columna fila en stg.buk_fila, conservarla solo para errores.
+- **Auditoría:** set_config en una acción y la RPC en otra pueden usar conexiones distintas. Lucas debe mantener motivo y operación en la misma conexión; auditoría real pendiente de Andrés. No certificarla por reutilización accidental del pool.
+- **Distribución:** el C# alerta cuando la suma difiere más de 0.001; SQL rechaza más de 0.000001. Una suma 1.0005 pasaría sin alerta en el primero y fallaría en el segundo. Requiere acuerdo de Andrés/Lucas; no se cambió la tolerancia.
+- **Claves de parámetros:** Nacional en main busca meta_gestion, mes_cambio_jornada y jornada_legal_horas_desde_mayo. Seed del back publica meta, jornada_ene_abr y jornada_may_dic. César/Andrés deben acordar el mapeo: la tarjeta usa alternativa y el marcador de jornada puede faltar. No renombrar claves unilateralmente.
+- **Pantalla Cambios:** deriva las cargas de v_cambios/v_errores_carga. Una carga sin cambios ni errores no aparece; archivo no está en v_cambios. Para comprobar 01, conservar ID/archivo desde SQL y Control Room. No añadir columnas al contrato para resolverlo aquí. Parámetros/simulación todavía es una pantalla inicial en main.
+
+## Comprobaciones reproducibles sin alterar servicios compartidos
+
+Desde la raíz, PowerShell 7. Requiere Python con las dependencias del proyecto, Node y binarios PostgreSQL 16. Los verificadores manuales están en tools para que test.ps1 -Modulo todo no arranque clusters ni consulte una VM automáticamente.
+
+```powershell
+# Congelar referencias antes del ensayo. No hace checkout/merge.
+git rev-parse HEAD origin/main origin/feat/B-05-semanal
+python -m unittest discover -s tools -p 'test_*.py'
+node --experimental-vm-modules tests\e2e\probar_cliente.mjs 4b6b1c4f903088ba55b7ae831ead06b9f0608ea8
+# Instancia propia, puerto libre loopback; se detiene al terminar.
+pwsh -NoProfile -File tools\probar_back_aislado.ps1 -Referencia 9f172cc625c9be8e69044ac17d70ba8f26894765
+# Con la ruta que imprime el ensayo:
+python tools\comprobar_catalogo.py "$env:TEMP\PlanBot_Integracion_<id>\catalogo_bot.json"
+```
+
+El último comando devuelve **1** con B-05 por las seis RPC y ocho vistas ausentes; es un bloqueo esperado, no una aprobación. Informa tipos stg y retornos para revisión; no certifica conversiones ODBC ni semántica de negocio. El cliente Node pasa en el main indicado; con a259e78 falla por horas_contratadas ausente en los mocks. No sustituir esa falla por un dato inventado.
+
+En la VM, solo después de recibir host/puerto/base y rol autorizados, ejecutar catálogo de **solo lectura** y guardar JSON (psql pide la clave, no escribirla en el comando):
+
+```powershell
+psql -h <host> -p <puerto> -U bot_carga -d <base_demo> -X -At -v ON_ERROR_STOP=1 -f tests\e2e\inspeccionar_contrato.sql > C:\PlanBot\respaldo\catalogo_bot.json
+python tools\comprobar_catalogo.py C:\PlanBot\respaldo\catalogo_bot.json
+# URL real de PostgREST, no la del dashboard. Solo GET, sin RPC ni cargas.
+pwsh -NoProfile -File tools\probar_api_planbot.ps1 -ApiUrl http://<host>:3000 -Origen http://<host>:8080 -Salida C:\PlanBot\respaldo\api_integracion.json
+```
+
+Los marcadores entre < > deben reemplazarse antes de ejecutar. Si requiere JWT, usar PLANBOT_TEST_TOKEN en entorno sin guardarlo en logs. Se prueban las ocho vistas con select explícito y CORS: un array vacío solo valida la consulta, **no la existencia de datos**. Con 127.0.0.1:3000 aquí, ocho conexiones rechazadas (comprobado, pendiente de servicio). En el navegador abrir `http://<host>:8080/?modo=api#nacional`; DevTools/Red debe mostrar llamadas a PostgREST, ninguna lectura mock/*.json. config.js usa apiUrl localhost:3000 y compose permite origen localhost:8080; si el navegador está en otro PC, César/Andrés deben configurar URL alcanzable y origen exacto del despliegue antes de probar (localhost designa ese otro PC). Guardar captura, endpoint/estado, conteos y hora; un HAR debe revisarse para retirar tokens y datos antes de compartirlo. Cotejar KPI y las cuatro horas con SQL, filtrar IT/área/mes y comprobar Instituto y Profesional. Si falla API, debe mostrarse error, no datos mock.
+
+## Ejecución coordinada en VM · todos los pasos siguen pendientes
+
+| Paso | Acción | Resultado esperado | Evidencia que guardar | Resultado real | OK |
+|---|---|---|---|---|---|
+| 1 | Acordar base/ventana; dejar la planilla de reglas en C:\PlanBot\entrada\planificacion; ejecutar P00. | Carga registrada sin errores; param.cargo_distribucion con reglas/versiones. No continuar si faltan RPC/vistas del recorrido. | Hash de entrada, carga_id, versión param, sesión Control Room y conteo SQL. | Pendiente VM | ☐ |
+| 2 | Copiar data\buk\01_original.xlsx a C:\PlanBot\entrada\buk; ejecutar P01–P05. Ver cola durante procesamiento y resultado; abrir Nacional con ?modo=api. Guardar snapshot posterior a 01. | Limpieza de encabezados/blancos; 3.123 filas BUK antes de validación. Dotación y plan visibles, KPI/horas iguales a SQL. Revisar errores reales, sin exigir cero por su nombre «original». | SHA, ID, leídas/válidas/filas con error, cola/sesión, conteos stg/core/calc, consultas y captura Red/SQL/pantalla; dump restaurable. | Pendiente BP/API; carga por psql aislada aprobada únicamente | ☐ |
+| 3 | Desde snapshot 01, capturar calc.plan_mes y copiar 02_cambios.xlsx a entrada\buk; ejecutar P01–P05. | Exactamente cinco eventos CSV, sin meses previos alterados: cargo 71132/131 marzo; alta 999001/131 abril; jornada 71555/131 mayo 40→30; baja 71027/101 junio; traslado 71146 a IT 101 julio. | Hash/ID, cola, consultas EXCEPT ALL sin filas, planes antes/después y tiempos de recálculo; pantalla Cambios filtrada por carga y Profesional. | Pendiente funciones de cambios/recálculo | ☐ |
+| 4 | Restaurar snapshot 01 con robot pausado; comprobar hash de 03 no procesado. Copiar 03_errores.xlsx a entrada\buk y ejecutar flujo de carga. No usar el estado posterior a 02. | Detectar cinco casos CSV: 71027 horas 0, 71132 fechas, 71146 cargo inexistente, 71232 duplicado, 71247 horas «cuarenta». Cada caso con fila/motivo semántico; inválidas fuera de stg.buk_fila/cálculo. Pueden existir errores adicionales del origen. | Hash/ID, resultados CSV↔SQL con faltantes cero, fila original, sesión/cola y pantalla Cambios/errores; cotejo de contadores. | Pendiente BP/API; no aprobado por pruebas de consola previas | ☐ |
+| 5 | Reentregar exactamente los bytes del archivo anterior (puede cambiar nombre). | «archivo repetido» por hash; no aumenta carga/stg/plan ni se recalcula. | SHA igual, conteos antes/después, ítem/sesión de cola y mensaje del robot. | Pendiente VM | ☐ |
+| 6 | Opcional, cuando B-12/C-09 existan: restaurar 01; crear escenario meta 0.85, simular, revisar y aprobar con usuario autorizado. | Simulación conserva plan vigente; aprobación aplica versión/meta, con motivo auditado; horas/atenciones intactas si solo varió meta. | ID escenario, aprobación humana, planes/versiones antes/después y audit.log. | Bloqueado: funciones y pantalla pendientes | ☐ |
 
 ## Consultas de verificación
 
@@ -25,6 +79,9 @@ FROM stg.carga ORDER BY carga_id DESC;
 -- Paso 2
 SELECT * FROM api.v_kpi;
 SELECT * FROM api.v_nacional_mes ORDER BY mes;
+-- Cuatro columnas obligatorias v1.1; cotejar también respuesta HTTP y gráfico.
+SELECT it, area, cargo, mes, horas_contratadas, horas_dir, horas_ind, horas_nas
+FROM api.v_instituto_area_mes ORDER BY it, area, cargo, mes;
 SELECT count(*) FROM calc.plan_mes;
 SELECT * FROM api.v_errores_carga ORDER BY carga_id DESC, fila;
 
@@ -86,6 +143,11 @@ FROM demo_errores_esperados e LEFT JOIN api.v_errores_carga r
   ON r.carga_id = :carga_errores AND r.persona_id = e.persona_id AND r.campo = e.campo;
 -- Ningún esperado debe carecer de fila; revisar semántica del motivo.
 -- Los contratos no fijan textos literales: alinear CSV y validación con Lucas.
+SELECT c.carga_id, c.leidas, c.validas, c.con_error,
+       (SELECT count(DISTINCT e.fila) FROM stg.error_fila e
+        WHERE e.carga_id=c.carga_id) AS filas_con_error_registradas
+FROM stg.carga c WHERE c.carga_id=:carga_errores;
+-- Guardar discrepancias: en B-04 este contador omite rechazos previos de BP.
 
 -- Paso 5: guardar los conteos antes y contrastar después del reintento.
 SELECT count(*) AS cargas FROM stg.carga;
@@ -97,6 +159,7 @@ SELECT count(*) AS filas_plan FROM calc.plan_mes;
 CREATE TEMP TABLE demo_plan_pre_simulacion AS TABLE calc.plan_mes;
 -- Crear escenario mediante el flujo aprobado por Andrés; la estructura de
 -- calc.escenario no está fijada en contratos, no inventar INSERT/UPDATE.
+-- Paso opcional BLOQUEADO hasta que ambas funciones existan. No ejecutarlo ahora.
 -- Usar esquema real de las funciones: localizarlo primero.
 SELECT n.nspname AS esquema, p.proname, pg_get_function_identity_arguments(p.oid)
 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
