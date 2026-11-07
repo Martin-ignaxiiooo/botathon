@@ -1,0 +1,57 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Capturas (herramienta de desarrollo)</title>
+<style>html,body{margin:0;background:#fff;overflow:hidden}iframe{display:block;border:0}pre{display:none}</style>
+<script type="module">
+// Herramienta de desarrollo (no es parte de la demo): arma una pantalla del dashboard para capturarla con web\dev\capturar.ps1.
+// Parámetros: r=#ruta, modo=api|mock, paso=ninguno|efecto|profesionales|escenario|dialogo|impresion, ancho, alto (0 = solo medir), prev=<json del KPI anterior>,
+// tok=<token JWT de planificador, solo para pruebas locales> y boton=Aprobar|Rechazar (paso dialogo)
+const q = new URLSearchParams(location.search);
+const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
+const ruta = q.get('r') || '#nacional';
+const modo = q.get('modo') || 'api';
+const paso = q.get('paso') || 'ninguno';
+const ancho = Number(q.get('ancho') || 1440);
+const alto = Number(q.get('alto') || 0);
+const res = {};
+async function main() {
+  // «efecto»: simula que la pestaña ya había visto la carga anterior (para mostrar las flechas ▲▼ de Nacional)
+  // «tok»: deja el token en sessionStorage como si se hubiera ingresado como planificador (para el diálogo en modo api)
+  if (q.get('tok')) sessionStorage.setItem('planbot-token-planificador', q.get('tok'));
+  if (paso === 'efecto') sessionStorage.setItem(`planbot-kpi-${modo}`, JSON.stringify({ actual: JSON.parse(q.get('prev')), anterior: null }));
+  const marco = document.createElement('iframe');
+  marco.style.cssText = `width:${ancho}px;height:${alto || 1200}px`;
+  document.body.append(marco);
+  await new Promise((r) => { marco.onload = r; marco.src = `../index.html?modo=${modo}${ruta}`; });
+  await esperar(4500);
+  const d = marco.contentDocument, w = marco.contentWindow;
+  const sinBarras = d.createElement('style'); sinBarras.textContent = '::-webkit-scrollbar{display:none}'; d.head.append(sinBarras);
+  if (paso === 'profesionales') { d.querySelector('.boton-area')?.click(); await esperar(2500); }
+  if (paso === 'escenario') { // desplaza la pantalla hasta el último escenario (el pendiente en los datos de ejemplo)
+    const tarjetas = d.querySelectorAll('article.escenario');
+    const acciones = tarjetas[tarjetas.length - 1].querySelector('.acciones');
+    (acciones ?? tarjetas[tarjetas.length - 1]).scrollIntoView({ block: 'center' }); await esperar(500); // deja visibles los botones
+  }
+  if (paso === 'dialogo') {
+    const boton = q.get('boton') || 'Rechazar';
+    const decidir = [...d.querySelectorAll('.acciones button')].find((b) => b.textContent === boton);
+    decidir.closest('article').scrollIntoView({ block: 'start' }); await esperar(300);
+    decidir.click(); await esperar(500);
+    const area = d.querySelector('dialog textarea'); area.value = boton === 'Aprobar' ? 'Alza gradual acordada con las jefaturas de los institutos' : 'La meta del 92 % no es viable con la dotación actual'; area.dispatchEvent(new w.Event('input', { bubbles: true }));
+    await esperar(400);
+  }
+  if (paso === 'impresion') {
+    // Emula la vista de impresión: aplica las reglas de @media print como CSS normal
+    const css = await (await fetch('../css/base.css')).text();
+    const i = css.indexOf('@media print {'); let n = 0, fin = i;
+    for (let k = css.indexOf('{', i); k < css.length; k++) { if (css[k] === '{') n++; if (css[k] === '}') { n--; if (!n) { fin = k; break; } } }
+    const st = d.createElement('style'); st.textContent = css.slice(css.indexOf('{', i) + 1, fin).replace(/@page[^}]*}/, ''); d.head.append(st);
+    w.dispatchEvent(new w.Event('beforeprint')); await esperar(1500);
+  }
+  const p = d.querySelector('.principal');
+  res.alto = Math.ceil(p.offsetTop + p.offsetHeight + 24);
+  res.h1 = d.querySelector('h1')?.textContent;
+  res.badge = d.getElementById('modo-datos')?.textContent;
+  res.avisos = d.getElementById('avisos')?.textContent;
+}
+await main().catch((e) => { res.error = String(e.stack || e); });
+document.body.insertAdjacentHTML('beforeend', `<pre id="salida">${JSON.stringify(res)}</pre>`);
+</script></head><body></body></html>

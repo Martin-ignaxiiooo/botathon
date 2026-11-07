@@ -1,6 +1,6 @@
 # Progreso BACK (Andrés · Claude Code)
 Última actualización: 2026-11-07 · por: Claude Code
-Rama actual: feat/C-01-jwt (desde main con B-12 #9 fusionado)
+Rama actual: main (fix/area-sigue-it #11 y feat/C-01-jwt #10 fusionados)
 Reparto 7-nov: B-09 (vistas api.*, database\views\) lo hace el Codex de César en feat/B-09-vistas; el BACK revisa
 y fusiona su PR. El BACK no toca database\views\ mientras tanto.
 
@@ -128,6 +128,14 @@ y fusiona su PR. El BACK no toca database\views\ mientras tanto.
   - database\demo\escenarios_demo.sql (lo corre instalar_sin_docker.ps1 -CargarBukPrueba): meta 92 % pendiente
     (+12.202 de meta), 91 % aprobado (+6.021), 95 % rechazado (+30.980). Idempotente.
   - tests\sql\070_escenarios.sql. Funciones nuevas fuera del Contrato 2 (listar/decidir): PR con etiqueta contrato.
+- Fix (aviso del front) · area sigue al IT. Causa: en el BUK la area es la sede (1 por IT); el 02_cambios.xlsx de
+  prueba cambia IT e Instituto de 71146 desde julio pero deja Area = Santiago, y cargar_dotacion la copiaba.
+  Ahora cargar_dotacion usa la area más frecuente del IT en esa carga cuando una fila trae otra, también en la
+  proyección, y deja core.alerta 'area_distinta_it' (detalle: area_buk, area_usada, meses). Base real: 0 alertas.
+  Para Codex: data\generar_casos.py debería cambiar también Area (y Centro de costo) en el traslado.
+- recalcular() rehace api.cuadratura() al final si stg.esperado tiene datos (audit.log guarda cuadratura_pct):
+  api.v_cuadratura ya no mezcla plan nuevo con diferencias viejas, y Blue Prism no necesita llamarla aparte.
+  recalcular(1) con la base real: 1,15 s. tests\sql\090_area_y_cuadratura.sql.
 - C-01 (parte BACK) · PostgREST con JWT. Decisión: decidir_escenario solo planificador, el front se autentica con JWT.
   - api\postgrest.conf sin credenciales: db-uri = "$(PGRST_DB_URI)", jwt-secret = "$(PGRST_JWT_SECRET)" (PostgREST
     interpola el entorno), anon web_lectura, role claim .role, puerto 3000, CORS http://localhost:8080.

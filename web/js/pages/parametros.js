@@ -1,10 +1,12 @@
 // Pantalla Parámetros (C-09): reglas vigentes por tabla y escenarios de simulación con aprobación.
-import { el, tablaDatos, tarjetaGrafico, opcionBase, idUnico } from '../ui.js';
+import { el, tablaDatos, tarjetaGrafico, opcionBase, idUnico, avisar } from '../ui.js';
 import { getData } from '../api.js';
 import { num, pct, fecha, fechaHora } from '../formato.js';
 import { lecturaFacil, plural } from '../lectura.js';
-import { listarEscenarios, decidirEscenario } from '../escenarios.js';
-import { abrirDialogoDecision } from '../dialogo.js';
+import {
+  listarEscenarios, decidirEscenario, requiereToken, leerToken, guardarToken, borrarToken, limpiarToken, pareceJwt, infoToken,
+} from '../escenarios.js';
+import { abrirDialogoDecision, abrirDialogoToken } from '../dialogo.js';
 
 const ORDEN_TABLAS = ['param.general', 'param.cargo_distribucion', 'param.cargo', 'param.asignacion_catalogo', 'param.asignacion', 'param.calendario_mes', 'param.calendario', 'param.grupal'];
 
@@ -48,7 +50,7 @@ export async function render(contenedor) {
       ? `Hay ${plural(resultado.escenarios.length, 'escenario', 'escenarios')}; ${pendientes.length} ${pendientes.length === 1 ? 'espera' : 'esperan'} una decisión.`
       : 'Los escenarios todavía no están disponibles.',
     primero ? `Si se aprueba el escenario ${primero.escenario_id}, la meta ${efecto >= 0 ? 'sube' : 'baja'} en ${num(Math.abs(efecto))} atenciones.` : null,
-    'Aprobar o rechazar siempre pide un motivo.',
+    requiereToken() ? 'Para aprobar o rechazar hay que ingresar como planificador y escribir un motivo.' : 'Aprobar o rechazar siempre pide un motivo.',
   ]);
 
   contenedor.append(seccionReglas(reglas));
@@ -116,7 +118,65 @@ function dibujarEscenarios(zona, resultado) {
     zona.append(el('p', { class: 'estado-vacio' }, 'No hay escenarios creados. Los escenarios se crean al simular un cambio de parámetros.'));
     return;
   }
+  if (requiereToken()) zona.append(bloquePlanificador());
   zona.append(...resultado.escenarios.map(tarjetaEscenario));
+}
+
+// ---------- Modo planificador (token JWT, solo en sessionStorage) ----------
+/** Vuelve a dibujar la pantalla y deja el foco en el botón indicado (la pantalla se reconstruye). */
+function recargar(idFoco) {
+  document.addEventListener('pagina-cambio', () => document.getElementById(idFoco)?.focus(), { once: true });
+  window.dispatchEvent(new window.HashChangeEvent('hashchange'));
+}
+
+/** true si hay un token que parece vigente (la firma la verifica PostgREST al decidir). */
+function tokenVigente() {
+  const info = infoToken();
+  return Boolean(leerToken() && info && !info.vencido);
+}
+
+async function ingresarComoPlanificador() {
+  const ingreso = await abrirDialogoToken({
+    validar: (texto) => {
+      const token = limpiarToken(texto);
+      if (!pareceJwt(token)) return 'Eso no parece un token JWT: debe tener tres partes separadas por puntos.';
+      const info = infoToken(token);
+      if (info?.vencido) return 'Ese token ya venció. Pida uno nuevo.';
+      if (info?.rol && info.rol !== 'planificador') return `Ese token es del rol «${info.rol}», no del rol planificador.`;
+      return null;
+    },
+    guardar: async (texto) => guardarToken(limpiarToken(texto)),
+  });
+  if (ingreso) recargar('boton-planificador');
+}
+
+function salirDelModoPlanificador() {
+  borrarToken();
+  avisar('Salió del modo planificador.', 'info');
+  recargar('boton-planificador');
+}
+
+function bloquePlanificador() {
+  const token = leerToken();
+  const info = infoToken(token);
+  const caja = el('div', { class: 'modo-planificador tarjeta' });
+  if (tokenVigente()) {
+    const vence = info.vence ? ` · el token vence el ${fechaHora(info.vence)}` : '';
+    caja.append(
+      el('p', { class: 'estado-texto estado-ok', role: 'status' }, el('span', { 'aria-hidden': 'true' }, '✓'), `Modo planificador activo${vence}`),
+      el('button', { type: 'button', id: 'boton-planificador', onclick: salirDelModoPlanificador }, 'Salir'));
+  } else if (token) {
+    caja.append(
+      el('p', { class: 'estado-texto estado-alerta', role: 'status' }, el('span', { 'aria-hidden': 'true' }, '!'),
+        info?.vencido ? 'El token del planificador venció' : 'No se puede leer el token guardado'),
+      el('button', { type: 'button', id: 'boton-planificador', class: 'boton-primario', onclick: ingresarComoPlanificador }, 'Ingresar de nuevo'),
+      el('button', { type: 'button', onclick: salirDelModoPlanificador }, 'Salir'));
+  } else {
+    caja.append(
+      el('p', { class: 'modo-planificador-texto' }, 'Para aprobar o rechazar escenarios hay que ingresar como planificador.'),
+      el('button', { type: 'button', id: 'boton-planificador', class: 'boton-primario', onclick: ingresarComoPlanificador }, 'Ingresar como planificador'));
+  }
+  return caja;
 }
 
 function tarjetaEscenario(esc) {
@@ -150,9 +210,21 @@ function tarjetaEscenario(esc) {
       document.addEventListener('pagina-cambio', () => document.getElementById(idTitulo)?.focus(), { once: true });
       window.dispatchEvent(new window.HashChangeEvent('hashchange'));
     };
-    tarjeta.append(el('div', { class: 'acciones' },
-      el('button', { type: 'button', class: 'boton-primario', 'aria-label': `Aprobar el escenario ${esc.escenario_id}`, onclick: decidir('aprobar') }, 'Aprobar'),
-      el('button', { type: 'button', 'aria-label': `Rechazar el escenario ${esc.escenario_id}`, onclick: decidir('rechazar') }, 'Rechazar')));
+    const autorizado = !requiereToken() || tokenVigente();
+    if (autorizado) {
+      tarjeta.append(el('div', { class: 'acciones' },
+        el('button', { type: 'button', class: 'boton-primario', 'aria-label': `Aprobar el escenario ${esc.escenario_id}`, onclick: decidir('aprobar') }, 'Aprobar'),
+        el('button', { type: 'button', 'aria-label': `Rechazar el escenario ${esc.escenario_id}`, onclick: decidir('rechazar') }, 'Rechazar')));
+    } else {
+      // Sin token no se puede decidir: los botones quedan inactivos (aria-disabled) y, al pulsarlos, piden el token
+      const idNota = `nota-decision-${esc.escenario_id}`;
+      const inactivo = (texto, etiqueta) => el('button', {
+        type: 'button', class: 'boton-inactivo', 'aria-disabled': 'true', 'aria-describedby': idNota,
+        'aria-label': `${etiqueta} el escenario ${esc.escenario_id} (requiere ingresar como planificador)`, onclick: ingresarComoPlanificador,
+      }, texto);
+      tarjeta.append(el('div', { class: 'acciones' }, inactivo('Aprobar', 'Aprobar'), inactivo('Rechazar', 'Rechazar'),
+        el('span', { id: idNota, class: 'nota-decision' }, 'Requiere ingresar como planificador')));
+    }
   }
   return tarjeta;
 }
@@ -194,7 +266,8 @@ function impacto(esc) {
       tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, valueFormatter: (v) => num(v) },
       legend: { top: 0 },
       grid: { left: 8, right: 8, top: 40, bottom: 8, containLabel: true },
-      xAxis: { type: 'category', data: filas.map((f) => f.instituto) },
+      // con muchos institutos se muestran todos los nombres (rotados) en vez de omitir algunos
+      xAxis: { type: 'category', data: filas.map((f) => f.instituto), axisLabel: { interval: 0, rotate: filas.length > 6 ? 35 : 0 } },
       yAxis: { type: 'value', axisLabel: { formatter: (v) => num(v) } },
       series: [
         { name: 'Meta antes', type: 'bar', data: filas.map((f) => Number(f.meta_antes)), barMaxWidth: 40 },
