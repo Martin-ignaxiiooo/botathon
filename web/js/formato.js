@@ -67,6 +67,13 @@ export function nombreMes(m, corto = false) {
   return lista[Number(m) - 1] ?? SIN_DATO;
 }
 
+const NOMBRES_AREA = { KI: 'Kinesiología', TO: 'Terapia ocupacional', FI: 'Fisiatría', ED: 'Educación' };
+
+/** "KI" -> "Kinesiología (KI)"; códigos desconocidos se muestran tal cual. */
+export function nombreArea(codigo) {
+  return NOMBRES_AREA[codigo] ? `${NOMBRES_AREA[codigo]} (${codigo})` : texto(codigo);
+}
+
 /** Texto genérico para celdas: números con num(), nulos con raya. */
 export function texto(x) {
   if (x === null || x === undefined || x === '') return SIN_DATO;

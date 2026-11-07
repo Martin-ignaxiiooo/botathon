@@ -194,7 +194,10 @@ def v_instituto_area_mes():
     for (it, area, cargo, mes), fs in sorted(g.items(), key=lambda kv: (-kv[0][0], kv[0][1], kv[0][3])):
         out.append(dict(it=it, instituto=INSTITUTOS[it], area=area, cargo=cargo, mes=mes,
                         atenciones_dir=sumar(fs, "ate"), meta=sumar(fs, "meta"),
-                        foja=round(foja_pond(fs), 4), dotacion=len(fs)))
+                        foja=round(foja_pond(fs), 4), dotacion=len(fs),
+                        horas_contratadas=round(sumar(fs, "horas_contratadas"), 2),
+                        horas_dir=round(sumar(fs, "h_dir"), 2), horas_ind=round(sumar(fs, "h_ind"), 2),
+                        horas_nas=round(sumar(fs, "h_nas"), 2)))
     return out
 
 
