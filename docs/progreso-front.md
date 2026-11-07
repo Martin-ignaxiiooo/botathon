@@ -11,11 +11,13 @@ Rama actual: main (todo fusionado)
 - C-04 filtros: `js\filtros.js` (instituto múltiple, área, cargo, mes desde/hasta, tipo; estado en el hash; «Limpiar filtros»; evento `filtros-cambiaron`), aplicado en Nacional
 - C-05 Instituto: tabla Tabulator área × mes (métrica atenciones/meta/% FOJA, ordenable con clic o teclado, fila de totales), meta mensual apilada por área, profesionales del área elegida con enlace a `#profesional?persona=`
 
+- C-06 Profesional: buscador por persona_id con sugerencias (datalist), ficha con trayectoria, tarjetas, meta mensual con marcas de cambios, línea de tiempo desde `v_cambios`, tabla mes a mes con total
+
 ## En curso
 - —
 
 ## Siguiente
-- C-06 Profesional, luego C-07, C-08, C-10, C-09, C-11
+- C-07 Cambios y errores (antes confirmar con Andrés el hueco de `archivo` en `v_cambios`), luego C-08, C-10, C-09, C-11
 
 ## Cómo probar el front
 - Servir sin bloquear: `Start-Process -WindowStyle Hidden python -ArgumentList '-m','http.server','8080' -WorkingDirectory web` y verificar con `Invoke-WebRequest http://localhost:8080 -UseBasicParsing`. Detenerlo al terminar.
@@ -33,6 +35,10 @@ Rama actual: main (todo fusionado)
 - % FOJA agregado = Σ horas_dir / Σ horas_contratadas (ponderado), en la tabla y en los totales.
 - Tabulator no ordena con teclado por defecto: `hacerOrdenablePorTeclado` (instituto.js) da `tabindex` a los encabezados y activa Enter/Espacio. Hay además «Ver como tabla simple» (tabla HTML equivalente). Si C-06/C-07 usan Tabulator, reutilizar esa función (conviene moverla a ui.js).
 - El área elegida y el selector de métrica no van en el hash (estado local de la pantalla).
+
+## Notas de C-06
+- La pantalla pide `v_profesional_mes` completo solo para armar las sugerencias del buscador (con cientos de profesionales en la base real puede ser pesado: si pasa, pedir a Andrés una vista liviana de personas).
+- `describirCambio` (profesional.js) convierte los jsonb `antes`/`despues` en texto; si el cambio trae `instituto`, oculta `it`. Los tipos de cambio conocidos (alta, baja, cambio_jornada, cambio_cargo, cambio_it) tienen etiqueta; otros se muestran con el nombre del tipo. C-07 puede reutilizarlo (conviene moverlo a un módulo común).
 
 ## API de los módulos (para quien siga)
 - `getData(vista, filtros)`: filtros `{it:[], area:[], cargo:[], persona:[], carga:[], desde, hasta}`; cada vista solo aplica los filtros que tiene (tabla `FILTRABLES` en api.js). `leerMock(nombre)` para JSON que no son vistas (escenarios).
