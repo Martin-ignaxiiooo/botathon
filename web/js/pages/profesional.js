@@ -5,6 +5,7 @@ import { getData } from '../api.js';
 import { irA } from '../router.js';
 import { num, pct, fecha, nombreMes, nombreArea } from '../formato.js';
 import { cargoLegible, tipoCambio, describirCambio } from '../textoCambios.js';
+import { lecturaFacil, plural } from '../lectura.js';
 
 const MESES = Array.from({ length: 12 }, (_, i) => i + 1);
 const rangoMeses = (meses) => (meses.length === 1 || meses[0] === meses.at(-1)
@@ -21,6 +22,11 @@ export async function render(contenedor, filtros) {
   contenedor.append(buscador(todos, nombreInstituto, persona));
 
   if (persona === null) {
+    lecturaFacil(contenedor, [
+      'Aquí puedes buscar a un profesional por su número de ID.',
+      'Escribe el número o elígelo de la lista.',
+      'Solo se muestran números de ID, nunca nombres.',
+    ]);
     contenedor.append(el('p', { class: 'estado estado-vacio' },
       'Escriba el ID de un profesional (solo números) o elíjalo de la lista para ver su ficha.'));
     return;
@@ -38,6 +44,20 @@ export async function render(contenedor, filtros) {
   }
 
   filas.sort((x, y) => x.mes - y.mes || x.it - y.it);
+  const t = totales(filas);
+  const mesMayor = MESES.filter((m) => filas.some((f) => f.mes === m))
+    .reduce((a, b) => (sumaMeta(filas, b) > sumaMeta(filas, a) ? b : a));
+  const ultimo = filas.at(-1);
+  lecturaFacil(contenedor, [
+    `Este es el profesional ${persona}.`,
+    `Trabaja en ${nombreInstituto.get(ultimo.it) ?? `IT ${ultimo.it}`} como ${cargoLegible(ultimo.cargo)}.`,
+    `Su meta del año es ${num(t.meta)} atenciones.`,
+    `Su mes con más meta es ${nombreMes(mesMayor)}.`,
+    cambios.length
+      ? `Tuvo ${plural(cambios.length, 'cambio', 'cambios')} este año: ${[...cambios].sort((a, b) => a.mes_vigencia - b.mes_vigencia)
+        .map((c) => `${tipoCambio(c.tipo).texto.toLowerCase()} en ${nombreMes(c.mes_vigencia)}`).join(', ')}.`
+      : 'No tuvo cambios este año.',
+  ]);
   contenedor.append(ficha(filas, nombreInstituto));
   contenedor.append(tarjetasResumen(filas));
   const rejilla = el('div', { class: 'grilla grilla-graficos' });
@@ -122,6 +142,8 @@ function ficha(filas, nombreInstituto) {
   }
   return ficha;
 }
+
+const sumaMeta = (filas, mes) => filas.filter((f) => f.mes === mes).reduce((s, f) => s + f.meta, 0);
 
 function totales(filas) {
   const t = { hc: 0, hd: 0, ate: 0, ateInd: 0, meta: 0, pctPond: 0 };

@@ -17,11 +17,13 @@ Rama actual: main (todo fusionado)
 
 - C-08 Cuadratura: tarjeta «N de 471 profesionales coinciden al 100 %», % de coincidencia por campo y por mes, explicación de causas y tabla de diferencias filtrable por causa
 
+- C-10 Accesibilidad: botones «Lectura fácil» y «Letra grande» (aria-pressed, se recuerdan en el navegador), resumen de 3 a 5 frases en cada pantalla, auditoría WCAG 2.1 A/AA con axe-core (0 violaciones en 18 combinaciones de pantalla y estado)
+
 ## En curso
 - —
 
 ## Siguiente
-- C-10 Accesibilidad (lectura fácil, letra grande, revisión WCAG), luego C-09 Parámetros y C-11 Exportar
+- C-09 Parámetros (en modo plan; al hacerla agregar también su `lecturaFacil`) y C-11 Exportar
 
 ## Cómo probar el front
 - Servir sin bloquear: `Start-Process -WindowStyle Hidden python -ArgumentList '-m','http.server','8080' -WorkingDirectory web` y verificar con `Invoke-WebRequest http://localhost:8080 -UseBasicParsing`. Detenerlo al terminar.
@@ -48,6 +50,16 @@ Rama actual: main (todo fusionado)
 - `v_cuadratura` solo trae diferencias. N = `config.totalProfesionalesExcel` (471) − personas distintas con diferencia ≠ 0 (si la vista incluyera filas que coinciden, se ignoran).
 - % de coincidencia por campo = 1 − diferencias / (471 para campos sin mes, 471×12 para campos mensuales); por mes = 1 − diferencias / (471×5 campos mensuales). Es una aproximación: confirmar con Andrés la base real de comparaciones. Los porcentajes se truncan (99,96 % se ve 99,9 %, nunca 100,0 %) y el eje de los gráficos no parte en 0 (se avisa en la nota).
 - Causas conocidas (redondeo, regla_ene_abr, descuento_julio, asignacion_no_calza, atencion_grupal, colacion_contrato) vienen de `docseglas.md` (puntos abiertos); una causa nueva se muestra con su nombre y «Causa todavía sin descripción». Los valores reales de `causa` los define Andrés.
+
+## Accesibilidad (C-10)
+- Auditoría: `web\dev\auditoria-a11y.html` corre axe-core (A y AA de WCAG 2.1) sobre cada pantalla en estado normal y con lectura fácil + letra grande, con «Ver datos» abierto. Hay que bajar axe-core 4.10.2 a `web\dev\axe.min.js` (está en .gitignore; la URL está en el comentario del archivo). Resultado final: 0 violaciones. Los chequeos «incompletos» son solo íconos decorativos (aria-hidden).
+- Contraste: todos los pares texto/fondo del CSS dan ≥ 4,5:1 (el menor es el estado «ok», 5,5:1); colores de gráficos ≥ 3:1 contra blanco; foco 5,3:1.
+- Correcciones hechas: ARIA de Tabulator (`accesibilizarTabulator` en ui.js: zona con scroll como `rowgroup`, orden por teclado), tablas con scroll horizontal enfocables y con nombre (`vigilarDesbordes`), estado «activado» de los botones del encabezado también con «✓», textos de los gráficos más grandes con letra grande (`ampliarTexto`).
+- Lectura fácil: cada pantalla llama `lecturaFacil(contenedor, frases)` (js\lectura.js); la caja existe siempre y el CSS la muestra solo con el botón activado. Solo Parámetros queda sin frases hasta C-09.
+- No se probó con lector de pantalla real ni con teclado físico: se verificó con axe, el árbol de roles y eventos simulados. Conviene un recorrido manual con Tab y NVDA antes de la demo. Los `ResizeObserver` no se entregan en Edge headless con tiempo virtual (solo afecta a pruebas automáticas).
+
+## Nota sobre el backlog
+- Al cerrar C-07 marqué por error D-04, D-05, D-06 y C-01 (son de Codex y Andrés) por reemplazar un bloque de líneas; ya se devolvieron a «[ ]». Quien las termine debe marcarlas.
 
 ## API de los módulos (para quien siga)
 - `getData(vista, filtros)`: filtros `{it:[], area:[], cargo:[], persona:[], carga:[], desde, hasta}`; cada vista solo aplica los filtros que tiene (tabla `FILTRABLES` en api.js). `leerMock(nombre)` para JSON que no son vistas (escenarios).

@@ -102,16 +102,100 @@ export function liberarGraficos() {
   liberadores.clear();
 }
 
+/**
+ * Tabulator no es del todo accesible por defecto: se corrige su estructura ARIA (la zona con scroll es un
+ * `rowgroup` y el contenedor interno se vuelve transparente) y se permite ordenar con teclado
+ * (Tab hasta el encabezado y Enter o Espacio).
+ */
+export function accesibilizarTabulator(contenedor) {
+  const zona = contenedor.querySelector('.tabulator-tableholder');
+  zona?.setAttribute('role', 'rowgroup');
+  contenedor.querySelector('.tabulator-table')?.setAttribute('role', 'presentation');
+  const preparar = () => contenedor.querySelectorAll('.tabulator-col').forEach((col) => {
+    if (!col.hasAttribute('tabindex')) col.setAttribute('tabindex', '0');
+  });
+  preparar();
+  contenedor.addEventListener('keydown', (e) => {
+    const col = e.target.closest?.('.tabulator-col');
+    if (!col || (e.key !== 'Enter' && e.key !== ' ')) return;
+    e.preventDefault();
+    col.click();
+    // Tabulator puede redibujar los encabezados al ordenar: se devuelve el foco a la misma columna
+    const campo = col.getAttribute('tabulator-field');
+    setTimeout(() => { preparar(); contenedor.querySelector(`.tabulator-col[tabulator-field="${campo}"]`)?.focus(); }, 30);
+  });
+}
+
+/**
+ * Las tablas pueden desbordar horizontalmente (pantallas chicas, letra grande) y entonces deben poder
+ * desplazarse con teclado (WCAG 2.1.1). Cada contenedor `.tabla-scroll` o `.datos-grafico` se vuelve una
+ * región enfocable con nombre (el título de su tabla). Se aplica a los que se agreguen después.
+ */
+export function vigilarDesbordes(raiz) {
+  const preparar = (caja) => {
+    const titulo = caja.querySelector('caption')?.textContent ?? 'Tabla';
+    caja.setAttribute('tabindex', '0');
+    caja.setAttribute('role', 'region');
+    caja.setAttribute('aria-label', `${titulo}. Se desplaza con las flechas si no cabe.`);
+  };
+  const mirar = (nodo) => {
+    if (nodo.nodeType !== 1) return;
+    if (nodo.matches('.tabla-scroll, .datos-grafico')) preparar(nodo);
+    nodo.querySelectorAll('.tabla-scroll, .datos-grafico').forEach(preparar);
+    const padre = nodo.parentElement?.closest('.tabla-scroll, .datos-grafico');
+    if (padre) preparar(padre); // la tabla de un contenedor existente cambió (p. ej. al filtrar)
+  };
+  new MutationObserver((cambios) => cambios.forEach((c) => c.addedNodes.forEach(mirar))).observe(raiz, { childList: true, subtree: true });
+  mirar(raiz);
+}
+
 /** Registra una función de limpieza (p. ej. destruir una tabla Tabulator) para el próximo cambio de pantalla. */
 export function registrarLiberador(fn) {
   liberadores.add(fn);
+}
+
+/** Con «Letra grande» los textos propios de los ejes, leyendas y etiquetas también crecen. */
+function ampliarTexto(opcion) {
+  if (!document.documentElement.classList.contains('letra-grande')) return opcion;
+  const tam = 17;
+  const mayor = (actual) => Math.max(tam, actual ?? 0);
+  const eje = (e) => ({
+    ...e,
+    axisLabel: {
+      ...e.axisLabel,
+      fontSize: mayor(e.axisLabel?.fontSize),
+      // con letra grande las marcas del eje no deben pisarse (salvo ejes que muestran todas las categorías)
+      ...(e.axisLabel?.interval === 0 ? {} : { hideOverlap: true }),
+      ...(e.axisLabel?.width ? { width: Math.round(e.axisLabel.width * 1.25) } : {}), // evita cortar palabras
+    },
+    nameTextStyle: { ...e.nameTextStyle, fontSize: mayor(e.nameTextStyle?.fontSize) },
+  });
+  const ejes = (x) => (Array.isArray(x) ? x.map(eje) : x ? eje(x) : x);
+  const etiqueta = (l) => (l ? { ...l, fontSize: mayor(l.fontSize) } : l);
+  return {
+    ...opcion,
+    // la leyenda ocupa más líneas: se deja más espacio arriba
+    grid: opcion.grid && opcion.legend ? { ...opcion.grid, top: (opcion.grid.top ?? 40) + 30 } : opcion.grid,
+    xAxis: ejes(opcion.xAxis),
+    yAxis: ejes(opcion.yAxis),
+    legend: opcion.legend && { ...opcion.legend, textStyle: { ...opcion.legend.textStyle, fontSize: mayor(opcion.legend.textStyle?.fontSize) } },
+    tooltip: opcion.tooltip && { ...opcion.tooltip, textStyle: { ...opcion.tooltip.textStyle, fontSize: mayor(opcion.tooltip.textStyle?.fontSize) } },
+    series: opcion.series?.map((s) => ({
+      ...s,
+      label: etiqueta(s.label),
+      markLine: s.markLine && { ...s.markLine, label: etiqueta(s.markLine.label) },
+    })),
+  };
 }
 
 /** Opciones base comunes (paleta, tipografía, márgenes). */
 export function opcionBase(extra = {}) {
   return {
     color: PALETA,
-    textStyle: { fontFamily: 'system-ui, "Segoe UI", Roboto, Arial, sans-serif', fontSize: 13, color: '#1f2933' },
+    textStyle: {
+      fontFamily: 'system-ui, "Segoe UI", Roboto, Arial, sans-serif', color: '#1f2933',
+      fontSize: document.documentElement.classList.contains('letra-grande') ? 17 : 13,
+    },
     animation: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
     ...extra,
   };
@@ -135,7 +219,7 @@ export function tarjetaGrafico({ titulo, ariaLabel, opcion, tabla, alto = 320, a
     if (!lienzo.clientWidth) return;
     if (!grafico) {
       grafico = echarts.init(lienzo);
-      grafico.setOption(opcion);
+      grafico.setOption(ampliarTexto(opcion));
       if (alClic) grafico.on('click', alClic);
     } else {
       grafico.resize();

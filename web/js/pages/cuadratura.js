@@ -7,6 +7,7 @@ import { el, tablaDatos, tarjetaGrafico, opcionBase, vacio, idUnico } from '../u
 import { getData } from '../api.js';
 import { hashPara } from '../router.js';
 import { num, pct, nombreMes, MESES_CORTOS } from '../formato.js';
+import { lecturaFacil } from '../lectura.js';
 
 const MESES = Array.from({ length: 12 }, (_, i) => i + 1);
 
@@ -77,6 +78,19 @@ export async function render(contenedor) {
 
   const conDiferencias = new Set(dif.map((f) => f.persona_id)).size;
   const coinciden = Math.max(0, total - conDiferencias);
+  const porCausa = new Map();
+  dif.forEach((d) => porCausa.set(d.causa, (porCausa.get(d.causa) ?? 0) + 1));
+  const causaComun = [...porCausa].sort((a, b) => b[1] - a[1])[0];
+  const porCampo = new Map();
+  dif.forEach((d) => porCampo.set(d.campo, (porCampo.get(d.campo) ?? 0) + 1));
+  const campoPeor = [...porCampo].sort((a, b) => b[1] - a[1])[0];
+  lecturaFacil(contenedor, [
+    `${num(coinciden)} de ${num(total)} profesionales coinciden con el Excel.`,
+    conDiferencias ? `${num(conDiferencias)} profesionales tienen diferencias.` : 'No hay diferencias.',
+    causaComun ? `La causa más común es «${causaInfo(causaComun[0]).texto}»: ${num(causaComun[1])} casos.` : null,
+    campoPeor ? `El campo con más diferencias es «${nombreCampo(campoPeor[0]).toLowerCase()}».` : null,
+    'Abajo puedes filtrar las diferencias por causa.',
+  ]);
   contenedor.append(tarjetaGrande(coinciden, total, conDiferencias, dif.length));
 
   const graficos = el('div', { class: 'grilla grilla-graficos' });

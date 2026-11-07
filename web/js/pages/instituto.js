@@ -1,12 +1,13 @@
 // Pantalla Instituto (C-05): tabla área × mes (Tabulator) con selector de métrica, meta mensual por área
 // y, al elegir un área, sus profesionales con enlace a la ficha.
 import {
-  el, tablaDatos, botonVerDatos, tarjetaGrafico, opcionBase, vacio, registrarLiberador, idUnico,
+  el, tablaDatos, botonVerDatos, tarjetaGrafico, opcionBase, vacio, registrarLiberador, idUnico, accesibilizarTabulator,
 } from '../ui.js';
 import { getData } from '../api.js';
 import { hashPara } from '../router.js';
 import { num, pct, nombreMes, nombreArea, MESES_CORTOS } from '../formato.js';
 import { resumenFiltros } from '../filtros.js';
+import { lecturaFacil } from '../lectura.js';
 
 const COLORES_AREA = ['#124a82', '#2f80c9', '#7b8794', '#b26b00', '#1b6e3c'];
 const METRICAS = [
@@ -68,6 +69,15 @@ export async function render(contenedor, filtros) {
   const { areas, totalMes, totalGeneral } = armarMatriz(filas);
   const nombreInstituto = new Map(filas.map((f) => [f.it, f.instituto]));
 
+  const mayorMes = MESES.filter((m) => totalMes[m - 1]).reduce((a, b) => (totalMes[b - 1].meta > totalMes[a - 1].meta ? b : a));
+  lecturaFacil(contenedor, [
+    `Estás viendo: ${titulo}.`,
+    `La meta del período es ${num(totalGeneral.meta)} atenciones.`,
+    areas.length > 1 ? `El área con más meta es ${nombreArea(areas[0].area)}: ${num(areas[0].total.meta)}.` : null,
+    `El mes con más meta es ${nombreMes(mayorMes)}.`,
+    totalGeneral.hc ? `El % FOJA es ${pct(totalGeneral.hd / totalGeneral.hc)}.` : null,
+  ]);
+
   // ---- Gráfico de meta mensual (apilado por área) ----
   contenedor.append(graficoMetaMensual(areas, totalMes).elemento);
 
@@ -128,7 +138,7 @@ export async function render(contenedor, filtros) {
     tabla.on('rowClick', (e, fila) => seleccionarArea(fila.getData().area));
     tabla.on('tableBuilt', () => {
       contenedorTabla.setAttribute('aria-label', `${tituloTabla.textContent}. Tabla ordenable.`);
-      hacerOrdenablePorTeclado(contenedorTabla);
+      accesibilizarTabulator(contenedorTabla);
       marcarActiva();
     });
     tabla.on('renderComplete', marcarActiva);
@@ -180,24 +190,6 @@ function selectorMetrica(alElegir) {
   return {
     elemento: el('fieldset', { class: 'selector-metrica' }, el('legend', {}, 'Métrica de la tabla'), radios),
   };
-}
-
-/** Tabulator ordena con clic en el encabezado: se agrega Enter/Espacio y foco con Tab. */
-function hacerOrdenablePorTeclado(contenedor) {
-  const preparar = () => contenedor.querySelectorAll('.tabulator-col').forEach((col) => {
-    if (!col.hasAttribute('tabindex')) { col.setAttribute('tabindex', '0'); }
-  });
-  preparar();
-  contenedor.addEventListener('keydown', (e) => {
-    const col = e.target.closest?.('.tabulator-col');
-    if (col && (e.key === 'Enter' || e.key === ' ')) {
-      e.preventDefault();
-      col.click();
-      // Tabulator puede redibujar los encabezados al ordenar: se devuelve el foco a la misma columna
-      const campo = col.getAttribute('tabulator-field');
-      setTimeout(() => { preparar(); contenedor.querySelector(`.tabulator-col[tabulator-field="${campo}"]`)?.focus(); }, 30);
-    }
-  });
 }
 
 function graficoMetaMensual(areas, totalMes) {
