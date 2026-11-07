@@ -37,8 +37,9 @@ if (Responde) {
     return
 }
 
-$python = (Get-Command python -ErrorAction SilentlyContinue)?.Source
-if (-not $python) { throw 'No se encontró python en el PATH. Instale Python 3 o use docker compose up -d (nginx en :8080).' }
+$comando = Get-Command python -ErrorAction SilentlyContinue
+if (-not $comando) { throw 'No se encontró python en el PATH. Instale Python 3 o use docker compose up -d (nginx en :8080).' }
+$python = $comando.Source  # compatible con Windows PowerShell 5.1 y PowerShell 7
 
 Start-Process -WindowStyle Hidden -FilePath $python -ArgumentList '-m', 'http.server', $Puerto -WorkingDirectory $web
 
