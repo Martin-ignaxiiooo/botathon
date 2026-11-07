@@ -62,7 +62,7 @@ export function tarjetaKpi({ titulo, valor, detalle, estado, compacta = false })
     el('p', { class: compacta ? 'tarjeta-valor tarjeta-valor-compacto' : 'tarjeta-valor' }, valor),
     detalle ? el('p', { class: 'tarjeta-detalle' }, detalle) : null,
     estado ? el('p', { class: `estado-texto estado-${estado.tipo}` },
-      el('span', { 'aria-hidden': 'true' }, iconos[estado.tipo] || ''), estado.texto) : null);
+      el('span', { 'aria-hidden': 'true' }, estado.icono ?? iconos[estado.tipo] ?? ''), estado.texto) : null);
 }
 
 // ---------- Tablas accesibles ----------

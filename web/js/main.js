@@ -1,4 +1,5 @@
 // Punto de entrada: menú responsive y arranque del router.
+import config from './config.js';
 import { iniciarRouter } from './router.js';
 import { iniciarFiltros } from './filtros.js';
 import { iniciarHerramientas } from './herramientas.js';
@@ -10,6 +11,13 @@ const menu = document.getElementById('menu-principal');
 const botonMenu = document.getElementById('boton-menu');
 const contenedor = document.getElementById('contenido');
 const pantallaChica = window.matchMedia('(max-width: 860px)');
+
+// Insignia de origen de los datos: nunca se pasa en silencio de la base real a datos de prueba.
+const insignia = document.getElementById('modo-datos');
+const enVivo = config.modo === 'api';
+insignia.textContent = enVivo ? '● En vivo: base de datos' : '◌ Datos de prueba (mock)';
+insignia.classList.add(enVivo ? 'modo-vivo' : 'modo-prueba');
+insignia.title = enVivo ? `Datos desde ${config.apiUrl}` : 'Datos de ejemplo de web/mock; agregue ?modo=api a la dirección para usar la base de datos';
 
 // Botones de accesibilidad (se aplican antes de dibujar para que no haya parpadeo)
 iniciarHerramientas(document.getElementById('herramientas'));
