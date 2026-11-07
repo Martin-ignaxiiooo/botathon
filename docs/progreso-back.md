@@ -1,6 +1,6 @@
 # Progreso BACK (Andrés · Claude Code)
 Última actualización: 2026-11-07 · por: Claude Code
-Rama actual: feat/B-10-cuadratura (desde main; PR por API de GitHub porque gh no está instalado)
+Rama actual: feat/B-11-auditoria (desde main con B-10 fusionado, PR #6; PR por API de GitHub)
 Reparto 7-nov: B-09 (vistas api.*, database\views\) lo hace el Codex de César en feat/B-09-vistas; el BACK revisa
 y fusiona su PR. El BACK no toca database\views\ mientras tanto.
 
@@ -95,9 +95,16 @@ y fusiona su PR. El BACK no toca database\views\ mientras tanto.
   - Base real: 1.518 diferencias, 135 personas (ajuste 950, multi_it 338, grupal 88, ene-abr 65, explicada 50, otra 27).
     Las 5 persona-IT del Excel con otro IT que el BUK (p. ej. 71342/61) salen multi_it.
   - instalar_sin_docker.ps1 -CargarBukPrueba ahora corre también api.cuadratura(). tests\sql\040_cuadratura.sql.
+- B-11 · Auditoría con triggers (database\functions\080_auditoria.sql) hecha.
+  - Trigger `auditar` AFTER INSERT/UPDATE/DELETE FOR EACH ROW en todas las tablas de param.* (se agrega solo a las
+    nuevas al correr migrar.ps1), core.asignacion y calc.escenario → `audit.registrar()` (SECURITY DEFINER).
+  - audit.log: tabla esquema.tabla, operacion insert|update|delete, usuario session_user, motivo
+    current_setting('planbot.motivo') o NULL, antes/despues jsonb. UPDATE sin cambios no se registra (semilla repetible).
+  - calc.plan_mes NO tiene trigger: recalcular() deja una sola fila resumen (B-08).
+  - Instalación desde cero: la semilla queda registrada como insert con motivo NULL. tests\sql\050_auditoria.sql.
 
 ## Siguiente
-- B-11 auditoría con triggers, D-05 casos dorados, B-12 escenarios (si queda tiempo).
+- D-05 casos dorados, B-12 escenarios (si queda tiempo).
 - Si sobra tiempo: usar data\csv\insumos.csv (Codex) para minutos, distribución y asignaciones por persona, como
   excepción documentada, y subir del 95,5 %.
 

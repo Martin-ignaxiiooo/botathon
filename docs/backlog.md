@@ -47,7 +47,8 @@ Formato: `- [ ] ID · título` y debajo sus criterios. Al terminar una historia,
   - [ ] Suma de v_instituto_area_mes = v_kpi
 - [x] B-10 · cuadratura() (BACK, 2 pts, should)
   - [x] Llena calc.cuadratura (solo diferencias) con causa probable; api.v_cuadratura poblada; 95,55 % plan_ate_dir may-dic
-- [ ] B-11 · Auditoría con triggers (BACK, 2 pts, should)
+- [x] B-11 · Auditoría con triggers (BACK, 2 pts, should)
+  - [x] audit.registrar en param.*, core.asignacion y calc.escenario; motivo desde planbot.motivo; antes/despues jsonb
 - [ ] B-12 · Escenarios, simular() y aplicar_escenario() (BACK, 5 pts, should)
 - [ ] B-13 · Multi-instituto (BACK, 3 pts, could)
 
