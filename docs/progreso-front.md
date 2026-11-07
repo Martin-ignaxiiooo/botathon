@@ -26,7 +26,9 @@ Rama actual: main (todo fusionado)
 - C-09 Parámetros (en modo plan; al hacerla agregar también su `lecturaFacil`) y C-11 Exportar
 
 ## Cómo probar el front
-- Servir sin bloquear: `Start-Process -WindowStyle Hidden python -ArgumentList '-m','http.server','8080' -WorkingDirectory web` y verificar con `Invoke-WebRequest http://localhost:8080 -UseBasicParsing`. Detenerlo al terminar.
+- Servir sin bloquear: `.\scripts\servir_web.ps1` (puerto 8080 por defecto, en segundo plano; `-Detener` lo apaga, `-Puerto` cambia el puerto). Es la única excepción a las carpetas de Claude Code en `AGENTS.md` (`scripts\` es del BACK); autorizada por César.
+- Recorrido de la demo verificado con mocks (Edge sin ventana, sin errores de consola): Nacional → clic en barra → Instituto → área → profesional → Cambios y errores → carga 2 → Cuadratura.
+- Modo api: `config.js` ya trae `apiUrl: 'http://localhost:3000'`; se activa con `?modo=api` en la URL (por defecto `mock`).
 - Revisión sin ventana: Edge headless (`msedge --headless=new --virtual-time-budget=6000 --dump-dom http://localhost:8080/#nacional`) y `--enable-logging=stderr` para ver la consola.
 - Modo de datos: `?modo=api` en la URL fuerza PostgREST (`config.js`); por defecto es mock.
 
