@@ -45,7 +45,8 @@ Formato: `- [ ] ID · título` y debajo sus criterios. Al terminar una historia,
 - [ ] B-09 · Vistas api.* (BACK, 2 pts)
   - [ ] Las 8 vistas con columnas exactas del contrato, GRANT SELECT a web_lectura
   - [ ] Suma de v_instituto_area_mes = v_kpi
-- [ ] B-10 · cuadratura() (BACK, 2 pts, should)
+- [x] B-10 · cuadratura() (BACK, 2 pts, should)
+  - [x] Llena calc.cuadratura (solo diferencias) con causa probable; api.v_cuadratura poblada; 95,55 % plan_ate_dir may-dic
 - [ ] B-11 · Auditoría con triggers (BACK, 2 pts, should)
 - [ ] B-12 · Escenarios, simular() y aplicar_escenario() (BACK, 5 pts, should)
 - [ ] B-13 · Multi-instituto (BACK, 3 pts, could)

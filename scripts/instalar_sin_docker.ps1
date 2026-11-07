@@ -78,10 +78,10 @@ if ($LASTEXITCODE -ne 0) { exit 1 }
 
 # 3 · datos BUK de prueba (opcional) + plan
 if ($CargarBukPrueba) {
-    Write-Host '3/4 Base BUK de prueba y plan mensual'
+    Write-Host '3/4 Base BUK de prueba, plan mensual y cuadratura'
     & (Join-Path $PSScriptRoot 'cargar_buk_prueba.ps1') -Modo nativo
     if ($LASTEXITCODE -ne 0) { Write-Host 'ERROR cargando la base BUK de prueba' -ForegroundColor Red; exit 1 }
-    $codigo = Invocar-Psql -Cfg $cfg -Modo 'nativo' -Comando "SELECT set_config('planbot.motivo', 'instalacion', false); SELECT * FROM api.recalcular(1);"
+    $codigo = Invocar-Psql -Cfg $cfg -Modo 'nativo' -Comando "SELECT set_config('planbot.motivo', 'instalacion', false); SELECT * FROM api.recalcular(1); SELECT api.cuadratura() AS pct_coincidencia;"
     if ($codigo -ne 0) { Write-Host 'ERROR en recalcular(1)' -ForegroundColor Red; exit 1 }
 } else {
     Write-Host '3/4 Sin datos BUK (los carga Blue Prism; para la demo agregar -CargarBukPrueba)'
