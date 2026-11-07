@@ -1,6 +1,8 @@
 # Progreso BACK (Andrés · Claude Code)
 Última actualización: 2026-11-07 · por: Claude Code
-Rama actual: feat/B-05-semanal (sale de feat/B-04-dotacion; PR por web porque gh no está instalado)
+Rama actual: feat/B-06-plan-mes (sale de feat/B-05-semanal; PR por web porque gh no está instalado)
+Reparto 7-nov: B-09 (vistas api.*, database\views\) lo hace el Codex de César en feat/B-09-vistas; el BACK revisa
+y fusiona su PR. El BACK no toca database\views\ mientras tanto.
 
 ## Hecho
 - B-01 · docker-compose.yml, V000__roles.sql, .env.example, scripts\_comun.ps1 (elige docker/nativo),
@@ -28,9 +30,32 @@ Rama actual: feat/B-05-semanal (sale de feat/B-04-dotacion; PR por web porque gh
   1 sin fila en param (71613), 1 cambio de cargo (72365), 1 otra (134744). Sin excepciones por persona.
   Pendiente César: confirmar regla "horas del periodo = promedio may-dic" y homologación cargo + sub_area.
   Casos D-04: 01/02/03 cargan con conteos correctos (03: 3124 leídas, 3119 válidas, 5 con error).
+  La regla semanal se mantiene tal cual. Codex mide 98,66 % en su capa B, pero con insumos del Excel; no es esta
+  cifra de punta a punta. 134744/11 es una diferencia explicada: 20 × 0,75 × 0,825 / 0,85 = 14,56 -> floor 14 y el
+  Excel dice 15. No sale de los insumos con la regla escrita, y no se ajusta.
+- B-06 (SIMPLIFICADO) · `calc.calcular_plan(p_desde_mes)` en database\functions\040_calcular_plan.sql + V006
+  (`calc.plan_mes_traza`: fuente de semanas por fila). Puebla calc.plan_mes (5.338 filas, base real).
+  - **Semanas hábiles:** `semhab` de stg.esperado (última carga con semhab; persona-IT repetida -> el máximo del mes).
+    Si la persona no tiene valor: semanas de param.calendario_mes (zona del IT; si no hay, 'general'),
+    fuente 'calendario'.
+  - **Atenciones:** ate_dir = floor(directas+grupal/sem × SH); ate_dir_ind = floor((dir+grupal+ind)/sem × SH);
+    meta = floor(ate_dir × meta).
+  - **Horas [h/mes]:** contratadas = h × S; dir/ind/nas = (h − colación) × %final × SH; foja = horas_dir / horas_contratadas.
+    Las ausencias no se cargan a horas_nas.
+  - **may-dic:** capa aislada (semanal y semhab del Excel) plan_ate_dir 3752/3752 = 100 %, meta 3747/3752 = 99,87 %.
+    Cálculo completo: plan_ate_dir 3394/3552 = 95,55 %, meta 3393/3552 = 95,52 %. Las 158 diferencias de
+    atenciones son de 20 persona-IT con semanal distinto (B-05) y 1 es "otra". Ene-abr: 95,35 % completo; la capa
+    aislada da 65 % porque el Excel no guarda el semanal de ene-abr (limitación).
+  - Evidencia: database\evidencia\b06\resumen.txt y diferencias_*.csv (scripts\evidencia_b06.ps1).
+    tests\sql\020_plan_mes.sql (137732, alta, baja, unidades FOJA, recálculo desde 9) en verde.
+  - **Mejora pendiente (no implementada):** V006 completa con ausencias, beneficios y cumpleaños desde el Excel, para
+    calcular semanas hábiles por regla. Fórmulas y evidencia en database\evidencia\b06\formulas.md: la regla reproduce
+    SemHab en 100 % de los meses con valor, con techo a 1 decimal en mayo y julio (inferido).
+    Pendientes: zona extrema y valores para altas.
 
 ## Siguiente
-- B-06 (MODO PLAN: mostrar plan antes de programar), C-01, B-07+B-08; prioridad B-09 (vistas api.* para César).
+- B-07 + B-08 (detectar_cambios, mes_minimo_afectado, recalcular en api, GRANT bot_carga), corrección de con_error
+  en cargar_dotacion, instalación en la VM con un comando. Luego revisar y fusionar el PR de B-09 (Codex).
 
 ## Cómo correr en este PC (laboratorio Duoc, sin admin, NO reiniciar)
 - Repo en `C:\dev\botathon`. Servicio `postgresql-x64-16` (puerto 5432) ya está en Running; superusuario `postgres`.

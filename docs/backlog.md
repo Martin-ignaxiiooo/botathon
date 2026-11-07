@@ -35,8 +35,8 @@ Formato: `- [ ] ID · título` y debajo sus criterios. Al terminar una historia,
   - [ ] >= 98 % de coincidencia con esperado.csv en ate_dir_semana (may–dic)
   - [ ] Grupal en CTE separada y parametrizada
 - [ ] B-06 · Plan mensual, meta y FOJA (BACK, 5 pts, MODO PLAN)
-  - [ ] calc.plan_mes con semanas hábiles por zona, atenciones, meta, FOJA, version_param
-  - [ ] 100 % en plan_ate_dir may–dic y >= 99 % en meta
+  - [x] calc.plan_mes con semanas hábiles por zona, atenciones, meta, FOJA, version_param
+  - [ ] 100 % en plan_ate_dir may–dic y >= 99 % en meta (capa aislada 100 % / 99,87 %; completo 95,55 % / 95,52 % por el semanal B-05)
 - [ ] B-07 · Detección de cambios (BACK, 3 pts)
   - [ ] `detectar_cambios(carga_id)`: alta, baja, cambio_jornada, cambio_cargo, cambio_it, cambio_vigencia con mes_vigencia; inserta en core.cambios
   - [ ] `mes_minimo_afectado(carga_id)`

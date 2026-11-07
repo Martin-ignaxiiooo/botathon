@@ -1,0 +1,64 @@
+ periodo | denominador | ate_dir_ok | ate_dir_ind_ok | meta_ok | pct_ate_dir | pct_meta 
+---------+-------------+------------+----------------+---------+-------------+----------
+ ene_abr |        1876 |       1224 |           1219 |    1213 |       65.25 |    64.66
+ may_dic |        3752 |       3752 |           3752 |    3747 |      100.00 |    99.87
+         |        5628 |       4976 |           4971 |    4960 |       88.42 |    88.13
+(3 filas)
+
+ periodo | denominador | ate_dir_ok | ate_dir_ind_ok | meta_ok | pct_ate_dir | pct_meta 
+---------+-------------+------------+----------------+---------+-------------+----------
+ ene_abr |        1785 |       1702 |           1703 |    1687 |       95.35 |    94.51
+ may_dic |        3552 |       3394 |           3394 |    3393 |       95.55 |    95.52
+         |        5337 |       5096 |           5097 |    5080 |       95.48 |    95.18
+(3 filas)
+
+ periodo |               causa                | filas | persona_it 
+---------+------------------------------------+-------+------------
+ may_dic | semanal_distinto (diferencia B-05) |   158 |         20
+ may_dic | otra                               |     1 |          1
+ ene_abr | semanal_distinto (diferencia B-05) |    88 |         31
+ ene_abr | otra                               |    10 |         10
+(4 filas)
+
+ persona_id | it  |               causa                | meses |   semanal_excel   | semanal_sistema 
+------------+-----+------------------------------------+-------+-------------------+-----------------
+      71232 | 131 | semanal_distinto (diferencia B-05) |     8 |              10.0 |              15
+      71292 | 131 | semanal_distinto (diferencia B-05) |     8 |               4.0 |               7
+      71342 | 131 | semanal_distinto (diferencia B-05) |     8 |              15.0 |              32
+      71372 | 131 | semanal_distinto (diferencia B-05) |     8 |               9.0 |              14
+      71575 | 101 | semanal_distinto (diferencia B-05) |     6 |              14.0 |              23
+      71613 | 131 | semanal_distinto (diferencia B-05) |     8 |               1.0 |              15
+      71926 | 131 | semanal_distinto (diferencia B-05) |     8 |              24.0 |           26.40
+      72190 |  41 | semanal_distinto (diferencia B-05) |     8 |               0.0 |              12
+      72365 |  41 | semanal_distinto (diferencia B-05) |     8 |              16.8 |            5.25
+      72458 |  51 | semanal_distinto (diferencia B-05) |     8 |              24.0 |              36
+      74761 | 131 | semanal_distinto (diferencia B-05) |     8 |              24.0 |              38
+     109828 | 131 | semanal_distinto (diferencia B-05) |     8 |              15.0 |               7
+     111842 | 131 | semanal_distinto (diferencia B-05) |     8 |              24.0 |              38
+     115444 |  12 | semanal_distinto (diferencia B-05) |     8 |              35.0 |              40
+     129024 | 131 | semanal_distinto (diferencia B-05) |     8 |              24.0 |              30
+     134744 |  11 | semanal_distinto (diferencia B-05) |     8 |              31.5 |          29.400
+     134746 |  41 | semanal_distinto (diferencia B-05) |     8 |              24.0 |              30
+     136947 | 131 | otra                               |     1 | 78.75000000000001 |          78.750
+     137147 | 131 | semanal_distinto (diferencia B-05) |     8 |              35.0 |              38
+     137356 |  22 | semanal_distinto (diferencia B-05) |     8 |              31.0 |              29
+     139458 |  61 | semanal_distinto (diferencia B-05) |     8 |              11.0 |              26
+(21 filas)
+
+          caso          | filas | con_atenciones_excel 
+------------------------+-------+----------------------
+ excel_sin_fila_en_plan |   291 |                   60
+ plan_sin_excel         |     1 |                    1
+(2 filas)
+
+ fuente_semanas | count 
+----------------+-------
+ calendario     |     1
+ excel          |  5337
+(2 filas)
+
+ filas | dir_ind_nas_igual_disp_x_sh | contratadas_igual_h_x_s | foja_igual_dir_sobre_contr | suma_mayor_que_contratadas | foja_min | foja_prom | foja_max 
+-------+-----------------------------+-------------------------+----------------------------+----------------------------+----------+-----------+----------
+  5338 |                        5338 |                    5338 |                       5338 |                          0 |   0.0000 |    0.4948 |   0.7500
+(1 fila)
+
