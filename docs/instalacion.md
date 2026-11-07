@@ -1,6 +1,6 @@
 # Instalación de PlanBot en la VM de demo
 
-Objetivo: Windows 11 de 64 bits, PowerShell 7 y Blue Prism 7.5.1. Ejecutar comandos desde la raíz del repositorio salvo que se indique otra ruta. Mantener claves fuera de Git y de los logs. Esta guía describe el despliegue integrado: al escribirla, este clon aún no incluye SQL, scripts, dashboard ni compose. Obtener esos componentes de Andrés/César antes de intentar levantar el sistema. No sustituirlos por esquemas SQL inventados.
+Objetivo: Windows 11 de 64 bits, PowerShell 7 y Blue Prism 7.5.1. Ejecutar comandos desde la raíz del repositorio salvo que se indique otra ruta. Mantener claves fuera de Git y de los logs. Esta guía describe el despliegue integrado: este clon ya recibió el dashboard del trabajo paralelo, pero aún no incluye SQL, scripts ni compose. Obtener esos componentes de Andrés antes de intentar levantar el sistema. No sustituirlos por esquemas SQL inventados.
 
 ## 1. Preparar la VM
 

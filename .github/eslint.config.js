@@ -9,7 +9,7 @@ module.exports = [
         'window', 'document', 'navigator', 'location', 'history', 'localStorage',
         'sessionStorage', 'fetch', 'URL', 'URLSearchParams', 'console', 'alert',
         'confirm', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval',
-        'requestAnimationFrame', 'cancelAnimationFrame', 'HTMLElement', 'Event',
+        'requestAnimationFrame', 'cancelAnimationFrame', 'HTMLElement', 'Node', 'Element', 'Event',
         'CustomEvent', 'AbortController', 'Blob', 'FileReader', 'TextEncoder',
         'Intl', 'echarts', 'Tabulator', 'ResizeObserver', 'IntersectionObserver',
         'matchMedia', 'performance', 'getComputedStyle', 'queueMicrotask',

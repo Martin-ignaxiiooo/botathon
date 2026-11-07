@@ -28,7 +28,7 @@ La **meta de gestión** es `floor(atenciones planificadas × porcentaje vigente)
 | `.github\` | CI PostgreSQL/pwsh y ESLint |
 | `docs\` | Contexto, contratos, reglas, instalación y progreso |
 
-Este clon contiene los entregables de apoyo. `database\`, `scripts\`, `web\`, `api\` y `docker-compose.yml` todavía deben integrarse desde el trabajo paralelo; los comandos siguientes requieren esos componentes. El generador detecta que la fuente actual solo contiene enero–julio y se detiene antes de inventar meses: falta resolver la base anual para D-04.
+Este clon contiene los entregables de apoyo y el dashboard integrado desde el trabajo paralelo. `database\`, `scripts\`, `api\` y `docker-compose.yml` todavía deben integrarse; los comandos siguientes requieren esos componentes. El generador crea original/errores, detecta que la fuente actual solo contiene enero–julio y se detiene antes de inventar meses: falta resolver la base anual para D-04.
 
 ## Requisitos e instalación en Windows
 
