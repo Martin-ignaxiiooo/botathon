@@ -1,18 +1,21 @@
 # Progreso FRONT (César · Claude Code, Codex de respaldo)
 Última actualización: 2026-11-06 · por: Claude Code
-Rama actual: main
+Rama actual: main (todo fusionado)
 
 ## Hecho (fusionado en main)
 - D-02 extractor (data\extraer.py) y CSV en data\csv
 - D-03 mocks: `web\mock\*.json` (8 vistas + escenarios.json), generados con `python web\mock\generar_mocks.py` (semilla fija)
-
 - C-02 esqueleto: `web\index.html`, `css\base.css`, `js\{config,api,router,formato,ui,main}.js`, stubs en `js\pages\`, ECharts 5.6.0 y Tabulator 6.7.1 en `vendor\` (ver `vendor\LEEME.txt`)
+- Contrato v1.1: `v_instituto_area_mes` con horas_contratadas/dir/ind/nas; mocks regenerados (la suma por mes cuadra con `v_nacional_mes`)
+- C-03 Nacional: 6 tarjetas, líneas atenciones/meta con marca de cambio de jornada, barras de meta por instituto (clic → `#instituto?it=`), horas apiladas por área; cada gráfico con aria-label y «Ver datos»
+- C-04 filtros: `jsiltros.js` (instituto múltiple, área, cargo, mes desde/hasta, tipo; estado en el hash; «Limpiar filtros»; evento `filtros-cambiaron`), aplicado en Nacional
+- C-05 Instituto: tabla Tabulator área × mes (métrica atenciones/meta/% FOJA, ordenable con clic o teclado, fila de totales), meta mensual apilada por área, profesionales del área elegida con enlace a `#profesional?persona=`
 
 ## En curso
 - —
 
 ## Siguiente
-- C-03 Nacional (antes: resolver con Andrés el hueco de horas por área), luego C-04 a C-07, C-10, C-09, C-11
+- C-06 Profesional, luego C-07, C-08, C-10, C-09, C-11
 
 ## Cómo probar el front
 - Servir sin bloquear: `Start-Process -WindowStyle Hidden python -ArgumentList '-m','http.server','8080' -WorkingDirectory web` y verificar con `Invoke-WebRequest http://localhost:8080 -UseBasicParsing`. Detenerlo al terminar.
@@ -26,10 +29,15 @@ Rama actual: main
 - `v_kpi` y `v_nacional_mes` no admiten it/area/cargo: con esos filtros (o con meses) Nacional deriva tarjetas y línea mensual desde `v_instituto_area_mes`; la «Última carga» sigue viniendo de `v_kpi`. Sin filtros usa las vistas nacionales.
 - `tipo` solo afecta al gráfico de horas por área (series visibles y tabla); las atenciones son siempre directas.
 
+## Notas de C-05
+- % FOJA agregado = Σ horas_dir / Σ horas_contratadas (ponderado), en la tabla y en los totales.
+- Tabulator no ordena con teclado por defecto: `hacerOrdenablePorTeclado` (instituto.js) da `tabindex` a los encabezados y activa Enter/Espacio. Hay además «Ver como tabla simple» (tabla HTML equivalente). Si C-06/C-07 usan Tabulator, reutilizar esa función (conviene moverla a ui.js).
+- El área elegida y el selector de métrica no van en el hash (estado local de la pantalla).
+
 ## API de los módulos (para quien siga)
 - `getData(vista, filtros)`: filtros `{it:[], area:[], cargo:[], persona:[], carga:[], desde, hasta}`; cada vista solo aplica los filtros que tiene (tabla `FILTRABLES` en api.js). `leerMock(nombre)` para JSON que no son vistas (escenarios).
 - Router: `hashPara(pagina, filtros)`, `irA(pagina, filtros)`, `filtrosDesdeParams`; evento `pagina-cambio` en `document` tras cada render. Cada pantalla es `js\pages\<id>.js` con `render(contenedor, filtros)` (puede ser async); su `h1` lleva `tabindex="-1"` para recibir el foco.
-- ui.js: `el`, `avisar`, `cargando`, `mostrarError`, `vacio`, `tarjetaKpi`, `tablaDatos`, `botonVerDatos`, `tarjetaGrafico` (gráfico con aria-label + "Ver datos"; se crea cuando el contenedor tiene tamaño), `opcionBase`, `liberarGraficos` (lo llama el router).
+- ui.js: `el`, `avisar`, `cargando`, `mostrarError`, `vacio`, `tarjetaKpi`, `tablaDatos`, `botonVerDatos`, `tarjetaGrafico` (gráfico con aria-label + "Ver datos"; se crea cuando el contenedor tiene tamaño), `opcionBase`, `liberarGraficos` (lo llama el router), `registrarLiberador(fn)` (p. ej. destruir una tabla Tabulator al cambiar de pantalla).
 
 ## Errores conocidos / decisiones
 - Trabajar en modo mock hasta que B-09 esté en main.
@@ -42,6 +50,6 @@ Rama actual: main
   - `v_parametros_vigentes.valor` es texto (ej. "0.9"); tablas `param.general|cargo|asignacion|calendario|grupal`.
   - `v_cuadratura`: 30 diferencias de 11 personas; causas: redondeo, regla_ene_abr, descuento_julio, asignacion_no_calza, atencion_grupal, colacion_contrato (los "471" de la tarjeta es constante del front).
   - `escenarios.json` NO es contrato (lo definirá Andrés): escenario_id, descripcion, parametro, valor_actual, valor_propuesto, estado (pendiente|aprobado), creado_por, creado_en, decision_motivo, impacto[] por instituto (atenciones y meta antes/después).
-- Huecos del Contrato 3 detectados (consultar con Andrés antes de C-03/C-07, no los cambiamos):
-  1. C-03 pide horas directas/indirectas/NAS por **área**, pero `v_nacional_mes` no trae área y `v_instituto_area_mes` no trae horas.
-  2. `v_cambios` no trae `archivo`: una carga sin errores no tiene nombre de archivo disponible.
+- Hueco resuelto: horas por área (contrato v1.1).
+- Hueco abierto (consultar con Andrés antes de C-07): `v_cambios` no trae `archivo`, una carga sin errores no tiene nombre de archivo disponible.
+- Nacional lee `meta_gestion`, `mes_cambio_jornada` y `jornada_legal_horas_desde_mayo` de `v_parametros_vigentes` (nada fijo en el código). Si en la base real esas claves se llaman distinto, la tarjeta cae a meta/atenciones y la marca de jornada desaparece: confirmar nombres de clave con Andrés.
