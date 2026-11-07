@@ -5,19 +5,19 @@ Formato: `- [ ] ID · título` y debajo sus criterios. Al terminar una historia,
 
 ## BACK (Andrés)
 
-- [ ] B-01 · Base instalada, roles y empaquetado (BACK, 3 pts)
-  - [ ] `docker-compose.yml`: postgres:16 (volumen, 5432, variables de .env), postgrest (esquema api, rol anónimo web_lectura, CORS), nginx sirviendo `web\` en 8080
-  - [ ] `database\migrations\V000__roles.sql` idempotente: owner_planbot, bot_carga, web_lectura, planificador
-  - [ ] `scripts\migrar.ps1` (corre migrations, functions, views, seed en orden con psql) y `scripts\instalar_sin_docker.ps1`
-  - [ ] `.env.example` sin secretos
-- [ ] B-02 · Migraciones de esquemas y tablas (BACK, 3 pts)
-  - [ ] Esquemas param, stg, core, calc, audit, api
-  - [ ] Tablas stg.* exactamente como `docs\contratos.md`
-  - [ ] param.* con version, vigente_desde, vigente_hasta; param.version, param.instituto(it, nombre, zona, grupo_it, correo_jefatura), param.cargo_homologado, param.general(clave, valor, descripcion)
-  - [ ] core.persona, core.dotacion_mes pk(persona_id,it,mes), core.asignacion, core.excepcion_multi_it, core.cambios, core.alerta
-  - [ ] calc.plan_mes pk(persona_id,it,mes), calc.escenario, calc.plan_mes_escenario, calc.cuadratura, audit.log
-  - [ ] Correr todo dos veces no da error
-  - [ ] `scripts\test.ps1 -Modulo db` + `tests\sql\000_humo.sql` verifican que existen esquemas y tablas
+- [x] B-01 · Base instalada, roles y empaquetado (BACK, 3 pts)
+  - [x] `docker-compose.yml`: postgres:16 (volumen, 5432, variables de .env), postgrest (esquema api, rol anónimo web_lectura, CORS), nginx sirviendo `web\` en 8080
+  - [x] `database\migrations\V000__roles.sql` idempotente: owner_planbot, bot_carga, web_lectura, planificador
+  - [x] `scripts\migrar.ps1` (corre migrations, functions, views, seed en orden con psql) y `scripts\instalar_sin_docker.ps1`
+  - [x] `.env.example` sin secretos
+- [x] B-02 · Migraciones de esquemas y tablas (BACK, 3 pts)
+  - [x] Esquemas param, stg, core, calc, audit, api
+  - [x] Tablas stg.* exactamente como `docs\contratos.md`
+  - [x] param.* con version, vigente_desde, vigente_hasta; param.version, param.instituto(it, nombre, zona, grupo_it, correo_jefatura), param.cargo_homologado, param.general(clave, valor, descripcion)
+  - [x] core.persona, core.dotacion_mes pk(persona_id,it,mes), core.asignacion, core.excepcion_multi_it, core.cambios, core.alerta
+  - [x] calc.plan_mes pk(persona_id,it,mes), calc.escenario, calc.plan_mes_escenario, calc.cuadratura, audit.log
+  - [x] Correr todo dos veces no da error
+  - [x] `scripts\test.ps1 -Modulo db` + `tests\sql\000_humo.sql` verifican que existen esquemas y tablas
 - [ ] B-03 · Parámetros iniciales (BACK, 2 pts) — los CSV YA ESTÁN en `data\csv`
   - [ ] Seed de param.general: meta 0.9, jornada_ene_abr 44, jornada_may_dic 42, pausa_pct_alta 0.10, pausa_pct_baja 0.06, colacion_h_dia 0.25, tramo_limite_bajo 22, tramo_limite_alto 40, max_asignaciones 2, horas_min_para_max 30, min_indirecta 30, dia_en_semanas 0.2
   - [ ] Carga de los CSV a stg.param_* y stg.excepcion y stg.esperado con un carga_id tipo 'planificacion'
