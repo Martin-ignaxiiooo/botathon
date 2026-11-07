@@ -1,0 +1,82 @@
+[
+  {
+    "escenario_id": 1,
+    "descripcion": "Subir la meta de gestión de 90 % a 92 % de las atenciones planificadas",
+    "parametro": "param.general.meta_gestion",
+    "valor_actual": "0.9",
+    "valor_propuesto": "0.92",
+    "estado": "pendiente",
+    "creado_por": "planificador",
+    "creado_en": "2026-11-03T16:40:00-03:00",
+    "decision_motivo": null,
+    "impacto": [
+      {
+        "it": 131,
+        "instituto": "Santiago",
+        "atenciones_antes": 8290,
+        "atenciones_despues": 8290,
+        "meta_antes": 7430,
+        "meta_despues": 7591,
+        "diferencia_meta": 161
+      },
+      {
+        "it": 81,
+        "instituto": "Concepción",
+        "atenciones_antes": 5963,
+        "atenciones_despues": 5963,
+        "meta_antes": 5343,
+        "meta_despues": 5460,
+        "diferencia_meta": 117
+      },
+      {
+        "it": 11,
+        "instituto": "Arica",
+        "atenciones_antes": 6172,
+        "atenciones_despues": 6172,
+        "meta_antes": 5534,
+        "meta_despues": 5654,
+        "diferencia_meta": 120
+      }
+    ]
+  },
+  {
+    "escenario_id": 2,
+    "descripcion": "Educador tramo 1: bajar el % no asistencial de 30 % a 25 % y subir el % directo de 55 % a 60 %",
+    "parametro": "param.cargo.EDUCADOR|tramo_1",
+    "valor_actual": "dir 0.55 · ind 0.15 · nas 0.3",
+    "valor_propuesto": "dir 0.6 · ind 0.15 · nas 0.25",
+    "estado": "aprobado",
+    "creado_por": "planificador",
+    "creado_en": "2026-10-28T11:05:00-03:00",
+    "decision_motivo": "Alineado con el plan de educación 2026",
+    "impacto": [
+      {
+        "it": 131,
+        "instituto": "Santiago",
+        "atenciones_antes": 8290,
+        "atenciones_despues": 8442,
+        "meta_antes": 7430,
+        "meta_despues": 7568,
+        "diferencia_meta": 138
+      },
+      {
+        "it": 81,
+        "instituto": "Concepción",
+        "atenciones_antes": 5963,
+        "atenciones_despues": 6098,
+        "meta_antes": 5343,
+        "meta_despues": 5466,
+        "diferencia_meta": 123
+      },
+      {
+        "it": 11,
+        "instituto": "Arica",
+        "atenciones_antes": 6172,
+        "atenciones_despues": 6172,
+        "meta_antes": 5534,
+        "meta_despues": 5534,
+        "diferencia_meta": 0
+      }
+    ]
+  }
+]
