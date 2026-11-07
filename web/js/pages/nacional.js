@@ -1,8 +1,9 @@
 // Pantalla Nacional (C-03): tarjetas KPI, evolución mensual, meta por instituto y horas por área.
-import { el, tarjetaKpi, tarjetaGrafico, opcionBase, vacio } from '../ui.js';
+import config from '../config.js';
+import { el, tarjetaKpi, tarjetaGrafico, opcionBase, vacio, avisar } from '../ui.js';
 import { getData } from '../api.js';
 import { hashPara, irA } from '../router.js';
-import { num, pct, fecha, fechaHora, nombreMes, nombreArea } from '../formato.js';
+import { num, pct, fecha, fechaHora, hora, nombreMes, nombreArea } from '../formato.js';
 import { hayFiltros } from '../filtros.js';
 import { lecturaFacil } from '../lectura.js';
 
@@ -62,12 +63,15 @@ export async function render(contenedor, filtros) {
   const porMes = filtrado ? mensualDerivado(porInstArea) : mensual;
 
   // Constantes de negocio: se leen de los parámetros vigentes, no se escriben en el código.
-  const param = (clave) => parametros.find((p) => p.clave === clave)?.valor;
-  const metaPct = Number(param('meta_gestion')) || (kpi?.atenciones_plan ? kpi.meta / kpi.atenciones_plan : null);
-  const mesJornada = Number(param('mes_cambio_jornada')) || null;
-  const horasJornada = Number(param('jornada_legal_horas_desde_mayo')) || null;
+  // Se busca por el nombre esperado y, si la base usa otro, por un patrón parecido.
+  const param = (clave, patron) => (parametros.find((p) => p.clave === clave) ?? parametros.find((p) => patron.test(p.clave)))?.valor;
+  const metaPct = Number(param('meta_gestion', /meta.*gesti/i)) || (kpi?.atenciones_plan ? kpi.meta / kpi.atenciones_plan : null);
+  const mesJornada = Number(param('mes_cambio_jornada', /mes.*jornada|jornada.*mes/i)) || null;
+  const horasJornada = Number(param('jornada_legal_horas_desde_mayo', /jornada.*(desde|nueva|vigente)|horas.*desde/i)) || null;
 
-  if (kpi) contenedor.append(tarjetas(kpi, metaPct));
+  // Solo sin filtros se compara con la carga anterior: así el efecto de una carga nueva se ve en las tarjetas.
+  const anterior = kpi && !filtrado ? cargaAnterior(kpi) : null;
+  if (kpi) contenedor.append(lineaEstado(kpi, Boolean(anterior)), tarjetas(kpi, metaPct, anterior));
 
   const graficos = el('div', { class: 'grilla grilla-graficos' });
   contenedor.append(graficos);
@@ -97,19 +101,64 @@ function frasesNacional({ kpi, porMes, porInstArea, filtrado }) {
   return frases;
 }
 
-function tarjetas(kpi, metaPct) {
+// ---------- Efecto de una carga nueva ----------
+// Se recuerda (por pestaña y por origen de datos) la última carga vista; si cambia, las tarjetas muestran
+// cuánto variaron respecto de la anterior. Sirve para ver el efecto de un BUK recién procesado.
+const claveEstado = () => `planbot-kpi-${config.modo}`;
+function leerEstado() { try { return JSON.parse(sessionStorage.getItem(claveEstado())); } catch { return null; } }
+function guardarEstado(e) { try { sessionStorage.setItem(claveEstado(), JSON.stringify(e)); } catch { /* sin almacenamiento */ } }
+
+/** KPI de la carga anterior (null si todavía no se vio una carga distinta). */
+function cargaAnterior(kpi) {
+  if (!kpi.ultima_carga) return null;
+  const previo = leerEstado();
+  let anterior = previo?.anterior ?? null;
+  if (previo?.actual && previo.actual.ultima_carga !== kpi.ultima_carga) anterior = previo.actual;
+  guardarEstado({ actual: kpi, anterior });
+  return anterior;
+}
+
+/** Estado de la tarjeta con la variación respecto de la carga anterior (null si no cambió). */
+function variacion(clave, kpi, anterior, decimales = 0) {
+  if (!anterior || anterior[clave] === null || anterior[clave] === undefined || kpi[clave] === null || kpi[clave] === undefined) return undefined;
+  const d = (Number(kpi[clave]) - Number(anterior[clave])) * (clave === 'foja' ? 100 : 1);
+  if (Math.abs(d) < (clave === 'foja' ? 0.05 : 0.5 / 10 ** decimales)) return undefined;
+  const unidad = clave === 'foja' ? ' pp' : '';
+  return {
+    tipo: 'info', icono: d > 0 ? '▲' : '▼',
+    texto: `${d > 0 ? '+' : '−'}${num(Math.abs(d), clave === 'foja' ? 1 : decimales)}${unidad} desde la carga anterior`,
+  };
+}
+
+function lineaEstado(kpi, hayCargaNueva) {
+  const actualizar = () => {
+    document.addEventListener('pagina-cambio', () => {
+      document.getElementById('boton-actualizar')?.focus();
+      avisar('Datos actualizados.', 'ok');
+    }, { once: true });
+    window.dispatchEvent(new window.HashChangeEvent('hashchange'));
+  };
+  return el('p', { class: 'linea-estado' },
+    el('span', {}, `Última carga: ${kpi.ultima_carga ? fechaHora(kpi.ultima_carga) : 'sin dato'}`),
+    el('span', {}, `Datos leídos a las ${hora()}`),
+    hayCargaNueva ? el('span', { class: 'estado-texto estado-info' }, el('span', { 'aria-hidden': 'true' }, 'ℹ'), 'Hay una carga nueva: las tarjetas muestran lo que cambió') : null,
+    el('button', { type: 'button', id: 'boton-actualizar', onclick: actualizar }, 'Actualizar datos'));
+}
+
+function tarjetas(kpi, metaPct, anterior) {
+  const horaCarga = kpi.ultima_carga ? fechaHora(kpi.ultima_carga).split(', ')[1] : null;
   return el('div', { class: 'grilla grilla-kpi', role: 'group', 'aria-label': 'Indicadores nacionales' },
-    tarjetaKpi({ titulo: 'Atenciones planificadas', valor: num(kpi.atenciones_plan), detalle: 'Atenciones directas del período' }),
+    tarjetaKpi({ titulo: 'Atenciones planificadas', valor: num(kpi.atenciones_plan), detalle: 'Atenciones directas del período', estado: variacion('atenciones_plan', kpi, anterior) }),
     tarjetaKpi({
       titulo: metaPct ? `Meta de gestión (${pct(metaPct, 0)})` : 'Meta de gestión',
-      valor: num(kpi.meta), detalle: 'Atenciones que se espera cumplir en el período',
+      valor: num(kpi.meta), detalle: 'Atenciones que se espera cumplir en el período', estado: variacion('meta', kpi, anterior),
     }),
-    tarjetaKpi({ titulo: '% FOJA', valor: pct(kpi.foja), detalle: 'Horas disponibles para atención directa / horas contratadas' }),
-    tarjetaKpi({ titulo: 'Horas contratadas', valor: num(kpi.horas_contratadas), detalle: 'Suma de las horas del período' }),
-    tarjetaKpi({ titulo: 'Dotación', valor: num(kpi.dotacion), detalle: 'Profesionales con contrato en el último mes' }),
+    tarjetaKpi({ titulo: '% FOJA', valor: pct(kpi.foja), detalle: 'Horas disponibles para atención directa / horas contratadas', estado: variacion('foja', kpi, anterior) }),
+    tarjetaKpi({ titulo: 'Horas contratadas', valor: num(kpi.horas_contratadas), detalle: 'Suma de las horas del período', estado: variacion('horas_contratadas', kpi, anterior, 1) }),
+    tarjetaKpi({ titulo: 'Dotación', valor: num(kpi.dotacion), detalle: 'Profesionales con contrato en el último mes', estado: variacion('dotacion', kpi, anterior) }),
     tarjetaKpi({
-      titulo: 'Última carga', valor: fecha(kpi.ultima_carga), compacta: true,
-      detalle: `Último archivo de BUK procesado (${fechaHora(kpi.ultima_carga).split(', ')[1]} h)`,
+      titulo: 'Última carga', valor: kpi.ultima_carga ? fecha(kpi.ultima_carga) : 'Sin dato', compacta: true,
+      detalle: horaCarga ? `Último archivo de BUK procesado (${horaCarga} h)` : 'Aún no hay archivos procesados',
     }));
 }
 

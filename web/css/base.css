@@ -361,6 +361,13 @@ table.tabla a[aria-current="true"] { font-weight: 700; }
   details > *:not(summary) { display: block; }
 }
 
+/* ---------- Polish para la demo ---------- */
+.modo-datos { margin: 0; padding: .2rem .7rem; border-radius: 999px; font-size: .85rem; font-weight: 600; white-space: nowrap; }
+.modo-prueba { border: 1px dashed #ffffff; color: #ffffff; }
+.modo-vivo { border: 1px solid #ffffff; background: #ffffff; color: var(--azul-900); }
+.linea-estado { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin: -.25rem 0 1rem; color: var(--gris-700); }
+.linea-estado button { padding: .2rem .7rem; font-size: .9rem; }
+
 /* ---------- Lectura fácil (C-10) ---------- */
 .lectura-facil-caja { display: none; }
 html.lectura-facil .lectura-facil-caja { display: block; }

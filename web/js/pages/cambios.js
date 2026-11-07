@@ -55,7 +55,8 @@ export async function render(contenedor, filtros) {
     contenedor.append(caja);
     return vacio(caja, 'Todavía no hay cargas registradas. Procese un archivo de BUK para verlo aquí.');
   }
-  const elegida = cargas.find((c) => c.id === filtros.carga?.[0]) ?? null;
+  // Sin carga en la dirección se abre la más reciente (es la que se quiere ver tras procesar un archivo).
+  const elegida = cargas.find((c) => c.id === filtros.carga?.[0]) ?? (filtros.carga?.length ? null : cargas[0]);
   const nombreInstituto = new Map(institutos.map((f) => [f.it, f.instituto]));
 
   const conErrores = cargas.filter((c) => c.errores > 0).length;

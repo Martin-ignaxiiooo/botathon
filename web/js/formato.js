@@ -79,3 +79,8 @@ export function texto(x) {
   if (x === null || x === undefined || x === '') return SIN_DATO;
   return typeof x === 'object' ? JSON.stringify(x) : String(x);
 }
+
+/** Hora local con segundos: "02:20:05". */
+export function hora(valor = new Date()) {
+  return new Intl.DateTimeFormat(LOCALE, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(aFecha(valor));
+}

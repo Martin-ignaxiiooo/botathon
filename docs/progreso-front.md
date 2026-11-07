@@ -24,11 +24,14 @@ Rama actual: main (todo fusionado)
 
 - C-11 Exportar CSV e imprimir: `js/exportar.js` (botón por tabla), `js/impresion.js` + `@media print` (cabecera con título, fecha y filtros), botón «Imprimir»
 
+- Pulido para la demo (revisado contra `docs/demo.md`): insignia de origen de datos en el encabezado, Nacional con «Última carga», hora de lectura, botón «Actualizar datos» y variación de las tarjetas respecto de la carga anterior, Cambios abre la carga más reciente
+- Corrección de ESLint del CI (`window.MutationObserver`, `window.HashChangeEvent`): `npx eslint@9.39.1 --config .github/eslint.config.js 'web/js/**/*.js'` sin errores
+
 ## En curso
-- Revisión del recorrido de `docs/demo.md` y pulido de Nacional (jurado)
+- —
 
 ## Siguiente
-- Ensayo con la base real (`?modo=api`) cuando Andrés tenga las vistas; revisar claves de `v_parametros_vigentes`
+- Ensayo con la base real (`?modo=api`) cuando Andrés tenga las vistas; revisar claves de `v_parametros_vigentes` (ver «Notas para la demo»)
 
 ## Cómo probar el front
 - Servir sin bloquear: `.\scripts\servir_web.ps1` (puerto 8080 por defecto, en segundo plano; `-Detener` lo apaga, `-Puerto` cambia el puerto). Es la única excepción a las carpetas de Claude Code en `AGENTS.md` (`scripts\` es del BACK); autorizada por César.
@@ -64,6 +67,15 @@ Rama actual: main (todo fusionado)
 - Correcciones hechas: ARIA de Tabulator (`accesibilizarTabulator` en ui.js: zona con scroll como `rowgroup`, orden por teclado), tablas con scroll horizontal enfocables y con nombre (`vigilarDesbordes`), estado «activado» de los botones del encabezado también con «✓», textos de los gráficos más grandes con letra grande (`ampliarTexto`).
 - Lectura fácil: cada pantalla llama `lecturaFacil(contenedor, frases)` (js\lectura.js); la caja existe siempre y el CSS la muestra solo con el botón activado. Solo Parámetros queda sin frases hasta C-09.
 - No se probó con lector de pantalla real ni con teclado físico: se verificó con axe, el árbol de roles y eventos simulados. Conviene un recorrido manual con Tab y NVDA antes de la demo. Los `ResizeObserver` no se entregan en Edge headless con tiempo virtual (solo afecta a pruebas automáticas).
+
+## Notas para la demo (lo que hace el front en cada minuto de `docs/demo.md`)
+- URL: `http://localhost:8080/?modo=api#nacional` (levantar con `.{BS}scripts{BS}servir_web.ps1`). El encabezado muestra «● En vivo: base de datos» o «◌ Datos de prueba (mock)»: confirmar que diga «En vivo» antes de empezar. Si la API falla se muestra un aviso rojo y la pantalla queda vacía; **nunca** se cambia en silencio a datos de prueba.
+- 0:00 Nacional: «Última carga» (con hora), dotación, atenciones, meta y FOJA. Anotar los valores antes de cargar `02`.
+- 1:00–2:00 tras procesar `02`: botón «Actualizar datos» (o F5). Aparece «Hay una carga nueva» y las tarjetas muestran ▲/▼ con lo que cambió respecto de la carga anterior (se compara por pestaña con la última carga vista; sin filtros). Si se recarga la pestaña con F5 se conserva; si se cierra la pestaña se pierde.
+- 2:00–3:00: Cambios abre solo la carga más reciente (cambios y errores con persona, campo, fila y motivo); para ir directo a otra: `?modo=api#cambios?carga=<carga_id>`. Profesional: `#profesional?persona=71555` (jornada 40 → 30 en mayo, marcada en el gráfico) y `#profesional?persona=71146` (traslado, con columna de instituto).
+- Teclado: Tab muestra el «Saltar al contenido», el menú y los filtros con foco visible; «Lectura fácil», «Letra grande» e «Imprimir» están en el encabezado.
+- Dependencias con la base real que no pude comprobar sin ella: nombres de clave de `v_parametros_vigentes` (Nacional busca `meta_gestion`, `mes_cambio_jornada`, `jornada_legal_horas_desde_mayo` y patrones parecidos; si no existen no se dibuja la marca de jornada y la meta se toma de meta/atenciones), valores de `tipo` en `v_cambios` (hay etiqueta para alta, baja, cambio_jornada, cambio_cargo y cambio_it; otros se muestran con su nombre) y forma de `antes`/`despues` (se muestra cualquier clave).
+- Sin lector de pantalla real ni PDF real verificados: ensayar «Imprimir → Guardar como PDF» y un recorrido con Tab antes de presentar.
 
 ## Notas de C-11
 - El CSV sale de la tabla HTML que ya está en pantalla (también las de «Ver datos», aunque estén ocultas): lo exportado es lo mismo que se ve, con números es-CL (`1.234,5`); sirve para abrir en Excel en español. No exporta los datos crudos de la vista.
