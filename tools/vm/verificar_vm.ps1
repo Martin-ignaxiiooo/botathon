@@ -1,5 +1,6 @@
 ﻿#requires -Version 5.1
-param([string]$DirectorioPlanBot='C:\PlanBot', [ValidateRange(1,65535)][int]$PuertoApi=3000, [ValidateRange(1,65535)][int]$PuertoWeb=8080)
+param([string]$DirectorioPlanBot='C:\PlanBot', [ValidateRange(1,65535)][int]$PuertoApi=3000, [ValidateRange(1,65535)][int]$PuertoWeb=8080,
+ [string]$RaizRepo=(Split-Path -Parent (Split-Path -Parent $PSScriptRoot)))
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'comun.ps1')
 $script:fallosPlanBot=0
@@ -40,10 +41,11 @@ if ($psql) {
     }
     $claveBot=Get-PlanBotVariable 'BOT_CARGA_PASSWORD'
     foreach ($firma in @('cargar_parametros(bigint)','cargar_dotacion(bigint)','detectar_cambios(bigint)',
-        'mes_minimo_afectado(bigint)','recalcular(integer)','simular(bigint)','aplicar_escenario(bigint)','cuadratura()')) {
+        'mes_minimo_afectado(bigint)','recalcular(integer)','simular(bigint)','aplicar_escenario(bigint)','cuadratura()',
+        'listar_escenarios()','decidir_escenario(bigint,text,text)')) {
         $r=[pscustomobject]@{Ok=$false;Texto='Login previo fallido.'}
         if ($logins['bot_carga']) { $r=Invoke-PlanBotLectura $psql 'bot_carga' $claveBot $base ("SELECT to_regprocedure('api.$firma') IS NOT NULL;") }
-        Mostrar-PlanBot "RPC api.$firma" ($r.Ok -and $r.Texto -eq 't') 'Existencia del Contrato 2 (no se ejecuta)'
+        Mostrar-PlanBot "RPC api.$firma" ($r.Ok -and $r.Texto -eq 't') 'Existencia RPC (no se ejecuta en esta consulta)'
     }
     foreach ($vista in @('v_kpi','v_nacional_mes','v_instituto_area_mes','v_profesional_mes','v_cambios',
         'v_errores_carga','v_parametros_vigentes','v_cuadratura')) {
@@ -78,6 +80,40 @@ try {
     $r=Invoke-WebRequest "http://localhost:$PuertoWeb/" -UseBasicParsing -TimeoutSec 4
     Mostrar-PlanBot 'Dashboard HTTP' ($r.StatusCode -eq 200 -and $r.Content -match 'PlanBot') "http://localhost:$PuertoWeb/?modo=api#nacional"
 } catch { Mostrar-PlanBot 'Dashboard HTTP' $false "No responde http://localhost:$PuertoWeb." }
+try {
+    $r=Invoke-WebRequest "http://localhost:$PuertoApi/rpc/listar_escenarios" -UseBasicParsing -TimeoutSec 4
+    Mostrar-PlanBot 'HTTP api.listar_escenarios' ($r.StatusCode -eq 200 -and $r.Content.TrimStart().StartsWith('[')) 'Listado accesible sin decidir/aplicar escenarios.'
+} catch { Mostrar-PlanBot 'HTTP api.listar_escenarios' $false 'RPC no responde como lista JSON.' }
+function Sonda-Jwt([string]$Token='') {
+    $cabeceras=@{Accept='application/json'}
+    if ($Token) { $cabeceras.Authorization='Bearer '+$Token }
+    # Decision invalida: la funcion la rechaza ANTES de leer/modificar un escenario.
+    $cuerpo='{"escenario_id":0,"decision":"verificar_sin_cambios","motivo":"Sonda de permisos sin mutacion"}'
+    try {
+        $r=Invoke-WebRequest "http://localhost:$PuertoApi/rpc/decidir_escenario" -Method Post -ContentType 'application/json' -Body $cuerpo -Headers $cabeceras -UseBasicParsing -TimeoutSec 4
+        return [pscustomobject]@{Estado=[int]$r.StatusCode;Codigo='';Mensaje=''}
+    } catch {
+        $respuesta=$_.Exception.Response
+        if (-not $respuesta) { return [pscustomobject]@{Estado=0;Codigo='';Mensaje=''} }
+        $lector=New-Object IO.StreamReader($respuesta.GetResponseStream())
+        try { $json=$lector.ReadToEnd() | ConvertFrom-Json } catch { $json=$null } finally {$lector.Dispose()}
+        return [pscustomobject]@{Estado=[int]$respuesta.StatusCode;Codigo=$json.code;Mensaje=$json.message}
+    }
+}
+$anonima=Sonda-Jwt
+Mostrar-PlanBot 'JWT sin token' ($anonima.Estado -in @(401,403)) ('decidir_escenario rechaza anonimo; HTTP '+$anonima.Estado)
+try {
+    $generarToken=Join-Path $RaizRepo 'scripts\token_planificador.ps1'
+    if (-not (Test-Path -LiteralPath $generarToken)) { throw 'Falta generador de token' }
+    $stderrAnterior=[Console]::Error; $stderrOculto=New-Object IO.StringWriter
+    try { [Console]::SetError($stderrOculto); $token=[string](& $generarToken -Horas 1) }
+    finally { [Console]::SetError($stderrAnterior); $stderrOculto.Dispose() }
+    if ($token -notmatch '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$') { throw 'Salida JWT invalida' }
+    $autorizada=Sonda-Jwt $token
+    $permiso=$autorizada.Estado -eq 400 -and $autorizada.Codigo -eq 'P0001' -and $autorizada.Mensaje -like '*aprobar*rechazar*'
+    Mostrar-PlanBot 'JWT planificador' $permiso ('Acceso a funcion comprobado con decision invalida; HTTP '+$autorizada.Estado+'; sin modificar escenarios.')
+} catch { Mostrar-PlanBot 'JWT planificador' $false 'No se pudo generar/verificar JWT con el .env de la VM; no se imprime secreto ni token.' }
+finally { $token=$null }
 Write-Host "Resultado: $script:fallosPlanBot comprobaciones pendientes. No certifica BP ni lectura visual en vivo."
 if ($script:fallosPlanBot) { exit 1 }
 exit 0

@@ -61,13 +61,25 @@ function Get-PlanBotProcesoPuerto([int]$Puerto) {
 }
 
 function New-PlanBotRegistroProceso($Proceso,[string]$Tipo) {
-    return [pscustomobject]@{ Tipo=$Tipo; Id=$Proceso.Id; InicioUtc=$Proceso.StartTime.ToUniversalTime().ToString('o'); Ejecutable=$Proceso.Path }
+    # El objeto que retorna Start-Process puede cachear Path vacio antes de cargar
+    # el modulo. Obtener identidad fresca del SO; nunca registrar un Path nulo.
+    $inicio=$Proceso.StartTime.ToUniversalTime().Ticks
+    for($i=0;$i -lt 20;$i++) {
+        $actual=Get-Process -Id $Proceso.Id -ErrorAction Stop
+        if($actual.StartTime.ToUniversalTime().Ticks -ne $inicio) { throw 'PID reutilizado durante el arranque.' }
+        if($actual.Path) { return [pscustomobject]@{Tipo=$Tipo;Id=$actual.Id;InicioUtc=$actual.StartTime.ToUniversalTime().ToString('o');Ejecutable=$actual.Path} }
+        Start-Sleep -Milliseconds 50
+    }
+    throw 'No se pudo identificar el ejecutable del proceso propio.'
 }
 
 function Test-PlanBotIdentidadProceso($Registro) {
     $p = Get-Process -Id $Registro.Id -ErrorAction SilentlyContinue
     if (-not $p) { return $null }
-    if ($p.StartTime.ToUniversalTime().ToString('o') -ne $Registro.InicioUtc -or $p.Path -ne $Registro.Ejecutable) { return $null }
+    # ConvertFrom-Json puede materializar ISO como DateTime; comparar ticks UTC,
+    # no el formato regional que toma un DateTime al convertirse a string.
+    try { $inicio=[datetime]$Registro.InicioUtc } catch { return $null }
+    if ($p.StartTime.ToUniversalTime().Ticks -ne $inicio.ToUniversalTime().Ticks -or $p.Path -ne $Registro.Ejecutable) { return $null }
     return $p
 }
 

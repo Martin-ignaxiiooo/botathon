@@ -1,8 +1,13 @@
 # Progreso Codex · César
 
-Rama actual: `codex/trabajo`. Última actualización: 2026-11-07. Tareas 11–13 autorizadas con commit/push por tarea. B-09 permanece publicada en su rama; no se fusionaron web, database, api ni scripts en este worktree. Se conserva el historial anterior.
+Rama actual: `codex/trabajo`, integrada con main/d0cea06 mediante pull solicitado por César. Última actualización: 2026-11-07. Nuevos cambios solo en las carpetas autorizadas; no se editan los archivos SQL, API, scripts de Andrés ni el front. Se conserva el historial anterior.
 
 ## Hecho
+
+- Corrección urgente previa a la cola: pull de main/d0cea0617482cdb8eaa21896aba89cc35b7008b2 (JWT y área). levantar_demo importa PGRST_JWT_SECRET y lo entrega al hijo; conserva ajustes jwt-* de la plantilla y restaura variables del llamador, sin borrar todos los PGRST_*. Siempre llama instalar_sin_docker.ps1 -SinPruebas y reinicia solo su API registrada para cargar esquema/JWT nuevos. Registro de proceso obtenido fresco del SO (Start-Process podía cachear Path vacío); hora comparada como ticks UTC, sin depender del formato regional.
+- Versión única en tools/vm/postgrest-version.json: 12.2.3, comprobada ejecutando el binario de César en C:\tools\postgrest\artifacts\postgrest-windows-x64\postgrest.exe. Asset oficial confirmado y descargado; SHA-256 del EXE descargado idéntico al instalado. No se usa latest ni una versión distinta por parámetro. API/secretos en entorno del hijo; ningún secreto/token en salida ni conf local.
+- verificar_vm añade listar_escenarios, cuadratura y permisos JWT: sonda inválida deliberada llega al cuerpo de decidir_escenario con JWT (HTTP 400 P0001 de validación) y obtiene 401 sin token, sin cambiar escenarios. Además ensayo real aislado: escenario nuevo rechazado con JWT HTTP 200; sin JWT HTTP 401. Token generado por scripts/token_planificador.ps1 capturado solo en memoria. Listado/vistas/CORS/KPI contra SQL correctos. Repetir arranque sobre base existente aplicó migraciones y renovó API propia. Trece SQL en verde; 23 pruebas Python y parser PS5.1 verdes. Único rojo del verificador local: ODBC x64 aún ausente, no ocultado.
+- Ensayo urgente en copia aislada (PG 18632, API 18400, web 18980), todas las instancias propias detenidas; servicio ajeno 3000 intacto. Evidencia %TEMP%\PlanBot_JWT_c67cea7806c7457bae581f3bcccc67f8\prueba_validada.log y test_db.log. Comprobado que los logs no contienen el secreto ni un JWT. data/generar_casos.py traslada también Área/Centro de Costo desde el IT destino: solo D28 Santiago→Puerto Montt y F28 300509→300513 cambian frente al fixture previo; estilos idénticos, cortes de meses y matriz completa verificados. 02 y esperado_cambios regenerados (CSV conserva exactamente cinco eventos); 03 conservado byte a byte. Sin cambios a reglas de cálculo.
 
 - Recuperación del merge solicitado por César: se conserva la versión codex de ambos documentos; verificacion integra además el bloque B-09 exclusivo de main. Respaldo íntegro del documento main en docs/verificacion-main-respaldo.md, tomado de eedaad3 antes de resolver. Sin reescribir commits ni borrar archivos sin seguimiento.
 
@@ -71,6 +76,8 @@ Rama actual: `codex/trabajo`. Última actualización: 2026-11-07. Tareas 11–13
 - Tras integración paralela del dashboard, ESLint 9.39.1 ejecutado sobre los 12 módulos de web\js: correcto. Se añadieron Node/Element como globales del navegador. Git permanece en codex/trabajo; no se modificó web.
 
 ## Siguiente
+
+- Retomar cola autorizada: terminar simular_robot.ps1 y tests/e2e/e2e.ps1 (trabajo en curso conservado sin incluir en el commit urgente); compilar C# con referencias estrictas de BP; README/instalación final y sección Supuestos del MVP en demo, solo documental. Anotar diferencias de SQL «para Andrés» sin editar database.
 
 - Lucas: crear/publicar auxiliares y procesos siguiendo guia_procesos.md; Check Code, configurar catálogos aprobados y ensayar 01/03 en VM con Andrés. César/Lucas: ejecutar guion único docs/demo.md con la misma pestaña y guardar evidencia real. No asumir que el .cs ya está importado en el release; lector de pantalla y PDF requieren validación humana.
 

@@ -134,8 +134,10 @@ def main():
     assert 999001 not in groups
     alternate_cargo = next(v[cols['Cargo']] for _, _, _, v in rows
                            if v[cols['Cargo']] != groups[cargo][0][3][cols['Cargo']])
-    target_it, target_name = next((v[cols['IT']], v[cols['Instituto']]) for _, _, _, v in rows
-                                if v[cols['IT']] != groups[traslado][0][3][cols['IT']])
+    area = next(k for k in cols if k in ('Area', 'Área', 'ÁREA'))
+    target_it, target_name, target_area, target_coste = next(
+        (v[cols['IT']], v[cols['Instituto']], v[cols[area]], v[cols['Centro de Costo']])
+        for _, _, _, v in rows if v[cols['IT']] != groups[traslado][0][3][cols['IT']])
     shutil.copyfile(SOURCE, OUT / '01_original.xlsx')
     assert hashlib.sha256(SOURCE.read_bytes()).digest() == hashlib.sha256((OUT / '01_original.xlsx').read_bytes()).digest()
     expected_changes = []
@@ -155,6 +157,8 @@ def main():
             changes['Cargo'] = alternate_cargo
         if pid == traslado and month >= 7:
             changes.update(IT=target_it, Instituto=target_name)
+            changes[area] = target_area
+            changes['Centro de Costo'] = target_coste
         for key, value in changes.items():
             ws.cell(rowno, cols[key] + 1, value)
             vals = list(expected_sheet[rowno - 1]); vals[cols[key]] = value
@@ -182,7 +186,8 @@ def main():
     assert matriz(with_check[SHEET]) == normalizar(expected_sheet)
     actual = records(with_check[SHEET], cols)
     for pid, cutoff, column, value in [(jornada, 5, 'Horas Semanales', 30), (cargo, 3, 'Cargo', alternate_cargo),
-                                        (traslado, 7, 'IT', target_it), (traslado, 7, 'Instituto', target_name)]:
+                                        (traslado, 7, 'IT', target_it), (traslado, 7, 'Instituto', target_name),
+                                        (traslado, 7, area, target_area), (traslado, 7, 'Centro de Costo', target_coste)]:
         for _, _, month, values in (r for r in actual if r[1] == pid):
             original = next(r[3] for r in groups[pid] if r[2] == month)
             assert values[cols[column]] == (value if month >= cutoff else original[cols[column]])

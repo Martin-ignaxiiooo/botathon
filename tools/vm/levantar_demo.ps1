@@ -3,7 +3,6 @@ param(
     [string]$RaizRepo=(Split-Path -Parent (Split-Path -Parent $PSScriptRoot)),
     [string]$DirectorioPlanBot='C:\PlanBot',
     [string]$DirectorioHerramientas='C:\tools',
-    [string]$PostgrestVersion='v16.5',
     [ValidateRange(1,65535)][int]$PuertoApi=3000,
     [ValidateRange(1,65535)][int]$PuertoWeb=8080,
     [switch]$CargarBukPrueba
@@ -21,7 +20,8 @@ function Importar-PlanBotEnv {
     foreach ($linea in Get-Content -LiteralPath $ruta -Encoding UTF8) {
         if ($linea -match '^\s*([A-Z][A-Z0-9_]*)\s*=(.*)$') {
             $k=$Matches[1]; $v=$Matches[2].Trim()
-            if ($k -notmatch '^(POSTGRES_|BOT_CARGA_PASSWORD$|WEB_LECTURA_PASSWORD$|PG_|PGHOST$|PGPORT$)') { continue }
+            if ($k -notmatch '^(POSTGRES_|BOT_CARGA_PASSWORD$|WEB_LECTURA_PASSWORD$|PGRST_JWT_SECRET$|PG_|PGHOST$|PGPORT$)') { continue }
+            if ($k -eq 'PG_SUPER_PASSWORD' -and (-not $v -or $v -like 'cambiar*') -and (Get-PlanBotVariable $k)) { continue }
             if (-not $antesEntorno.ContainsKey($k)) { $antesEntorno[$k]=[Environment]::GetEnvironmentVariable($k,'Process') }
             [Environment]::SetEnvironmentVariable($k,$v,'Process')
         }
@@ -30,32 +30,20 @@ function Importar-PlanBotEnv {
 try {
     Importar-PlanBotEnv
     $psql=Get-PlanBotPsql
+    if (-not (Test-Path -LiteralPath $instalar -PathType Leaf)) { throw 'Falta el instalador de Andres en scripts\instalar_sin_docker.ps1.' }
+    $opciones=@{SinPruebas=$true;Puerto=[int](Get-PlanBotVariable 'PG_PORT' (Get-PlanBotVariable 'PGPORT' '5432'))}
+    if (Get-PlanBotVariable 'PG_SUPER_PASSWORD') { $opciones.SuperClave=Get-PlanBotVariable 'PG_SUPER_PASSWORD' }
+    if (Get-PlanBotVariable 'PG_SUPER_USER') { $opciones.SuperUsuario=Get-PlanBotVariable 'PG_SUPER_USER' }
+    if (Get-PlanBotVariable 'PG_BIN') { $opciones.PgBin=Get-PlanBotVariable 'PG_BIN' }
+    if ($CargarBukPrueba) { $opciones.CargarBukPrueba=$true }
+    # Siempre migrar/sembrar tras pull. En proceso: ningun secreto aparece en argv.
+    $global:LASTEXITCODE=0
+    & $instalar @opciones
+    if ($LASTEXITCODE -ne 0) { throw 'Instalador de Andres fallo; revisar salida antes de arrancar servicios.' }
+    Importar-PlanBotEnv
     $base=Get-PlanBotVariable 'POSTGRES_DB' 'planbot'
-    $administrador=Get-PlanBotVariable 'POSTGRES_USER' 'owner_planbot'
-    $clave=Get-PlanBotVariable 'POSTGRES_PASSWORD'
-    if (Get-PlanBotVariable 'PG_SUPER_PASSWORD') {
-        $administrador=Get-PlanBotVariable 'PG_SUPER_USER' 'postgres'
-        $clave=Get-PlanBotVariable 'PG_SUPER_PASSWORD'
-    }
-    $baseLiteral=$base.Replace("'","''")
-    $r=Invoke-PlanBotLectura $psql $administrador $clave 'postgres' ("SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname='$baseLiteral');")
-    if (-not $r.Ok) { throw 'No se pudo determinar si la base existe. Definir POSTGRES_PASSWORD o PG_SUPER_PASSWORD correctos; no se instala a ciegas.' }
-    if ($r.Texto -eq 'f') {
-        if (-not (Test-Path -LiteralPath $instalar -PathType Leaf)) { throw 'Falta el instalador de Andres en scripts\instalar_sin_docker.ps1.' }
-        $superClave=Get-PlanBotVariable 'PG_SUPER_PASSWORD'
-        if (-not $superClave) { throw 'Base ausente: definir PG_SUPER_PASSWORD antes de instalar.' }
-        $opciones=@{ SuperClave=$superClave; SuperUsuario=(Get-PlanBotVariable 'PG_SUPER_USER' 'postgres');
-            Puerto=[int](Get-PlanBotVariable 'PG_PORT' (Get-PlanBotVariable 'PGPORT' '5432')) }
-        if (Get-PlanBotVariable 'PG_BIN') { $opciones.PgBin=Get-PlanBotVariable 'PG_BIN' }
-        if ($CargarBukPrueba) { $opciones.CargarBukPrueba=$true }
-        # En el mismo proceso: la clave no aparece en argumentos de consola.
-        $global:LASTEXITCODE=0
-        & $instalar @opciones
-        if ($LASTEXITCODE -ne 0) { throw 'Instalador de Andres fallo; revisar su salida antes de arrancar servicios.' }
-        Importar-PlanBotEnv # Puede haber generado claves aleatorias en .env.
-    } elseif ($CargarBukPrueba) {
-        Write-Host 'Base existente: no se recarga BUK ni se ejecutan migraciones. La carga inicial corresponde al robot/Andres.'
-    }
+    $secretoJwt=Get-PlanBotVariable 'PGRST_JWT_SECRET'
+    if ($secretoJwt.Length -lt 32 -or $secretoJwt -like 'cambiar*') { throw 'El instalador no dejo un secreto JWT valido; no se publica PostgREST.' }
     foreach ($rel in @('entrada\planificacion','entrada\buk','entrada\asignaciones','procesados','errores','logs','respaldo','preparar','runtime')) {
         New-Item -ItemType Directory -Force -Path (Join-Path $DirectorioPlanBot $rel) | Out-Null
     }
@@ -68,16 +56,25 @@ try {
             if ($p -and (Test-PlanBotIdentidadProceso $p)) { $procesos+= $p }
         }
     }
+    # Recargar esquema/JWT despues de migrar, pero solo reiniciar procesos propios.
+    foreach($r in @($procesos | Where-Object Tipo -eq 'PostgREST')) {
+        $propio=Test-PlanBotIdentidadProceso $r
+        if ($propio) { Stop-Process -Id $propio.Id -ErrorAction Stop; $propio.WaitForExit(5000) | Out-Null }
+    }
+    $procesos=@($procesos | Where-Object Tipo -ne 'PostgREST')
+    Save-PlanBotProcesos $estado $procesos
+    $versionFijada=Get-Content (Join-Path $PSScriptRoot 'postgrest-version.json') -Raw | ConvertFrom-Json
     $exe=Join-Path $DirectorioHerramientas 'postgrest.exe'
+    $binarioPc=Join-Path $DirectorioHerramientas 'postgrest\artifacts\postgrest-windows-x64\postgrest.exe'
+    if (-not (Test-Path -LiteralPath $exe) -and (Test-Path -LiteralPath $binarioPc)) { $exe=$binarioPc }
     if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
-        if ($PostgrestVersion -notmatch '^v\d+\.\d+(\.\d+)?$') { throw 'Version PostgREST invalida (ejemplo v16.5).' }
         New-Item -ItemType Directory -Force -Path $DirectorioHerramientas | Out-Null
         $tlsAnterior=[Net.ServicePointManager]::SecurityProtocol
         try {
             [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12
-            $release=Invoke-RestMethod ("https://api.github.com/repos/PostgREST/postgrest/releases/tags/$PostgrestVersion") -Headers @{'User-Agent'='PlanBot-VM'} -TimeoutSec 20
-            $archivo=@($release.assets | Where-Object name -Match 'windows.*(x86-64|x86_64).*\.zip$')
-            if ($archivo.Count -ne 1 -or $archivo[0].browser_download_url -notlike 'https://github.com/PostgREST/postgrest/releases/download/*') { throw 'Release oficial sin un ZIP Windows x64 inequívoco.' }
+            $release=Invoke-RestMethod ("https://api.github.com/repos/PostgREST/postgrest/releases/tags/"+$versionFijada.tag) -Headers @{'User-Agent'='PlanBot-VM'} -TimeoutSec 20
+            $archivo=@($release.assets | Where-Object name -EQ $versionFijada.asset)
+            if ($archivo.Count -ne 1 -or $archivo[0].browser_download_url -ne $versionFijada.url) { throw 'Release oficial sin un ZIP Windows x64 inequívoco.' }
             $descarga=Join-Path $DirectorioHerramientas ('postgrest_'+[Guid]::NewGuid().ToString('N'))
             New-Item -ItemType Directory -Path $descarga | Out-Null
             $zip=Join-Path $descarga 'postgrest.zip'
@@ -91,6 +88,16 @@ try {
             Copy-Item -LiteralPath $binarios[0].FullName -Destination $exe
         } finally { [Net.ServicePointManager]::SecurityProtocol=$tlsAnterior }
     }
+    $pathVersion=$env:PATH
+    try {
+        $env:PATH=(Split-Path -Parent $psql)+';'+$env:PATH
+        $versionOut=Join-Path $runtime 'postgrest-version.txt'; $versionErr=Join-Path $runtime 'postgrest-version.err'
+        $v=Start-Process -FilePath $exe -ArgumentList '--version' -WindowStyle Hidden -PassThru -RedirectStandardOutput $versionOut -RedirectStandardError $versionErr
+        $handleVersion=$v.Handle
+        if (-not $v.WaitForExit(10000)) { Stop-Process -Id $v.Id; throw 'Timeout comprobando version de PostgREST.' }
+        $versionReal=Get-Content -LiteralPath $versionOut -Raw
+        if ($v.ExitCode -ne 0 -or $versionReal -notmatch ('PostgREST\s+'+[regex]::Escape($versionFijada.version)+'(?:\s|$)')) { throw 'El binario no coincide con tools\vm\postgrest-version.json; usar una carpeta con la version fijada.' }
+    } finally { $env:PATH=$pathVersion }
     if (-not (Get-PlanBotProcesoPuerto $PuertoApi)) {
         $plantilla=Join-Path $RaizRepo 'api\postgrest.conf'
         if (-not (Test-Path -LiteralPath $plantilla)) {
@@ -100,11 +107,13 @@ try {
         # Conserva la plantilla salvo URI/JWT y ajustes que se fijan para esta VM.
         # Nunca copia credenciales de una plantilla local al nuevo archivo.
         $contenido=@(Get-Content -LiteralPath $plantilla | Where-Object {
-            $_ -notmatch '(?i)password|secret|postgres(ql)?://' -and
-            $_ -notmatch '^\s*(db-uri|db-schemas|db-anon-role|db-config|server-host|server-port|server-cors-allowed-origins|jwt-[a-z-]+)\s*='
+            $_ -notmatch '(?i)postgres(ql)?://' -and
+            $_ -notmatch '^\s*(db-uri|db-schemas|db-anon-role|db-config|server-host|server-port|server-cors-allowed-origins)\s*=' -and
+            ($_ -notmatch '^\s*jwt-secret\s*=' -or $_ -match '\$\(PGRST_JWT_SECRET\)')
         })
         $config=Join-Path $runtime 'postgrest.conf'
-        $lineasConfig=@($contenido)+@('db-schemas = "api"','db-anon-role = "web_lectura"','db-config = false',
+        if (-not ($contenido -match '^\s*jwt-secret\s*=')) { $contenido+= 'jwt-secret = "$(PGRST_JWT_SECRET)"' }
+        $lineasConfig=@($contenido)+@('db-uri = "$(PGRST_DB_URI)"','db-schemas = "api"','db-anon-role = "web_lectura"','db-config = false',
             'server-host = "127.0.0.1"',('server-port = '+$PuertoApi),('server-cors-allowed-origins = "http://localhost:'+$PuertoWeb+'"'))
         [IO.File]::WriteAllLines($config,[string[]]$lineasConfig,(New-Object Text.UTF8Encoding($false)))
         $claveWeb=Get-PlanBotVariable 'WEB_LECTURA_PASSWORD'
@@ -115,9 +124,9 @@ try {
         $previoPgrst=@{}
         $pathAnterior=$env:PATH
         try {
-            # Evitar que PGRST_* ajenos sobrescriban esquema, rol, puerto o JWT.
-            foreach ($v in @(Get-ChildItem Env:PGRST_*)) { $previoPgrst[$v.Name]=$v.Value; Remove-Item ('Env:'+ $v.Name) }
-            $env:PGRST_DB_URI=$uri
+            # Ajustes controlados, sin borrar JWT ni el resto de PGRST_* del llamador.
+            $valoresPgrst=@{PGRST_DB_URI=$uri;PGRST_JWT_SECRET=$secretoJwt;PGRST_JWT_SECRET_IS_BASE64='false';PGRST_JWT_ROLE_CLAIM_KEY='.role';PGRST_DB_SCHEMAS='api';PGRST_DB_ANON_ROLE='web_lectura';PGRST_DB_CONFIG='false';PGRST_SERVER_HOST='127.0.0.1';PGRST_SERVER_PORT=[string]$PuertoApi;PGRST_SERVER_CORS_ALLOWED_ORIGINS="http://localhost:$PuertoWeb"}
+            foreach($k in $valoresPgrst.Keys) { $previoPgrst[$k]=[Environment]::GetEnvironmentVariable($k,'Process'); [Environment]::SetEnvironmentVariable($k,$valoresPgrst[$k],'Process') }
             # El ZIP Windows requiere libpq.dll y dependencias de PostgreSQL.
             $env:PATH=(Split-Path -Parent $psql)+';'+$env:PATH
             $p=Start-Process -FilePath $exe -ArgumentList ('"'+$config+'"') -WindowStyle Hidden -PassThru -WorkingDirectory $runtime -RedirectStandardOutput (Join-Path $runtime 'postgrest.out.log') -RedirectStandardError (Join-Path $runtime 'postgrest.err.log')
@@ -125,7 +134,6 @@ try {
             Save-PlanBotProcesos $estado $procesos
         } finally {
             $env:PATH=$pathAnterior
-            Remove-Item Env:PGRST_DB_URI -ErrorAction SilentlyContinue
             foreach ($k in $previoPgrst.Keys) { [Environment]::SetEnvironmentVariable($k,$previoPgrst[$k],'Process') }
         }
     } else { Write-Host "Puerto $PuertoApi ocupado: se verificara el servicio existente; no se adopta ni reinicia." }
@@ -152,7 +160,7 @@ try {
         Start-Sleep -Milliseconds 250
     }
     Write-Host "Abrir http://localhost:$PuertoWeb/?modo=api#nacional y confirmar la marca En vivo."
-    & (Join-Path $PSScriptRoot 'verificar_vm.ps1') -DirectorioPlanBot $DirectorioPlanBot -PuertoApi $PuertoApi -PuertoWeb $PuertoWeb
+    & (Join-Path $PSScriptRoot 'verificar_vm.ps1') -RaizRepo $RaizRepo -DirectorioPlanBot $DirectorioPlanBot -PuertoApi $PuertoApi -PuertoWeb $PuertoWeb
     $codigoVerificacion=$LASTEXITCODE
 } finally {
     foreach ($k in $antesEntorno.Keys) { [Environment]::SetEnvironmentVariable($k,$antesEntorno[$k],'Process') }

@@ -3,6 +3,9 @@
 db-schemas = "api"
 db-anon-role = "web_lectura"
 db-config = false
+jwt-secret = "$(PGRST_JWT_SECRET)"
+jwt-secret-is-base64 = false
+jwt-role-claim-key = ".role"
 server-host = "127.0.0.1"
 server-port = 3000
 server-cors-allowed-origins = "http://localhost:8080"
