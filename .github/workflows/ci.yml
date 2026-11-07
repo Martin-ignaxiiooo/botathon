@@ -1,0 +1,91 @@
+name: PlanBot CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: owner_planbot
+          POSTGRES_PASSWORD: planbot_ci_solo_pruebas
+          POSTGRES_DB: planbot
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U owner_planbot -d planbot"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: owner_planbot
+      PGPASSWORD: planbot_ci_solo_pruebas
+      PGDATABASE: planbot
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: '5432'
+      POSTGRES_USER: owner_planbot
+      POSTGRES_PASSWORD: planbot_ci_solo_pruebas
+      POSTGRES_DB: planbot
+      BOT_CARGA_PASSWORD: bot_ci_solo_pruebas
+      WEB_LECTURA_PASSWORD: web_ci_solo_pruebas
+      PGRST_JWT_SECRET: secreto_ci_ficticio_de_mas_de_32_caracteres
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar cliente PostgreSQL
+        run: |
+          sudo apt-get update -qq
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          sudo apt-get install -y --no-install-recommends postgresql-client
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Preparar entorno de prueba
+        run: |
+          @(
+            "POSTGRES_HOST=$env:POSTGRES_HOST"
+            "POSTGRES_PORT=$env:POSTGRES_PORT"
+            "POSTGRES_USER=$env:POSTGRES_USER"
+            "POSTGRES_PASSWORD=$env:POSTGRES_PASSWORD"
+            "POSTGRES_DB=$env:POSTGRES_DB"
+            "BOT_CARGA_PASSWORD=$env:BOT_CARGA_PASSWORD"
+            "WEB_LECTURA_PASSWORD=$env:WEB_LECTURA_PASSWORD"
+            "PGRST_JWT_SECRET=$env:PGRST_JWT_SECRET"
+          ) | Set-Content -LiteralPath .env -Encoding utf8
+      - name: Migraciones y pruebas
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (Test-Path .\scripts\migrar.ps1) {
+            & .\scripts\migrar.ps1
+            if (-not $? -or $LASTEXITCODE -gt 0) { throw 'Fallaron las migraciones' }
+          } else { Write-Warning 'Aún no existe scripts\migrar.ps1; migración omitida.' }
+          if (Test-Path .\scripts\test.ps1) {
+            & .\scripts\test.ps1 -Modulo todo
+            if (-not $? -or $LASTEXITCODE -gt 0) { throw 'Fallaron las pruebas' }
+          } else { Write-Warning 'Aún no existe scripts\test.ps1; pruebas omitidas.' }
+
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: ESLint de módulos del navegador
+        shell: pwsh
+        run: |
+          npx --yes --package=eslint@9.39.1 eslint --config .github/eslint.config.js 'web/js/**/*.js' --no-error-on-unmatched-pattern
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
