@@ -253,7 +253,8 @@ table.tabla td.num, table.tabla th.num { text-align: right; font-variant-numeric
 .resumen-filtros { margin: .5rem 0 0; font-size: .9rem; color: var(--gris-700); }
 
 /* ---------- Pantalla Instituto (C-05) ---------- */
-.seccion { margin-top: 1rem; }
+.seccion { margin: 1rem 0; }
+.tarjeta h3 { margin-top: 1rem; }
 .selector-metrica { border: 0; padding: 0; margin: 0 0 .75rem; display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; align-items: center; }
 .selector-metrica legend { font-size: .85rem; font-weight: 600; color: var(--gris-700); padding: 0; margin-bottom: .25rem; float: left; margin-right: 1rem; }
 .opcion-radio { display: inline-flex; align-items: center; gap: .4rem; cursor: pointer; }
@@ -271,6 +272,26 @@ table.tabla td.num, table.tabla th.num { text-align: right; font-variant-numeric
 .tabulator .tabulator-row { cursor: pointer; }
 .tabulator .tabulator-footer { background: var(--gris-100); border-top: 2px solid var(--azul-700); font-weight: 700; color: var(--azul-900); }
 .tabulator .tabulator-footer .tabulator-calcs-holder, .tabulator .tabulator-footer .tabulator-calcs-holder .tabulator-row { background: var(--gris-100); }
+
+/* ---------- Pantalla Profesional (C-06) ---------- */
+.buscador { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .75rem 1rem; margin-bottom: 1.25rem; }
+.buscador input { font: inherit; padding: .4rem .6rem; border: 1px solid var(--gris-600); border-radius: var(--radio); min-height: 2.4rem; min-width: 14rem; }
+.buscador input[aria-invalid="true"] { border-color: var(--error); border-width: 2px; }
+.error-campo { flex-basis: 100%; margin: 0; color: var(--error); font-weight: 600; min-height: 0; }
+.error-campo:empty { display: none; }
+.ficha-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .75rem 1.5rem; margin: 0; }
+.ficha-datos dt { font-size: .85rem; font-weight: 600; color: var(--gris-700); }
+.ficha-datos dd { margin: 0; font-weight: 600; color: var(--azul-900); }
+.trayectoria { margin: 0 0 .25rem; padding-left: 1.2rem; }
+.tabla-scroll { overflow-x: auto; }
+table.tabla tr.fila-total td, table.tabla tr.fila-total th { font-weight: 700; background: var(--gris-100); border-top: 2px solid var(--azul-700); }
+.linea-tiempo { list-style: none; margin: 0; padding: 0; }
+.linea-tiempo > li { display: flex; gap: .85rem; padding-bottom: 1rem; position: relative; }
+.linea-tiempo > li:not(:last-child)::before { content: ''; position: absolute; left: 1.05rem; top: 2.2rem; bottom: 0; width: 2px; background: var(--azul-300); }
+.hito { flex: none; width: 2.1rem; height: 2.1rem; border-radius: 50%; background: var(--azul-700); color: var(--blanco); display: grid; place-items: center; font-weight: 700; }
+.hito-titulo { margin: 0; }
+.hito-detalle { margin: .15rem 0; padding-left: 1.1rem; }
+.hito-pie { margin: 0; font-size: .85rem; color: var(--gris-600); }
 
 /* ---------- Lectura fácil (C-10) ---------- */
 .lectura-facil-caja {
