@@ -39,7 +39,7 @@ BEGIN
     -- calc.escenario, sin motivo -> NULL
     PERFORM set_config('planbot.motivo', '', true);
     INSERT INTO calc.escenario (nombre) VALUES ('prueba 050') RETURNING escenario_id INTO v_id;
-    UPDATE calc.escenario SET estado = 'descartado' WHERE escenario_id = v_id;
+    UPDATE calc.escenario SET estado = 'rechazado' WHERE escenario_id = v_id;
     SELECT count(*) INTO v_n FROM audit.log WHERE log_id > v_log AND tabla = 'calc.escenario' AND motivo IS NULL;
     IF v_n <> 2 THEN RAISE EXCEPTION 'AUDITORIA calc.escenario: % filas, se esperan 2 sin motivo', v_n; END IF;
 

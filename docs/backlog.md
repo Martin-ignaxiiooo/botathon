@@ -49,7 +49,8 @@ Formato: `- [ ] ID · título` y debajo sus criterios. Al terminar una historia,
   - [x] Llena calc.cuadratura (solo diferencias) con causa probable; api.v_cuadratura poblada; 95,55 % plan_ate_dir may-dic
 - [x] B-11 · Auditoría con triggers (BACK, 2 pts, should)
   - [x] audit.registrar en param.*, core.asignacion y calc.escenario; motivo desde planbot.motivo; antes/despues jsonb
-- [ ] B-12 · Escenarios, simular() y aplicar_escenario() (BACK, 5 pts, should)
+- [x] B-12 · Escenarios, simular() y aplicar_escenario() (BACK, 5 pts, should)
+  - [x] simular sin efectos + impacto, aplicar crea versión, listar_escenarios y decidir_escenario para el front, 3 ejemplos
 - [ ] B-13 · Multi-instituto (BACK, 3 pts, could)
 
 ## FRONT (César)
