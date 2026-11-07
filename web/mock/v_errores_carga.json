@@ -1,0 +1,7 @@
+[
+  {"carga_id": 1, "archivo": "buk_2026-10.xlsx", "fila": 12, "persona_id": 124981, "campo": "horas_semanales", "motivo": "La jornada debe ser un número entre 1 y 45"},
+  {"carga_id": 1, "archivo": "buk_2026-10.xlsx", "fila": 25, "persona_id": 142571, "campo": "fecha_termino", "motivo": "La fecha de término es anterior a la fecha de ingreso"},
+  {"carga_id": 1, "archivo": "buk_2026-10.xlsx", "fila": 31, "persona_id": null, "campo": "persona_id", "motivo": "Campo obligatorio vacío: PersonaId"},
+  {"carga_id": 1, "archivo": "buk_2026-10.xlsx", "fila": 48, "persona_id": 133218, "campo": "cod_esp", "motivo": "El código de especialidad no existe en los parámetros"},
+  {"carga_id": 1, "archivo": "buk_2026-10.xlsx", "fila": 63, "persona_id": 118826, "campo": "periodo", "motivo": "El período 2025-12-01 está fuera del año de planificación"}
+]
