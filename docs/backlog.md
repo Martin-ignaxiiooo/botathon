@@ -69,7 +69,8 @@ Formato: `- [ ] ID · título` y debajo sus criterios. Al terminar una historia,
 - [x] C-07 · Pantalla Cambios y errores de carga (FRONT, 3 pts)
 - [ ] D-04 · Bases de prueba en `data\buk\` (FRONT, 3 pts)
   - [ ] 01_original.xlsx, 02_cambios.xlsx (40→44 h desde junio, baja desde agosto, alta 999001 desde julio, cambio de cargo desde septiembre, cambio de IT desde octubre), 03_errores.xlsx (horas 0, fechas incoherentes, cargo inexistente, duplicado, texto en número), esperado_cambios.csv, esperado_errores.csv
-- [ ] D-05 · Pruebas SQL con 10 casos dorados de esperado.csv y prueba de forma de vistas (BACK/Andrés, 3 pts) → `tests\sql\`
+- [x] D-05 · Pruebas SQL con 10 casos dorados de esperado.csv y prueba de forma de vistas (BACK/Andrés, 3 pts) → `tests\sql\`
+  - [x] tests\sql\060_casos_dorados.sql (10 casos, 12 campos, 12 meses) · forma de vistas en 030_vistas.sql
 - [ ] D-06 · CI en GitHub Actions (ubuntu-latest, servicio postgres:16, pwsh corre migrar.ps1 y test.ps1, ESLint) (FRONT, 2 pts)
 - [ ] C-01 · postgrest.conf y prueba de endpoints (BACK/Andrés, 2 pts)
 - [x] C-08 · Pantalla Cuadratura (FRONT, 2 pts, should)

@@ -1,6 +1,6 @@
 # Progreso BACK (Andrés · Claude Code)
 Última actualización: 2026-11-07 · por: Claude Code
-Rama actual: feat/B-11-auditoria (desde main con B-10 fusionado, PR #6; PR por API de GitHub)
+Rama actual: feat/B-12-escenarios (desde main con B-10 #6, B-11 #7 y D-05 #8 fusionados)
 Reparto 7-nov: B-09 (vistas api.*, database\views\) lo hace el Codex de César en feat/B-09-vistas; el BACK revisa
 y fusiona su PR. El BACK no toca database\views\ mientras tanto.
 
@@ -102,9 +102,14 @@ y fusiona su PR. El BACK no toca database\views\ mientras tanto.
     current_setting('planbot.motivo') o NULL, antes/despues jsonb. UPDATE sin cambios no se registra (semilla repetible).
   - calc.plan_mes NO tiene trigger: recalcular() deja una sola fila resumen (B-08).
   - Instalación desde cero: la semilla queda registrada como insert con motivo NULL. tests\sql\050_auditoria.sql.
+- D-05 · Casos dorados (tests\sql\060_casos_dorados.sql) hecha. 10 persona-IT del Excel que el sistema reproduce
+  exacto, calculadas en CI desde sus 70 filas BUK embebidas (solo persona_id): 71853/12, 72379/51, 76852/11 (arica),
+  73182/51, 71509/101, 132962/41, 72253/81, 125926/131, 71425/91 (grupal 55 %), 71132/131. Cubre cambio de jornada,
+  colación, asignaciones 0,25-6 h, 7 cargos. Usa api.cuadratura(): ninguna diferencia (salvo ate_semana_total grupal).
+  Generador: se armó con una consulta a la carga BUK local 63 (filas copiadas tal cual al test).
 
 ## Siguiente
-- D-05 casos dorados, B-12 escenarios (si queda tiempo).
+- B-12 escenarios (tope 1,5 h; congelado a las 7:00).
 - Si sobra tiempo: usar data\csv\insumos.csv (Codex) para minutos, distribución y asignaciones por persona, como
   excepción documentada, y subir del 95,5 %.
 
