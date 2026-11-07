@@ -4,6 +4,13 @@ Rama actual: `codex/trabajo`, integrada con origin/main/60fb288 (PR #14) mediant
 
 ## Hecho
 
+- Cierre guía Lucas / PR #14: pull y merge ca7543b integra main/60fb288 sin conflictos, preservando archivos ajenos. Guia_procesos enlaza **las 11 sentencias ODBC exactas** de database/demo/llamadas_robot.sql con sus pasos 1–9; CAST bigint/integer explícitos para Number/Decimal, INSERT por columnas y valores posicionales. Q04 lee estado/contadores; **Q08 retirado**, sin UPDATE de cierre. Q09 solo estado error con V009; P06/Q10 opcional porque recalcular ya rehace cuadratura. Colecciones, lecturas y conciliación de P02/P05 actualizadas; ninguna firma pública ni Data Item se renombra. 15 SQL verdes, incluida 100 como bot_carga con ROLLBACK, y 5338 filas preservadas. Evidencia %TEMP%\PlanBot_PR14_e3687f495fc4480a8dd287677b351e71\ (codigo=0, cluster_detenido=true).
+- Complemento, punto 3 (fechas): Validar Dotacion entrega periodo/fecha_ingreso/fecha_termino como **DateTime** sin hora; Preparar Carga conserva DateTime y acepta ISO heredado. Carga Masiva valida esas columnas antes de conectar y las enlaza como **OdbcType.Date**, incluido DBNull; otros parámetros DateTime generales conservan la hora/tipo timestamp. Global Code y cuerpos actualizados sin cambiar inputs/outputs. LEEME/guía eliminan la conversión manual obsoleta de string y piden a Lucas una fila con término NULL y otra informado antes de lotes completos.
+- Validación final de fechas: cinco BO individuales, dos compilaciones conjuntas y consola con csc Framework4, /noconfig /langversion:5 /warnaserror y referencias BP exactas. Consola detecta 5/5 errores, comprueba columnas DateTime, OdbcType.Date/NULL, rechazo anticipado de Text y conservación de timestamps generales. **27 pruebas Python verdes** (23 previas + 4 del esperado anual); 11 SQL documentadas idénticas al archivo canónico salvo espacios y enlaces locales correctos. Evidencia compilación %TEMP%\PlanBot_BP_Fechas_2dc78a73e4894c3b823e8481e267618b\.
+- E2E repetido tras el cambio de tipos: **10/10 OK, exit 0; 15 SQL verdes**. CSV de carga/errores de 01/02/03 idénticos byte a byte al ensayo anterior, ninguna diferencia no esperada. Evidencia %TEMP%\PlanBot_Fechas_E2E_dcddc9dfd0b74dd78b2a60aa0458774b\evidencia\, cluster_detenido=true. Registro Windows Registry64 confirma que PostgreSQL Unicode(x64) **no está instalado**: prueba de INSERT real por ODBC pendiente de Lucas; no se presenta psql como prueba del driver.
+- César informa PR **#15 ya abierto**. Este cierre se publica en codex/trabajo para actualizarlo. **Esperar «APROBADO»**: todavía no enviar la rama a main. Al recibir esa instrucción, fetch, merge origin/main, pruebas y git push origin codex/trabajo:main; informar hash final. No se ha hecho ese push a main.
+
+
 - Complemento, punto 2: Supuestos del MVP explica expresamente promedio anual para tramo/%NAS, efecto en meses anteriores al cambio dentro del rango recalculado y ejemplo 71555 (marzo 162, abril 159; enero/febrero preservados). README, instalación y LEEME e2e actualizados para que no sigan presentando el esperado anterior como un fallo del back. Solo se documenta la regla confirmada por César; no cambia SQL.
 
 
@@ -31,11 +38,11 @@ Rama actual: `codex/trabajo`, integrada con origin/main/60fb288 (PR #14) mediant
 - tests/e2e/e2e.ps1 congela back/seed de HEAD, crea cluster propio loopback, 01→snapshot→02, duplicado y misma foto con otra huella (NULL); restaura 01 en segunda base nueva y carga 03. Sin DROP ni servicios activos. Resultado: **7 casos OK y 1 FALLA estricta por vigencia individual**; 5/5 eventos CSV y 5/5 errores CSV exactos, conteos 01=3123/3123/0 y 03=3124/3119/5, duplicado sin nueva carga, mínimo NULL sin recálculo, cero diferencias antes del corte global 3. Trece SQL de Andrés verdes sobre 01. Cuadratura: 01 95.55 %, 02 95.08 %, 03 restaurado 95.55 %. No se ocultó la falla ni se presenta ejecución del script como Blue Prism; docs/demo.md aclara camino principal/contingencia.
 - Evidencia del punto 1: %TEMP%\PlanBot_E2E_160145c2ee844e5880680c23afa351b3\ (backend 72cc3a4), resultados.json, ejecucion.json (cluster_detenido=true), dump01, resúmenes/CSV. Repetición independiente del lector minimizado produce exactamente los mismos CSV. Datos de la diferencia se conservan en tests/e2e/para_andres_71555.csv (20 campos con precisión PostgreSQL). Todos los servidores propios de prueba detenidos.
 
-### Para Andrés · diferencia del back/criterio de vigencia individual
+### Histórico resuelto · esperado de vigencia individual
 
 Tras 02, mes_minimo_afectado=3 (por el cargo de otra persona). Para **71555, IT 131**, la jornada cambia desde mayo (5); el chequeo más estricto del guion espera conservar marzo/abril como en 01, pero cambian:
 
-| persona_id / IT | mes | campo | esperado (snapshot 01) | obtenido tras 02 |
+| persona_id / IT | mes | campo | esperado antiguo (snapshot 01) | obtenido correcto tras 02 |
 |---|---:|---|---:|---:|
 | 71555 / 131 | 3 | ate_dir | 141 | 162 |
 | 71555 / 131 | 3 | meta | 126 | 145 |
@@ -43,7 +50,7 @@ Tras 02, mes_minimo_afectado=3 (por el cargo de otra persona). Para **71555, IT 
 | 71555 / 131 | 4 | meta | 124 | 143 |
 | 71555 / 131 | 3 y 4 | ate_dir_semana | 34 | 39 |
 
-El corte **global** sí se respeta (enero/febrero intactos). Revisar con Andrés/Teletón si estas diferencias se aceptan por promedios/tramo anual o si se exige conservar la vigencia individual del guion: no se afirma un defecto de fórmula demostrado ni se cambian reglas para llegar a verde. El CSV incluye horas, porcentajes y FOJA además de esos valores. El e2e conserva exit 1/FALLA de ese chequeo mientras esté pendiente; no introduce excepción por persona_id. No se investigaron de nuevo B/AX/134744.
+El corte **global** sí se respeta (enero/febrero intactos). Revisar con Andrés/Teletón si estas diferencias se aceptan por promedios/tramo anual o si se exige conservar la vigencia individual del guion: no se afirma un defecto de fórmula demostrado ni se cambian reglas para llegar a verde. El CSV incluye horas, porcentajes y FOJA además de esos valores. Ese ensayo histórico conservó exit 1; César confirmó después el efecto anual y se corrigió el esperado. Ahora el e2e pasa 10/10 sin excluir persona_id ni modificar SQL. No se investigaron de nuevo B/AX/134744.
 
 - Corrección urgente previa a la cola: pull de main/d0cea0617482cdb8eaa21896aba89cc35b7008b2 (JWT y área). levantar_demo importa PGRST_JWT_SECRET y lo entrega al hijo; conserva ajustes jwt-* de la plantilla y restaura variables del llamador, sin borrar todos los PGRST_*. Siempre llama instalar_sin_docker.ps1 -SinPruebas y reinicia solo su API registrada para cargar esquema/JWT nuevos. Registro de proceso obtenido fresco del SO (Start-Process podía cachear Path vacío); hora comparada como ticks UTC, sin depender del formato regional.
 - Versión única en tools/vm/postgrest-version.json: 12.2.3, comprobada ejecutando el binario de César en C:\tools\postgrest\artifacts\postgrest-windows-x64\postgrest.exe. Asset oficial confirmado y descargado; SHA-256 del EXE descargado idéntico al instalado. No se usa latest ni una versión distinta por parámetro. API/secretos en entorno del hijo; ningún secreto/token en salida ni conf local.
@@ -118,17 +125,16 @@ El corte **global** sí se respeta (enero/febrero intactos). Revisar con Andrés
 
 ## Siguiente
 
-- **PR PENDIENTE DE ABRIR EN LA WEB**: gh no tiene sesión. Rama codex/trabajo publicada; abrir PR hacia main con el título pedido «fix(vm): JWT, reinstalación, PostgREST fijo, verificar_vm y casos regenerados». Descripción en %TEMP%\PlanBot_PR_codex_trabajo.md; debe mencionar PG_SUPER_PASSWORD sin valor. Tareas 2–3/5–6 pueden agruparse en ese PR. Andrés revisa; no se ha fusionado nada a main ni se presume aprobación de los cambios posteriores a 72cc3a4.
-- **Tarea 4 pendiente de Andrés**: publicar database/demo/llamadas_robot.sql en main (borrador b61042e en origin/docs/cierre-back-demo). Tras fetch, actualizar cada llamada de guia_procesos.md con la sentencia exacta, retirar UPDATE Q08 de contadores y probar 100_llamadas_robot.sql en aislado. No usar el Q08 anterior en la construcción final sin esta revisión; el simulador ya consulta el cierre del back.
-- **Para Andrés**: criterio estricto de vigencia individual del guion conserva FALLA en 71555/131, marzo–abril. Acordar cómo presentar ese chequeo frente al corte global y promedios del back; valores en tabla anterior y tests/e2e/para_andres_71555.csv. No alterar SQL ni esperados para ocultarlo. B/AX no se investigan de nuevo y 134744/11 es diferencia explicada.
-- **Lucas/César**: Check Code con los fuentes corregidos, release real, ODBC x64, catálogos aprobados, Runtime/colas y ensayo visible BP → SQL → dashboard en VM. Los ensayos por psql no sustituyen esta validación. Acordar autenticación del front para entregar el token sin imprimirlo; aprobar y aplicar son pasos distintos.
+- **PR #15 abierto**, según César; cambios publicados en codex/trabajo. Esperar el mensaje **APROBADO**. Solo después: git fetch, merge origin/main, pruebas pertinentes en aislado y git push origin codex/trabajo:main; devolver commit final de main. No se ha publicado este cierre en main.
+- **Lucas**: ejecutar Check Code con los Global Code/cuerpos actualizados y probar **una fila primero por ODBC** en su base de ensayo: periodo/fecha_ingreso DateTime y fecha_termino DBNull, verificar días exactos/NULL; repetir con término informado. Aquí falta el driver x64; no se hizo INSERT real por ODBC. No comenzar lotes completos si esa prueba falla.
+- **Lucas/César**: release, catálogos aprobados, Excel VBO/Runtime/colas y recorrido visual BP → SQL → dashboard en VM. Los ensayos por psql no sustituyen esa validación. Entrega de token al front sin imprimirlo; aprobar y aplicar son pasos distintos.
 
 ## Errores conocidos
 
-- E2E final: **8 OK / 1 FALLA** del criterio individual, exit 1 deliberadamente conservado. Pasan 5/5 cambios, 5/5 errores, ambos conteos, repetido, mínimo NULL, corte global y reinicio exacto a 5338 filas. No se presenta como suite totalmente verde. 14 SQL y 23 pruebas Python verdes; compilación estricta de cinco BO y consola correcta.
-- PS5.1 iniciado por Start-Process desde PS7 puede heredar un PSModulePath incompatible. El wrapper de ensayos importa Utility desde su PSHOME; no modifica scripts del back. Todos los clusters/procesos propios de prueba quedaron detenidos; no se intervienen los servicios activos del equipo.
-- El driver ODBC x64 falta en este PC; revisión de registro queda roja. Check Code/ODBC/Excel VBO/cola y accesibilidad real siguen pendientes de VM/Lucas/César.
-- Compilación local con csc Framework 4/C# 5 (subconjunto de C# 7.3); sin reference assemblies 4.7 ni Roslyn 7.3 verificados. No se afirma certificación de Blue Prism por compilar fuentes.
-- Carga Masiva confirma por lote: un error puede dejar lotes previos confirmados. Conciliar antes de reintentar; nunca borrar stg ni forzar hash para ocultarlo.
-- insumos.csv conserva 471 filas/469 pares del Excel: no deduplicar automáticamente. Plan y cuadratura actuales tienen limitaciones de fuentes individuales y proyección documentadas; no se promete 100 % independiente. B se mantiene, sin adoptar AX ni excepciones por identificador.
-- Los archivos sin seguimiento cd y git ya existían y se conservan. Git imprime un aviso de metadatos del worktree temporal antiguo (Permission denied al eliminar .git/worktrees/bothaton-merge); no impidió merge, commits ni push y no se fuerza su borrado.
+- **71555 resuelto**: el esperado de invariancia individual era incorrecto por tramo/NAS anual. No es un error pendiente del back. E2E final **10/10 OK**, 15 SQL, 27 Python y compilación/consola verdes. 134744/11 sigue como diferencia explicada y B se conserva, sin reabrir AX.
+- ODBC x64 ausente en este PC: queda pendiente el INSERT real de una fila y Check Code/Runtime de Lucas. Tipos .NET/ODBC Date/DBNull comprobados sin conexión y serialización CSV del e2e sin regresiones.
+- PS5.1 iniciado desde PS7 puede heredar PSModulePath incompatible; el wrapper de ensayos importa Utility desde su PSHOME. Todos los clusters propios quedaron detenidos, sin intervenir servicios activos.
+- Compilación local Framework4/C#5, subconjunto de C#7.3; no se afirma certificación de Runtime BP/.NET4.7 por compilar fuentes.
+- Carga Masiva confirma por lote: ante falla pueden quedar lotes anteriores confirmados. Conciliar antes de reintentar; no borrar stg ni forzar hash.
+- insumos.csv conserva 471 filas/469 pares del Excel; no deduplicar automáticamente. Las limitaciones de fuentes/proyección y cuadratura permanecen documentadas.
+- Archivos sin seguimiento cd y git preservados. Aviso Git de metadatos del worktree temporal antiguo (Permission denied al eliminar .git/worktrees/bothaton-merge) no impidió merge/commit/push; no se fuerza su borrado.

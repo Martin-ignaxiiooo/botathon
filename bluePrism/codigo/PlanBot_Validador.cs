@@ -61,7 +61,7 @@ public class PlanBot_Validador
         validas = new DataTable();
         validas.Columns.Add("carga_id", typeof(long));
         foreach (string campo in campos)
-            validas.Columns.Add(campo, campo == "persona_id" ? typeof(long) : campo == "it" || campo == "ndias" ? typeof(int) : campo == "horas_semanales" ? typeof(decimal) : typeof(string));
+            validas.Columns.Add(campo, campo == "persona_id" ? typeof(long) : campo == "it" || campo == "ndias" ? typeof(int) : campo == "horas_semanales" ? typeof(decimal) : campo == "periodo" || campo == "fecha_ingreso" || campo == "fecha_termino" ? typeof(DateTime) : typeof(string));
         errores = new DataTable();
         errores.Columns.Add("carga_id", typeof(long)); errores.Columns.Add("fila", typeof(int)); errores.Columns.Add("persona_id", typeof(long));
         errores.Columns.Add("campo", typeof(string)); errores.Columns.Add("valor", typeof(string)); errores.Columns.Add("motivo", typeof(string));
@@ -104,9 +104,10 @@ public class PlanBot_Validador
             foreach (string campo in campos) if (validas.Columns[campo].DataType == typeof(string)) v[campo] = Texto(r[campo]);
             v["persona_id"] = persona; v["it"] = (int)it; v["horas_semanales"] = horas;
             v["ndias"] = ndiasVacio ? (object)DBNull.Value : (int)ndias;
-            v["periodo"] = periodo.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-            v["fecha_ingreso"] = ingreso.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-            v["fecha_termino"] = tieneTermino ? (object)termino.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : DBNull.Value;
+            // DateTime tipado, sin texto regional/NVarChar en las columnas date.
+            v["periodo"] = periodo.Date;
+            v["fecha_ingreso"] = ingreso.Date;
+            v["fecha_termino"] = tieneTermino ? (object)termino.Date : DBNull.Value;
             validas.Rows.Add(v);
         }
     }

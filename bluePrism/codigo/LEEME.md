@@ -78,27 +78,11 @@ Obtener institutos y cargos desde los catálogos vigentes aprobados por Andrés,
 
 Validar Dotacion devuelve una fila por **cada error**, por lo que con_error debe contarse por **filas originales distintas**, no por cantidad de errores. `persona_id` queda NULL en el error cuando no se puede convertir, y `valor` guarda el dato rechazado. Una fila con cualquier error no entra a validas. Se marca como duplicada la segunda y siguientes apariciones de persona_id + it + periodo, incluso si la primera tenía otro error; la primera conserva su propio resultado. Fechas aceptadas: DateTime, serial Excel numérico, ISO yyyy-MM-dd (también hora sin zona) y fecha chilena día/mes/año o día-mes-año. No se infieren fechas de texto numérico. Fecha Ingreso inválida también se informa; Fecha Término, si existe, debe ser **estrictamente posterior**. Los límites 1–45 de horas corresponden a la validación pedida para esta entrada, no al cálculo de la jornada legal. Ndias vacío queda NULL; si se informa debe ser entero int.
 
-validas contiene exactamente las 17 columnas del contrato: carga_id bigint, persona_id bigint, it/ndias int, horas_semanales decimal, fechas en texto ISO yyyy-MM-dd y los demás textos. No contiene `fila`: esa columna solo viaja a errores. Los números son valores .NET, no texto dependiente de la región; al exportarlos usar InvariantCulture para obtener punto decimal. Se acepta coma o punto decimal sin separadores de miles.
+validas contiene exactamente las 17 columnas del contrato: carga_id bigint, persona_id bigint, it/ndias int, horas_semanales decimal, fechas DateTime sin hora (periodo/fecha_ingreso/fecha_termino) y los demás textos. No contiene `fila`: esa columna solo viaja a errores. Los números son valores .NET, no texto dependiente de la región; al exportarlos usar InvariantCulture para obtener punto decimal. Se acepta coma o punto decimal sin separadores de miles.
 
-**Antes de enviar validas a Carga Masiva**, convertir las tres columnas de fecha ISO a DateTime en una colección auxiliar para que ODBC enlace tipos de fecha en lugar de varchar. Crear un Code stage con entrada `validas` (Collection), salida `datosCarga` (Collection) y pegar este cuerpo; no insertar valores de fecha concatenados en SQL:
+**Fechas seguras antes de ODBC:** Validar Dotacion entrega las tres fechas como columnas **DateTime**, nunca como Text/NVarChar. Preparar Carga conserva ese tipo (también acepta ISO yyyy-MM-dd de una versión anterior y lo convierte a DateTime). Usar esa acción y enviar **datosCarga** a Carga Masiva, según la guía. Carga Masiva valida el tipo de las columnas date de stg.buk_fila antes de abrir conexión y las enlaza como **OdbcType.Date**, incluso fecha_termino=DBNull. No usar una Collection definida como Text para volver a copiar las fechas ni pegar el antiguo snippet que las trataba siempre como string. Los nombres de entradas/salidas se conservan.
 
-```csharp
-datosCarga = validas.Clone();
-string[] fechasCarga = { "periodo", "fecha_ingreso", "fecha_termino" };
-foreach (string campo in fechasCarga) datosCarga.Columns[campo].DataType = typeof(DateTime);
-foreach (DataRow origen in validas.Rows)
-{
-    DataRow destino = datosCarga.NewRow();
-    foreach (DataColumn columna in validas.Columns)
-    {
-        string campo = columna.ColumnName;
-        if (Array.IndexOf(fechasCarga, campo) >= 0 && !origen.IsNull(campo))
-            destino[campo] = DateTime.ParseExact((string)origen[campo], "yyyy-MM-dd", CultureInfo.InvariantCulture);
-        else destino[campo] = origen[campo];
-    }
-    datosCarga.Rows.Add(destino);
-}
-```
+El driver **PostgreSQL Unicode(x64) no está instalado en este PC**: no se ha certificado un INSERT real por ODBC. Lucas debe ejecutar primero una fila en una base de ensayo, con periodo/fecha_ingreso DateTime y fecha_termino DBNull, usando Carga Masiva. Comprobar en SQL el día exacto, la ausencia de hora y el NULL; luego probar otra fila con fecha_termino DateTime. No registrar connStr/credenciales ni comenzar los lotes completos si esa prueba falla. La consola comprueba tipos .NET y OdbcType.Date/DBNull sin driver; el e2e por psql no sustituye esta prueba.
 
 Cargar datosCarga en `stg.buk_fila` y errores en `stg.error_fila`, ambos con el mismo cargaId. Conservar errores para la cola y el informe de carga. No registrar el Excel entero ni credenciales en Session Logs.
 
@@ -134,6 +118,9 @@ Release/colas, permisos y datos reales de VM se verifican con [el guion E2E](../
 
 Seguir [guia_procesos.md](guia_procesos.md): páginas, Data Items, mapeos, SQL y recuperación del maestro. Crear/publicar las cuatro acciones auxiliares de la tabla anterior con los cuerpos de los métodos homónimos, sin pegar la clase completa. No cambian las entradas/salidas de las acciones originales.
 
-Actualización del estado de §9: B-07/B-08 ya publican detectar_cambios, mes_minimo_afectado y recalcular en api; B-09 publica las ocho vistas. El hash/versiones desplegados deben comprobarse en la VM. La corrección de con_error en origin/feat/B-04-con-error conserva errores de BP pero agrega **mensajes**: P05 reconcilia por filas distintas de BP cuando no hay rechazos adicionales BD. Si los hay, detener y conciliar, sin adivinar el número de fila original. No usar filasCore proyectadas como válidas del archivo.
+Actualización del estado de §9: B-07/B-08 ya publican detectar_cambios, mes_minimo_afectado y recalcular en api; B-09 publica las ocho vistas. El hash/versiones desplegados deben comprobarse en la VM. La corrección de con_error en origin/feat/B-04-con-error conserva errores de BP pero agrega **mensajes**: P05 lee y concilia los contadores de stg.carga con BP cuando no hay rechazos adicionales BD; no los sobrescribe. Si los hay, detener y conciliar, sin adivinar el número de fila original. No usar filasCore proyectadas como válidas del archivo.
 
-Crear Parametros evita rellenar a mano colecciones dinámicas de tipos mixtos: los casos de la guía usan todo Text o todo Number con casts SQL explícitos. Leer Numero Resultado distingue cero, DBNull y colección vacía; mínimo NULL no dispara recálculo. Preparar Carga convierte ISO a DateTime y cuenta una sola vez cada fila inválida. Mover Archivo usa ID/tiempo/nombre, no sobrescribe y requiere carpeta existente; solo se llama después de cerrar Excel y confirmar P05. El motivo de recálculo se establece con la RPC en una consulta SQL dependiente, en la misma conexión/transacción, según Q07 de la guía.
+Crear Parametros evita rellenar a mano colecciones dinámicas de tipos mixtos: los casos de la guía usan todo Text o todo Number con casts SQL explícitos. Leer Numero Resultado distingue cero, DBNull y colección vacía; mínimo NULL no dispara recálculo. Preparar Carga conserva DateTime (convierte ISO heredado si es necesario) y cuenta una sola vez cada fila inválida. Carga Masiva enlaza las tres fechas BUK como OdbcType.Date, incluido DBNull. Mover Archivo usa ID/tiempo/nombre, no sobrescribe y requiere carpeta existente; solo se llama después de cerrar Excel y confirmar P05. El motivo de recálculo se establece con la RPC en una consulta SQL dependiente, en la misma conexión/transacción, según Q07 de la guía.
+
+
+Actualización PR #14: la fuente SQL vigente es [llamadas_robot.sql](../../database/demo/llamadas_robot.sql). El antiguo UPDATE Q08 de cierre se retira: cargar_dotacion ya fija estado/contadores y P05 solo los lee. Q09 cambia únicamente estado='error' con permiso V009; P06 es opcional porque recalcular rehace cuadratura. Usar los mapeos del apartado 7 de la guía.

@@ -4,9 +4,11 @@ Guía de construcción, no un release ya importado. Crear cinco procesos con est
 
 Las acciones C# van en **Object Studio**, nunca en Process Studio. Preparar los cinco BO del [LEEME](LEEME.md), publicar las acciones y ejecutar Check Code. Pegar el cuerpo de cada método sin firma/clase. No se requiere Npgsql. Los .cs usan sintaxis compatible con C# 7.3/.NET 4.7; las pruebas externas no sustituyen Check Code/ODBC en el Runtime.
 
+Fuente de las sentencias ODBC: [database/demo/llamadas_robot.sql](../../database/demo/llamadas_robot.sql), publicada en main por el PR #14 (60fb288), y su ensayo tests/sql/100_llamadas_robot.sql. Usar las sentencias de los comentarios **ODBC:** con `?`, no las variables `:carga_id`/`\gset` de psql ni los valores de ejemplo. La tabla del apartado 7 vincula cada llamada de esta guía con el paso exacto de ese archivo.
+
 ## 1. Preparación común
 
-1. Confirmar las cinco RPC en api: cargar_parametros, cargar_dotacion, detectar_cambios, mes_minimo_afectado y recalcular. El mínimo es NULL cuando no hay cambios; la primera carga pide mes 1. No llamar funciones sin api ni inventar funciones nuevas.
+1. Confirmar las cinco RPC en api: cargar_parametros, cargar_dotacion, detectar_cambios, mes_minimo_afectado y recalcular. El mínimo es NULL cuando no hay cambios; la primera carga pide mes 1. No llamar funciones sin api ni inventar funciones nuevas. Confirmar también V009 para Q09: el robot puede marcar estado='error'; los contadores los deja cargar_dotacion y **no se actualizan desde BP**.
 2. Configurar credencial **PlanBot_Postgres**, usuario bot_carga, y Environment Variable **ConnStrSinClave** como indica LEEME. La acción PlanBot_PostgreSQL → Armar Conexion obtiene usuario/clave con Credentials → Get Login. Desactivar logging de clave, connStr, parámetros sensibles y Excel crudo; no incluirlos en la cola ni en una Exception.
 3. Crear carpetas entrada\buk, preparar, procesados y errores bajo C:\PlanBot. Completar la copia en preparar y después moverla a entrada\buk; no encolar un archivo en copia. Cerrar Excel antes de mover el archivo procesado.
 4. Crear Work Queue **PlanBot_BUK**, clave ruta, sin reintentos automáticos. Un schedule ejecuta solo el maestro; no programar además P01/P02/P03/P05. P00 carga reglas previamente usando PlanBot_Reglas → Transformar Distribucion, añade carga_id y usa Carga Masiva + api.cargar_parametros; no repetir P00 por cada BUK.
@@ -37,7 +39,7 @@ Todas las tablas siguientes son el orden de enlaces de la rama normal. «Proceso
 
 **P(modo; valores)** significa una etapa Acción *PlanBot_PostgreSQL / Crear Parametros*. Mapear siempre los ocho inputs: modo indicado; texto1/texto2="" y numero1..4=0 salvo los valores enumerados en orden. Guardar salida en parametros. T1 usa texto1; T2 texto1/texto2; N1 numero1; N2 numero1/numero2; N4 numero1..4. El BO construye filas posicionales nombre/valor, con tipo Text o Number homogéneo. No construir SQL concatenando Data Items ni añadir comillas alrededor de ?.
 
-**Q(nn)** significa Acción *PlanBot_PostgreSQL / Ejecutar Consulta*: connStr=[connStr], sql=texto Qnn del apartado 7, parametros=[parametros], resultado→[resultado]. Para UPDATE usar *Ejecutar Comando*, mismos inputs y filasAfectadas→[filasAfectadas]. **L(columna→item)** significa Acción *Leer Numero Resultado*: resultado=[resultado], columna literal → numero=[item], esNulo=[esNulo], filasResultado=[filasResultado]. Estos atajos son etapas distintas, no un BO ficticio.
+**Q(nn)** significa Acción *PlanBot_PostgreSQL / Ejecutar Consulta*: connStr=[connStr], sql=texto Qnn del apartado 7, parametros=[parametros], resultado→[resultado]. Para Q09 usar *Ejecutar Comando*, mismos inputs y filasAfectadas→[filasAfectadas]. El antiguo UPDATE Q08 está retirado. **L(columna→item)** significa Acción *Leer Numero Resultado*: resultado=[resultado], columna literal → numero=[item], esNulo=[esNulo], filasResultado=[filasResultado]. Estos atajos son etapas distintas, no un BO ficticio.
 
 | Collection | Campos y tipos exactos | Inicial |
 |---|---|---|
@@ -47,7 +49,7 @@ Todas las tablas siguientes son el orden de enlaces de la rama normal. «Proceso
 | cargos | cargo_origen Text | Filas aprobadas del catálogo |
 | archivosPrueba, datosItem | ruta Text | archivosPrueba: una fila C:\PlanBot\entrada\buk\01_original.xlsx; datosItem: vacía |
 
-limpias: it, instituto, persona_id, area, sub_area, centro_costo, periodo, tipo_contrato, tipo_trabajador, fecha_ingreso, fecha_termino, horas_semanales, cargo, dias_jornada, ndias, cod_esp; más fila Number. Conserva los valores originales para validar. validas/datosCarga: **carga_id + los 16 campos anteriores, sin fila**. Números .NET: carga_id/persona_id bigint, it/ndias int, horas_semanales decimal; otros Text salvo las tres fechas: validas entrega ISO Text, Preparar Carga las convierte a DateTime en datosCarga. errores: carga_id Number, fila Number, persona_id Number nullable, campo/valor/motivo Text. Un DBNull real no es el texto "NULL".
+limpias: it, instituto, persona_id, area, sub_area, centro_costo, periodo, tipo_contrato, tipo_trabajador, fecha_ingreso, fecha_termino, horas_semanales, cargo, dias_jornada, ndias, cod_esp; más fila Number. Conserva los valores originales para validar. validas/datosCarga: **carga_id + los 16 campos anteriores, sin fila**. Números .NET: carga_id/persona_id bigint, it/ndias int, horas_semanales decimal; otros Text salvo las tres fechas: validas entrega DateTime sin hora; Preparar Carga conserva DateTime en datosCarga (convierte ISO heredado si es necesario). errores: carga_id Number, fila Number, persona_id Number nullable, campo/valor/motivo Text. Un DBNull real no es el texto "NULL".
 
 ## 3. P01 Recibir BUK
 
@@ -68,7 +70,7 @@ Error: ninguna reconexión/reintento de INSERT a ciegas. Si cargaId>0, el maestr
 
 ## 4. P02 Cargar BUK
 
-Start: ruta Text, connStr Text, cargaId Number, institutos/cargos Collection. End: leidas, filasValidas, filasConError, mensajesError Number. Locales: handle Number=0; libro Text=""; excelAbierto/libroAbierto Flag=False; filasDescartadas/insertadas/filasCore/alertas/totalMensajes/filasResultado Number=0; esNulo Flag=False; colecciones de apartado 2; errorTipo/errorDetalle Text. No conservar datos entre archivos.
+Start: ruta Text, connStr Text, cargaId Number, institutos/cargos Collection. End: leidas, filasValidas, filasConError, mensajesError Number. Locales: handle Number=0; libro Text=""; excelAbierto/libroAbierto Flag=False; filasDescartadas/insertadas/filasCore/alertas/filasResultado Number=0; esNulo Flag=False; colecciones de apartado 2; errorTipo/errorDetalle Text; leidasBD/validasBD/conErrorBD Number=0; estadoBD Text="". No conservar datos entre archivos.
 
 | Orden / etapa | Tipo, objeto y acción | Entradas → salidas / enlace |
 |---|---|---|
@@ -83,17 +85,19 @@ Start: ruta Text, connStr Text, cargaId Number, institutos/cargos Collection. En
 | 6 Limpiar | Acción PlanBot_Limpieza / Limpiar Dotacion | datos=[datosExcel] → limpias, filasDescartadas |
 | 7 Validar | Acción PlanBot_Validador / Validar Dotacion | limpias, institutos, cargos, cargaId → validas, errores |
 | 8 Tipar/contar | Acción PlanBot_PostgreSQL / Preparar Carga | validas, limpias, errores → datosCarga, leidas, filasValidas, filasConError, mensajesError |
-| 9 Guardar errores | Acción PlanBot_PostgreSQL / Carga Masiva | connStr, tabla="stg.error_fila", datos=[errores], tamanoLote=500 → insertadas |
+| 9 Guardar errores | Acción PlanBot_PostgreSQL / Carga Masiva | connStr, tabla="stg.error_fila", datos=[errores], tamanoLote=500 → insertadas; INSERT del paso 4 de llamadas_robot.sql, motivo sin prefijo cargar_dotacion: |
 | 10 Hay válidas | Decision | filasValidas>0: seguir; False: Exception «Sin filas válidas; no reemplazar dotación» |
-| 11 Guardar válidas | Acción PlanBot_PostgreSQL / Carga Masiva | connStr, tabla="stg.buk_fila", datos=[datosCarga], tamanoLote=500 → insertadas |
+| 11 Guardar válidas | Acción PlanBot_PostgreSQL / Carga Masiva | connStr, tabla="stg.buk_fila", datos=[datosCarga], tamanoLote=500 → insertadas; INSERT del paso 3 de llamadas_robot.sql |
 | 12 ID para cargar | P(N1; cargaId) | numero1=[cargaId] |
 | 13 Cargar core | Q03 | RPC real cargar_dotacion |
 | 14 Leer respuesta | L(filas→filasCore), luego L(alertas→alertas) | Dos Action stages; filasCore incluye proyección y **no** es filasValidas |
-| 15 Revisar rechazos BD | P(N1; cargaId), Q04, L(mensajes→totalMensajes) | Si totalMensajes<>mensajesError: Exception «BD agregó/eliminó errores: conciliar carga»; si iguales, End |
+| 15 Leer cierre BD | P(N1; cargaId), Q04 | SELECT de contadores del paso 5; no UPDATE |
+| 16 Leer campos | L(leidas→leidasBD), L(validas→validasBD), L(con_error→conErrorBD); Calculation estadoBD=[resultado.estado] | Exigir una fila y números no NULL en cada lectura |
+| 17 Conciliar | Decision | Exigir estadoBD="cargada", leidasBD=leidas, validasBD=filasValidas, conErrorBD=filasConError; si difiere, Exception «BD y BP difieren: conciliar carga»; si coincide, End |
 
 La lectura debe conservar la cabecera Excel de fila 2 en datosExcel (o en sus nombres de columna). No quitar filas antes de Limpiar Dotacion: se perdería fila original. Si el VBO dispone de Use Header, dejar False para conservar cabecera; si no, comprobar que datosExcel contiene IT/PersonaId/Periodo en la fila útil. Preferir valores Value/Value2, no Text formateado. Las etiquetas/inputs del VBO pueden variar con la versión importada: comprobarlos en Object Studio antes de mapear; no existe un VBO universal pegable en este repo. Referencia primaria: [MS Excel VBO User Guide](https://community.blueprism.com/hfgie69872/attachments/hfgie69872/digital-exchange/4467/1/Excel%20Guide.pdf).
 
-Error: si libroAbierto=True intentar Close Workbook; si excelAbierto=True intentar Close Instance, incluso cuando falló Open Workbook. Proteger cada cierre con su propio Recover/Resume para que el fallo al cerrar el libro no impida cerrar la instancia. Solo se cierra el handle propio; conservar y reemitir el error original. Puede haber lotes confirmados. No volver a ejecutar 9–13 automáticamente; no tiene DELETE el robot. Si hay rechazos adicionales de BD, no inventar una correspondencia entre su fila reenumerada y fila original BP; parar antes del recálculo y conciliar/restaurar con Andrés.
+Error: si libroAbierto=True intentar Close Workbook; si excelAbierto=True intentar Close Instance, incluso cuando falló Open Workbook. Proteger cada cierre con su propio Recover/Resume para que el fallo al cerrar el libro no impida cerrar la instancia. Solo se cierra el handle propio; conservar y reemitir el error original. Puede haber lotes confirmados. No volver a ejecutar 9–13 automáticamente; no tiene DELETE el robot. Los contadores se leen del back; no se corrigen por UPDATE. Si varios mensajes BP comparten fila y los conteos del back no coinciden con los de Preparar Carga, parar y conciliar. Si hay rechazos adicionales de BD, no inventar una correspondencia entre su fila reenumerada y fila original BP; parar antes del recálculo y conciliar/restaurar con Andrés.
 
 ## 5. P03-P04 Cambios y Recalculo
 
@@ -115,15 +119,17 @@ Error: detener el archivo y propagar. api.recalcular es transaccional para el re
 
 ## 6. P05 Cerrar Carga y maestro
 
-**P05** Start: connStr Text, cargaId/leidas/filasValidas/filasConError/mensajesError Number. End sin datos sensibles. Locales resultado/parametros Collection; totalMensajes/filasAfectadas/filasResultado Number; esNulo Flag; errorTipo/errorDetalle Text.
+**P05** Start: connStr Text, cargaId/leidas/filasValidas/filasConError/mensajesError Number. End sin datos sensibles. Locales resultado/parametros Collection; leidasBD/validasBD/conErrorBD/filasResultado Number=0; estadoBD Text=""; esNulo Flag=False; errorTipo/errorDetalle Text.
 
 | Orden | Tipo, objeto y acción | Mapeo |
 |---|---|---|
-| 1 Reconciliar | P(N1; cargaId), Q04, L(mensajes→totalMensajes) | Exigir totalMensajes=mensajesError y leidas=filasValidas+filasConError |
-| 2 Cerrar | P(N4; leidas, filasValidas, filasConError, cargaId), Ejecutar Comando Q08 | Los cuatro valores Number en ese orden; exigir filasAfectadas=1 |
-| 3 End | End | No mueve archivos ni marca la cola antes de confirmar UPDATE |
+| 1 Leer cierre | P(N1; cargaId), Q04 | SELECT leidas/validas/con_error/estado del paso 5 de llamadas_robot.sql |
+| 2 Leer contadores | L(leidas→leidasBD), L(validas→validasBD), L(con_error→conErrorBD) | Exigir filasResultado=1 y esNulo=False en cada lectura |
+| 3 Leer estado | Calculation | estadoBD=[resultado.estado], única fila |
+| 4 Conciliar | Decision | estadoBD="cargada", leidasBD=leidas, validasBD=filasValidas, conErrorBD=filasConError y leidas=filasValidas+filasConError; si difiere, Exception y conciliación con Andrés |
+| 5 End | End | No UPDATE ni Q08; solo después de confirmar cierre BD el maestro mueve archivo y completa cola |
 
-P05 cuenta errores **por fila distinta**, no por mensajes, y no usa filasCore (5.338 con original proyectado). El back tiene una corrección de contadores que cuenta mensajes; Q08 cierra con los contadores de BP solo si la BD no agregó rechazos. No oculta nuevos errores ni modifica las funciones. Error: propagar; no declarar la carga finalizada.
+cargar_dotacion ya deja estado y contadores (incluye los rechazos de la base). P05 **solo los lee y concilia** con los datos de BP; no usa filasCore proyectadas como válidas ni mensajesError como filas con error. Se conservan los inputs de P05 para compatibilidad con el maestro; mensajesError es informativo. Si la BD agrega rechazos o cuenta distinto una fila con varios errores, detener y conciliar sin sobrescribir sus datos. **Q08 no va**: eliminar la etapa anterior de UPDATE, no dejarla desconectada como alternativa. Error: propagar y no declarar la carga finalizada.
 
 **Maestro PlanBot Ciclo BUK**. Páginas exactas: Main, Encolar Prueba, Archivo, Error. Colecciones institutos/cargos aprobadas, archivosPrueba/datosItem según apartado 2. Items: cola Text="PlanBot_BUK"; encolarPrueba Flag=False; itemId Text=""; status Text=""; attempts Number=0; ruta Text=""; connStr Text="" (logging off); cargaId Number=0; duplicado/cargaCreada/bdConfirmada Flag=False; leidas/filasValidas/filasConError/mensajesError/mesMinimo/filasPlan/ms Number=0; huboRecalculo Flag=False; rutaDestino Text=""; errorTipo/errorDetalle Text=""; parametros/resultado Collection; filasAfectadas Number=0. Entrada de Start opcional: encolarPrueba Flag. No hay código C# en estas páginas.
 
@@ -151,55 +157,110 @@ Error del maestro: Recover del bloque Trabajo de Main (que contiene la referenci
 
 ## 7. SQL exacto para pegar
 
-Q01, T1(hash):
+Referencia canónica: [llamadas_robot.sql](../../database/demo/llamadas_robot.sql). Cada etiqueta remite al número de paso del archivo:
+
+| Llamada de esta guía | Etapa / acción ODBC | Paso canónico |
+|---|---|---|
+| Q01 | P01, Ejecutar Consulta, T1(hash) | 1 |
+| Q02 | P01, Ejecutar Consulta, T2(ruta, hash) | 2 |
+| QM-BUK | P02, Carga Masiva, datosCarga | 3 |
+| QM-ERROR | P02, Carga Masiva, errores | 4 |
+| Q03 | P02, Ejecutar Consulta, N1(cargaId) | 5, cargar_dotacion |
+| Q04 | P02/P05, Ejecutar Consulta, N1(cargaId) | 5, SELECT de contadores |
+| Q05 | P03, Ejecutar Consulta, N1(cargaId); lista opcional | 6, detectar_cambios |
+| Q06 | P03, Ejecutar Consulta, N1(cargaId) | 6, mes_minimo_afectado |
+| Q07 | P04, Ejecutar Consulta, N2(cargaId, mesMinimo) | 7 |
+| Q08 | **RETIRADO: no crear ninguna etapa UPDATE de cierre** | 5 confirma cierre automáticamente |
+| Q09 | Recuperación, Ejecutar Comando, N1(cargaId) | 9; requiere V009 |
+| Q10 | P06 opcional, Ejecutar Consulta, parametros vacía | 8 |
+
+**Parámetros:** `?` son posicionales; el orden de las filas de parametros debe coincidir, no lo determina nombre. Un Number de BP llega como Decimal (.NET): usar **CAST(? AS bigint)** para IDs y **CAST(? AS integer)** para meses en RPC. Sin CAST, PostgreSQL busca por ejemplo cargar_dotacion(numeric) y no encuentra la función bigint. Usar Ejecutar Consulta con el SQL explícito, no Ejecutar Función sin casts. En Carga Masiva no hacen falta casts: las columnas del INSERT fijan tipos; fechas como DateTime y NULL como DBNull real. En las tres columnas date de stg.buk_fila, Carga Masiva usa OdbcType.Date, incluido DBNull; si llegan como Text, falla antes de abrir conexión. Nunca concatenar valores ni usar el texto "NULL".
+
+Q01 — paso 1, T1(hash):
+
 ```sql
 SELECT carga_id FROM stg.carga WHERE hash = ?;
 ```
-Q02, T2(ruta, hash):
+
+Q02 — paso 2, T2(ruta, hash); ruta se almacena en archivo:
+
 ```sql
-INSERT INTO stg.carga(tipo,archivo,hash,estado)
-VALUES ('buk',?,?,'recibida')
+INSERT INTO stg.carga (tipo, archivo, hash, estado) VALUES ('buk', ?, ?, 'recibida')
 ON CONFLICT (hash) DO NOTHING RETURNING carga_id;
 ```
-Q03, N1(cargaId):
+
+QM-BUK — paso 3, referencia del INSERT que parametriza Carga Masiva:
+
+```sql
+INSERT INTO stg.buk_fila (carga_id, it, instituto, persona_id, area, sub_area, centro_costo, periodo,
+        tipo_contrato, tipo_trabajador, fecha_ingreso, fecha_termino, horas_semanales, cargo, dias_jornada,
+        ndias, cod_esp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+```
+
+QM-ERROR — paso 4, referencia de Carga Masiva, seis valores:
+
+```sql
+INSERT INTO stg.error_fila (carga_id, fila, persona_id, campo, valor, motivo) VALUES (?, ?, ?, ?, ?, ?);
+```
+
+Carga Masiva construye el INSERT a partir de los nombres/orden de columnas de cada DataTable y agrega los valores en ese mismo orden. Comprobar correspondencia columna/valor con las referencias anteriores; no usar el orden físico de stg como sustituto. No ejecutar además estos INSERT manuales para las mismas filas. El prefijo **cargar_dotacion:** en motivo pertenece a rechazos del back; el robot no lo añade. Ambos lotes van antes de Q03; esta guía guarda errores primero para conservarlos ante un fallo posterior.
+
+Q03 — paso 5, N1(cargaId):
+
 ```sql
 SELECT * FROM api.cargar_dotacion(CAST(? AS bigint));
 ```
-Q04, N1(cargaId):
+
+Q04 — paso 5, N1(cargaId), lectura de cierre para P02/P05; reemplaza el antiguo COUNT de mensajes:
+
 ```sql
-SELECT count(*) AS mensajes FROM stg.error_fila WHERE carga_id=CAST(? AS bigint);
+SELECT leidas, validas, con_error, estado FROM stg.carga WHERE carga_id = CAST(? AS bigint);
 ```
-Q05, N1(cargaId):
+
+Q05 — paso 6, N1(cargaId), lista opcional para el informe:
+
 ```sql
 SELECT * FROM api.detectar_cambios(CAST(? AS bigint));
 ```
-Q06, N1(cargaId):
+
+Q06 — paso 6, N1(cargaId):
+
 ```sql
 SELECT api.mes_minimo_afectado(CAST(? AS bigint)) AS mes_minimo;
 ```
-Q07, N2(cargaId, mesMinimo):
+
+Q07 — paso 7, N2(cargaId, mesMinimo), una única sentencia/conexión:
+
 ```sql
 WITH contexto AS MATERIALIZED (
-  SELECT set_config('planbot.motivo',
-    'PlanBot Ciclo BUK; carga=' || CAST(CAST(? AS bigint) AS text),true) AS motivo
-)
-SELECT r.filas,r.ms FROM contexto c
-CROSS JOIN LATERAL api.recalcular(
-  CASE WHEN c.motivo IS NOT NULL THEN CAST(? AS integer) ELSE NULL END
-) r;
+    SELECT set_config('planbot.motivo', 'PlanBot Ciclo BUK; carga=' || CAST(CAST(? AS bigint) AS text), true) AS motivo)
+SELECT r.filas, r.ms FROM contexto c
+CROSS JOIN LATERAL api.recalcular(CASE WHEN c.motivo IS NOT NULL THEN CAST(? AS integer) END) r;
 ```
-La dependencia del argumento respecto de c.motivo fuerza evaluar el contexto antes de llamar la RPC; configuración local a la transacción de la consulta, sin contaminar el pool. El resultado contiene solo filas/ms, no una tabla previa set_config.
 
-Q08, N4(leidas, filasValidas, filasConError, cargaId), Ejecutar Comando:
+La dependencia respecto de c.motivo fuerza evaluar el contexto antes de la RPC. No ejecutar set_config por separado. Q06 NULL implica no llamar Q07: tampoco pasar cero. recalcular ya rehace la cuadratura.
+
+**Q08 retirado**, sin sentencia SQL. No actualizar leidas/validas/con_error ni volver a fijar estado='cargada'; se consulta Q04.
+
+Q09 — paso 9, N1(cargaId), Ejecutar Comando solo en recuperación:
+
 ```sql
-UPDATE stg.carga SET estado='cargada',leidas=CAST(? AS integer),
- validas=CAST(? AS integer),con_error=CAST(? AS integer)
-WHERE carga_id=CAST(? AS bigint);
+UPDATE stg.carga SET estado = 'error' WHERE carga_id = CAST(? AS bigint);
 ```
-Q09, N1(cargaId), Ejecutar Comando en recuperación:
+
+V009 concede UPDATE(estado) a bot_carga. No cambiar contadores en esta sentencia ni ampliar permisos del robot. Conservar la regla bdConfirmada del maestro para no marcar error por una falla de archivado posterior a una carga confirmada.
+
+Q10 — paso 8, parametros vacía con columnas nombre/valor:
+
 ```sql
-UPDATE stg.carga SET estado='error' WHERE carga_id=CAST(? AS bigint);
+SELECT api.cuadratura() AS pct_coincidencia;
 ```
+
+### P06 Cuadratura (opcional)
+
+No es requisito de P01–P05: Q07 ya la rehace. Si se necesita el porcentaje en el informe, crear proceso **P06 Cuadratura**, páginas Main/Error con el mismo patrón Recover/Resume. Input connStr Text; output pctCoincidencia Number=0. Locales parametros (Collection vacía, nombre Text/valor Text), resultado Collection, esNulo Flag=False, filasResultado Number=0 y errorTipo/errorDetalle Text.
+
+Orden: Start → Ejecutar Consulta Q10 → Leer Numero Resultado (columna "pct_coincidencia", numero→pctCoincidencia) → Decision (una fila y no NULL; si no, Exception) → End. Puede invocarse después de P05, con bdConfirmada=True, antes del archivado; no hacer otro recálculo. Si falla, conservar la carga confirmada y reportar el error sin reintentar lotes.
 
 ## 8. Ensayo paso a paso (base restaurable, ventana con Andrés)
 
@@ -214,3 +275,5 @@ UPDATE stg.carga SET estado='error' WHERE carga_id=CAST(? AS bigint);
 Los conteos anteriores son referencias de fixtures, no condiciones por persona_id. Guardar hash, carga_id, release, cola y Session Log sin claves, evidencia SQL y captura del dashboard **En vivo** tras Actualizar datos. Probar además: colección catálogo vacía, todas las filas inválidas, desconexión ODBC entre lotes y carpeta destino inexistente. Debe detenerse y conservar trazabilidad; no borrar stg para «arreglarlo».
 
 Antes del jurado ejecutar Check Code, prueba SELECT 1 y este recorrido en el Runtime real. La compilación de los auxiliares y la prueba SQL externa no certifican el MS Excel VBO, los permisos de la credencial BP ni las conexiones ODBC de la VM.
+
+**Pendiente de Lucas — prueba ODBC de una fila:** este PC no tiene PostgreSQL Unicode(x64) registrado. Antes de los lotes, probar Carga Masiva en una carga de ensayo con periodo/fecha_ingreso DateTime y fecha_termino DBNull, verificar los días exactos y el NULL en SQL; repetir con fecha_termino informada. No dar por probada la ruta ODBC por pasar el e2e psql. Mantener connStr/credenciales fuera de logs.

@@ -1,6 +1,7 @@
 // Programa de consola de verificación. NO pegar en Blue Prism.
 using System;
 using System.Data;
+using System.Data.Odbc;
 using System.Globalization;
 using System.IO;
 using Microsoft.VisualBasic.FileIO;
@@ -51,8 +52,33 @@ public class Probar_CodeStages
         Exigir(encontrados == 5, "Deben comprobarse cinco errores esperados");
         Exigir(validas.Columns.Count == 17 && !validas.Columns.Contains("fila"), "Contrato stg sin columna fila");
         Exigir(validas.Columns["horas_semanales"].DataType == typeof(decimal), "Número decimal tipado");
-        DateTime fechaIso;
-        Exigir(DateTime.TryParseExact((string)validas.Rows[0]["periodo"], "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out fechaIso), "Fecha ISO");
+        foreach (string campo in new string[] { "periodo", "fecha_ingreso", "fecha_termino" })
+            Exigir(validas.Columns[campo].DataType == typeof(DateTime), "Fecha DateTime tipada: " + campo);
+        Exigir(((DateTime)validas.Rows[0]["periodo"]).TimeOfDay == TimeSpan.Zero, "Fecha sin hora");
+        // Comprobar el binding sin depender de una conexión/driver instalado.
+        PlanBot_PostgreSQL pg = new PlanBot_PostgreSQL();
+        System.Reflection.MethodInfo agregarFecha = typeof(PlanBot_PostgreSQL).GetMethod("AgregarFechaBuk",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        using (OdbcCommand comando = new OdbcCommand())
+        {
+            agregarFecha.Invoke(pg, new object[] { comando, new DateTime(2026, 7, 1, 13, 14, 15) });
+            agregarFecha.Invoke(pg, new object[] { comando, DBNull.Value });
+            Exigir(comando.Parameters[0].OdbcType == OdbcType.Date &&
+                (DateTime)comando.Parameters[0].Value == new DateTime(2026, 7, 1), "ODBC Date sin hora");
+            Exigir(comando.Parameters[1].OdbcType == OdbcType.Date &&
+                Convert.IsDBNull(comando.Parameters[1].Value), "ODBC Date para NULL");
+            System.Reflection.MethodInfo agregarGeneral = typeof(PlanBot_PostgreSQL).GetMethod("AgregarParametro",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            DateTime conHora = new DateTime(2026, 7, 1, 13, 14, 15);
+            agregarGeneral.Invoke(pg, new object[] { comando, conHora });
+            Exigir(comando.Parameters[2].OdbcType == OdbcType.DateTime &&
+                (DateTime)comando.Parameters[2].Value == conHora, "No truncar timestamps de consultas generales");
+        }
+        DataTable fechasTexto = new DataTable(); fechasTexto.Columns.Add("periodo", typeof(string));
+        bool textoRechazado = false;
+        try { decimal insertadas; pg.CargaMasiva("", "stg.buk_fila", fechasTexto, 500m, out insertadas); }
+        catch (Exception e) { textoRechazado = e.Message.Contains("DateTime"); }
+        Exigir(textoRechazado, "Fecha Text rechazada antes de abrir ODBC");
         // Varias fallas en una fila, coma decimal, límites, claves equivalentes y nulos.
         DataTable sinteticas = original.Clone();
         sinteticas.ImportRow(original.Rows[0]);
@@ -75,6 +101,6 @@ public class Probar_CodeStages
         new PlanBot_Reglas().TransformarDistribucion(rango, out reglas, out alertas);
         Exigir(reglas.Rows.Count == 3 && alertas.Rows.Count == 1 && (int)alertas.Rows[0]["tramo"] == 3, "Tramos, vacíos y alertas");
         Exigir((decimal)reglas.Rows[0]["pct_dir"] == 0.65m && (decimal)reglas.Rows[1]["pct_nas"] == 0.2m, "Porcentajes y coma");
-        Console.WriteLine("OK: 5/5 errores esperados; limpieza, filas, conversión, duplicados, múltiples errores y reglas.");
+        Console.WriteLine("OK: 5/5 errores esperados; limpieza, filas, conversión, duplicados, múltiples errores, reglas y fechas DateTime/ODBC Date/DBNull.");
     }
 }

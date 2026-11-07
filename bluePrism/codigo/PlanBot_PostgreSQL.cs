@@ -53,6 +53,21 @@ public class PlanBot_PostgreSQL
         foreach (DataRow fila in parametros.Rows) AgregarParametro(comando, fila["valor"]);
     }
 
+    private bool EsFechaBuk(string tabla, string columna)
+    {
+        return tabla == "stg.buk_fila" &&
+            (columna == "periodo" || columna == "fecha_ingreso" || columna == "fecha_termino");
+    }
+
+    private void AgregarFechaBuk(OdbcCommand comando, object valor)
+    {
+        // Tipar también DBNull: una fecha ausente no se enlaza como NVarChar.
+        if (valor != null && !Convert.IsDBNull(valor) && !(valor is DateTime))
+            throw new Exception("Fecha BUK debe ser DateTime o DBNull; usar Preparar Carga.");
+        OdbcParameter parametro = comando.Parameters.Add("p" + comando.Parameters.Count, OdbcType.Date);
+        parametro.Value = valor == null || Convert.IsDBNull(valor) ? DBNull.Value : (object)((DateTime)valor).Date;
+    }
+
     private string ValidarFuncion(string funcion)
     {
         if (String.IsNullOrEmpty(funcion) || !Regex.IsMatch(funcion, @"\A[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)?\z"))
@@ -184,6 +199,8 @@ public class PlanBot_PostgreSQL
         foreach (DataColumn columna in datos.Columns)
         {
             if (!Regex.IsMatch(columna.ColumnName, @"\A[A-Za-z_][A-Za-z0-9_]*\z")) throw new Exception("Columna inválida: " + columna.ColumnName);
+            if (EsFechaBuk(tabla, columna.ColumnName) && columna.DataType != typeof(DateTime))
+                throw new Exception("Columna " + columna.ColumnName + " debe ser DateTime; usar Preparar Carga antes de Carga Masiva.");
             if (columnas.Length > 0) columnas.Append(", ");
             columnas.Append("\"").Append(columna.ColumnName).Append("\"");
         }
@@ -202,7 +219,11 @@ public class PlanBot_PostgreSQL
                     for (int i = inicio; i < inicio + cantidad; i++)
                     {
                         comando.Parameters.Clear();
-                        foreach (DataColumn columna in datos.Columns) AgregarParametro(comando, datos.Rows[i][columna]);
+                        foreach (DataColumn columna in datos.Columns)
+                        {
+                            if (EsFechaBuk(tabla, columna.ColumnName)) AgregarFechaBuk(comando, datos.Rows[i][columna]);
+                            else AgregarParametro(comando, datos.Rows[i][columna]);
+                        }
                         comando.ExecuteNonQuery();
                     }
                     transaccion.Commit();
