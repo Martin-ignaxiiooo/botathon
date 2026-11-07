@@ -1,0 +1,14 @@
+[
+  {"mes": 1, "atenciones_dir": 1894, "atenciones_ind": 457, "meta": 1698, "horas_dir": 1336.38, "horas_ind": 252.48, "horas_nas": 695.94, "foja": 0.5849},
+  {"mes": 2, "atenciones_dir": 888, "atenciones_ind": 218, "meta": 793, "horas_dir": 1272.74, "horas_ind": 240.46, "horas_nas": 662.8, "foja": 0.5849},
+  {"mes": 3, "atenciones_dir": 1971, "atenciones_ind": 473, "meta": 1769, "horas_dir": 1400.02, "horas_ind": 264.5, "horas_nas": 729.08, "foja": 0.5849},
+  {"mes": 4, "atenciones_dir": 1887, "atenciones_ind": 455, "meta": 1693, "horas_dir": 1336.38, "horas_ind": 252.48, "horas_nas": 695.94, "foja": 0.5849},
+  {"mes": 5, "atenciones_dir": 1603, "atenciones_ind": 378, "meta": 1437, "horas_dir": 1157.03, "horas_ind": 218.6, "horas_nas": 608.88, "foja": 0.583},
+  {"mes": 6, "atenciones_dir": 1808, "atenciones_ind": 427, "meta": 1621, "horas_dir": 1278.82, "horas_ind": 241.61, "horas_nas": 672.97, "foja": 0.583},
+  {"mes": 7, "atenciones_dir": 1887, "atenciones_ind": 444, "meta": 1691, "horas_dir": 1339.72, "horas_ind": 253.12, "horas_nas": 705.02, "foja": 0.583},
+  {"mes": 8, "atenciones_dir": 1746, "atenciones_ind": 409, "meta": 1563, "horas_dir": 1278.82, "horas_ind": 241.61, "horas_nas": 672.97, "foja": 0.583},
+  {"mes": 9, "atenciones_dir": 1707, "atenciones_ind": 400, "meta": 1529, "horas_dir": 1244.95, "horas_ind": 233.14, "horas_nas": 658.86, "foja": 0.5826},
+  {"mes": 10, "atenciones_dir": 1640, "atenciones_ind": 371, "meta": 1470, "horas_dir": 1176.58, "horas_ind": 216.05, "horas_nas": 623.37, "foja": 0.5836},
+  {"mes": 11, "atenciones_dir": 1730, "atenciones_ind": 386, "meta": 1551, "horas_dir": 1287.34, "horas_ind": 233.09, "horas_nas": 672.97, "foja": 0.5869},
+  {"mes": 12, "atenciones_dir": 1664, "atenciones_ind": 373, "meta": 1492, "horas_dir": 1287.34, "horas_ind": 233.09, "horas_nas": 672.97, "foja": 0.5869}
+]

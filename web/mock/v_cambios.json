@@ -1,0 +1,7 @@
+[
+  {"carga_id": 2, "tipo": "cambio_cargo", "persona_id": 118826, "it": 131, "mes_vigencia": 7, "antes": {"cargo": "KINESIOLOGO", "area": "KI"}, "despues": {"cargo": "TERAPEUTA OCUPACIONAL", "area": "TO"}, "detectado_en": "2026-11-04T09:16:30-03:00"},
+  {"carga_id": 2, "tipo": "cambio_it", "persona_id": 145836, "it": 131, "mes_vigencia": 8, "antes": {"it": 11, "instituto": "Arica"}, "despues": {"it": 131, "instituto": "Santiago"}, "detectado_en": "2026-11-04T09:16:30-03:00"},
+  {"carga_id": 2, "tipo": "cambio_jornada", "persona_id": 142571, "it": 11, "mes_vigencia": 9, "antes": {"horas_semanales": 44}, "despues": {"horas_semanales": 30}, "detectado_en": "2026-11-04T09:16:30-03:00"},
+  {"carga_id": 2, "tipo": "baja", "persona_id": 133218, "it": 81, "mes_vigencia": 10, "antes": {"fecha_termino": null, "horas_semanales": 30}, "despues": {"fecha_termino": "2026-09-30", "horas_semanales": 30}, "detectado_en": "2026-11-04T09:16:30-03:00"},
+  {"carga_id": 2, "tipo": "alta", "persona_id": 149120, "it": 11, "mes_vigencia": 11, "antes": null, "despues": {"cargo": "TERAPEUTA OCUPACIONAL", "area": "TO", "horas_semanales": 44, "fecha_ingreso": "2026-11-02"}, "detectado_en": "2026-11-04T09:16:30-03:00"}
+]
