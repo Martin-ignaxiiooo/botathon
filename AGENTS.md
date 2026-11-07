@@ -48,7 +48,7 @@ docs\                 contexto, contratos, reglas, backlog, progreso-back, progr
 4. Sin contraseñas ni datos reales: `.env` (no versionado) y `.env.example`. Solo `persona_id`, nunca nombres ni RUT.
 5. Dos personas trabajan en paralelo, cada una con su agente y en su propio clon del repositorio:
    - BACK (Andrés): solo `database\`, `api\`, `scripts\`, `docker-compose.yml`, `tests\sql\`, `docs\progreso-back.md`.
-   - FRONT (César): solo `web\`, `data\`, `tests\e2e\`, `.github\`, `bluePrism\codigo\`, `docs\progreso-front.md`.
+   - FRONT (César), con dos agentes en carpetas separadas: Claude Code solo `web\` y `docs\progreso-front.md`; Codex (worktree `bothaton-codex`, rama `codex/trabajo`) solo `bluePrism\codigo\`, `data\generar_casos.py`, `data\buk\`, `tests\e2e\`, `.github\`, `README.md`, `docs\instalacion.md`, `docs\progreso-codex.md`.
 6. Una historia por rama `feat/<ID>-<nombre>` desde `main`. Commits Conventional Commits en español: `feat(db): ...`, `fix(web): ...`. PR con `gh pr create`.
 7. Cambios pequeños y probados. No refactorizar lo que la historia no pide.
 8. No leer los `.xlsx` completos: usar `data\csv\*.csv`.
