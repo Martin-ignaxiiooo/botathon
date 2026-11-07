@@ -1,6 +1,6 @@
 # Progreso BACK (Andrés · Claude Code)
 Última actualización: 2026-11-07 · por: Claude Code
-Rama actual: feat/B-07-B-08-cambios (sale de feat/B-06-plan-mes; PR por web porque gh no está instalado)
+Rama actual: feat/B-10-cuadratura (desde main; PR por API de GitHub porque gh no está instalado)
 Reparto 7-nov: B-09 (vistas api.*, database\views\) lo hace el Codex de César en feat/B-09-vistas; el BACK revisa
 y fusiona su PR. El BACK no toca database\views\ mientras tanto.
 
@@ -84,9 +84,20 @@ y fusiona su PR. El BACK no toca database\views\ mientras tanto.
     - `validas = filas pasadas a core.dotacion_mes`
   - Probado en tests\sql\002 (error del robot repetido sobre 900005: 24/19/5) y con 03_errores (3124/3119/5).
 - Prueba de cambios renombrada a tests\sql\035_cambios_recalcular.sql: Codex usa 030_vistas.sql para B-09.
+- B-10 · `api.cuadratura()` (database\functions\070_cuadratura.sql, V007 param.cuadratura_explicada) hecha.
+  - Compara la última carga de stg.esperado con calc.v_semanal (may_dic) y calc.plan_mes; guarda SOLO diferencias
+    (|excel − sistema| ≥ 1e-6) en calc.cuadratura → api.v_cuadratura. diferencia = sistema − excel.
+  - Sin fila en el sistema cuenta como 0 (coincide si el Excel dice 0); si el Excel repite persona-IT, vale la más cercana.
+  - Causa (la primera que aplica): diferencia_explicada (param.cuadratura_explicada: 134744/11, floor 14,56 vs 15)
+    → ajuste_individual (semanal may-dic distinto, o plan may-dic distinto con las mismas semhab: 19 persona-IT de
+    B-05) → periodo_ene_abr → dias_adicionales (semhab distinta) → multi_it → grupal → otra.
+  - Devuelve % plan_ate_dir may-dic sobre persona-IT-mes con plan en el sistema: 3394/3552 = 95,55 %.
+  - Base real: 1.518 diferencias, 135 personas (ajuste 950, multi_it 338, grupal 88, ene-abr 65, explicada 50, otra 27).
+    Las 5 persona-IT del Excel con otro IT que el BUK (p. ej. 71342/61) salen multi_it.
+  - instalar_sin_docker.ps1 -CargarBukPrueba ahora corre también api.cuadratura(). tests\sql\040_cuadratura.sql.
 
 ## Siguiente
-- Instalación en la VM con un comando (instalar_sin_docker.ps1). Luego revisar y fusionar el PR de B-09 (Codex).
+- B-11 auditoría con triggers, D-05 casos dorados, B-12 escenarios (si queda tiempo).
 - Si sobra tiempo: usar data\csv\insumos.csv (Codex) para minutos, distribución y asignaciones por persona, como
   excepción documentada, y subir del 95,5 %.
 
