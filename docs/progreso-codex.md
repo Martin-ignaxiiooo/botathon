@@ -4,6 +4,8 @@ Rama actual: `codex/trabajo`. Última actualización: 2026-11-07. Tareas 11–13
 
 ## Hecho
 
+- Revisión final T12: flags separados excelAbierto/libroAbierto y cálculos explícitos antes/después de abrir/cerrar; si Open Workbook falla, Error sigue cerrando la instancia propia. Cada cierre tiene recuperación independiente y no sobrescribe el error original. Cambio documental, sin tocar VBO de Lucas ni alegar prueba Runtime.
+
 - Tarea 13: docs/demo.md es el guion único de cinco minutos; incorpora las notas de progreso-front de origin/main/3829f230947f5dffbbd93bcef6757969fb637b25, contrastadas con main.js, nacional.js y cambios.js. URLs para Nacional/carga/personas/API, marca En vivo frente a mock, Actualizar datos/F5, aviso de carga nueva y flechas con condiciones reales de sessionStorage, misma pestaña y sin filtros. Preparación, accesibilidad, evidencias y contingencias unificadas; mantiene advertencia de 03 derivado de 01 y no promete aprobación de escenarios sin contrato/RPC real.
 - Revisión T13: cinco intervalos contiguos 0–5 min, cinco cambios contra CSV D-04, URLs y parámetros del front comprobados por lectura de código; enlaces locales y git diff --check correctos. No se modificaron web ni progreso-front ni se declaró ensayo visual/BP ya aprobado. No se hizo un test que solo repita el texto documental.
 

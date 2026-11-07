@@ -68,14 +68,17 @@ Error: ninguna reconexión/reintento de INSERT a ciegas. Si cargaId>0, el maestr
 
 ## 4. P02 Cargar BUK
 
-Start: ruta Text, connStr Text, cargaId Number, institutos/cargos Collection. End: leidas, filasValidas, filasConError, mensajesError Number. Locales: handle Number=0; libro Text=""; excelAbierto Flag=False; filasDescartadas/insertadas/filasCore/alertas/totalMensajes/esNulo/filasResultado (esNulo es Flag, restantes Number); colecciones de apartado 2; errorTipo/errorDetalle Text. No conservar datos entre archivos.
+Start: ruta Text, connStr Text, cargaId Number, institutos/cargos Collection. End: leidas, filasValidas, filasConError, mensajesError Number. Locales: handle Number=0; libro Text=""; excelAbierto/libroAbierto Flag=False; filasDescartadas/insertadas/filasCore/alertas/totalMensajes/filasResultado Number=0; esNulo Flag=False; colecciones de apartado 2; errorTipo/errorDetalle Text. No conservar datos entre archivos.
 
 | Orden / etapa | Tipo, objeto y acción | Entradas → salidas / enlace |
 |---|---|---|
 | 1 Excel propio | Acción MS Excel VBO / Create Instance | handle→handle; no conectar a Excel del usuario |
-| 2 Abrir | Acción MS Excel VBO / Open Workbook | handle=[handle], Filename=[ruta] → Workbook Name=[libro]; excelAbierto=True |
+| 1b Instancia creada | Calculation | excelAbierto=True antes de intentar Open Workbook |
+| 2 Abrir | Acción MS Excel VBO / Open Workbook | handle=[handle], Filename=[ruta] → Workbook Name=[libro] |
+| 2b Libro abierto | Calculation | libroAbierto=True |
 | 3 Leer hoja | Acción MS Excel VBO / Get Worksheet As Collection | handle, Workbook Name=[libro], Worksheet Name="Dotacion_2026" → Collection=[datosExcel] |
 | 4 Cerrar libro | Acción MS Excel VBO / Close Workbook | handle, Workbook Name=[libro], Save=False |
+| 4b Libro cerrado | Calculation | libroAbierto=False |
 | 5 Cerrar instancia | Acción MS Excel VBO / Close Instance | handle; excelAbierto=False |
 | 6 Limpiar | Acción PlanBot_Limpieza / Limpiar Dotacion | datos=[datosExcel] → limpias, filasDescartadas |
 | 7 Validar | Acción PlanBot_Validador / Validar Dotacion | limpias, institutos, cargos, cargaId → validas, errores |
@@ -90,7 +93,7 @@ Start: ruta Text, connStr Text, cargaId Number, institutos/cargos Collection. En
 
 La lectura debe conservar la cabecera Excel de fila 2 en datosExcel (o en sus nombres de columna). No quitar filas antes de Limpiar Dotacion: se perdería fila original. Si el VBO dispone de Use Header, dejar False para conservar cabecera; si no, comprobar que datosExcel contiene IT/PersonaId/Periodo en la fila útil. Preferir valores Value/Value2, no Text formateado. Las etiquetas/inputs del VBO pueden variar con la versión importada: comprobarlos en Object Studio antes de mapear; no existe un VBO universal pegable en este repo. Referencia primaria: [MS Excel VBO User Guide](https://community.blueprism.com/hfgie69872/attachments/hfgie69872/digital-exchange/4467/1/Excel%20Guide.pdf).
 
-Error: cerrar solo la instancia Excel creada por este proceso si excelAbierto=True; proteger Close Workbook/Close Instance con su propio Recover/Resume y reemitir el error original. Puede haber lotes confirmados. No volver a ejecutar 9–13 automáticamente; no tiene DELETE el robot. Si hay rechazos adicionales de BD, no inventar una correspondencia entre su fila reenumerada y fila original BP; parar antes del recálculo y conciliar/restaurar con Andrés.
+Error: si libroAbierto=True intentar Close Workbook; si excelAbierto=True intentar Close Instance, incluso cuando falló Open Workbook. Proteger cada cierre con su propio Recover/Resume para que el fallo al cerrar el libro no impida cerrar la instancia. Solo se cierra el handle propio; conservar y reemitir el error original. Puede haber lotes confirmados. No volver a ejecutar 9–13 automáticamente; no tiene DELETE el robot. Si hay rechazos adicionales de BD, no inventar una correspondencia entre su fila reenumerada y fila original BP; parar antes del recálculo y conciliar/restaurar con Andrés.
 
 ## 5. P03-P04 Cambios y Recalculo
 
