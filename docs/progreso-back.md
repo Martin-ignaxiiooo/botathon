@@ -1,6 +1,6 @@
 # Progreso BACK (Andrés · Claude Code)
 Última actualización: 2026-11-07 · por: Claude Code
-Rama actual: feat/B-04-dotacion (sale de feat/B-03-parametros; PR por web porque gh no está instalado)
+Rama actual: feat/B-05-semanal (sale de feat/B-04-dotacion; PR por web porque gh no está instalado)
 
 ## Hecho
 - B-01 · docker-compose.yml, V000__roles.sql, .env.example, scripts\_comun.ps1 (elige docker/nativo),
@@ -18,7 +18,12 @@ Rama actual: feat/B-04-dotacion (sale de feat/B-03-parametros; PR por web porque
   tests\sql\002_dotacion.sql (sintético, corre en CI) en verde.
 
 ## En curso
-- —
+- B-05 · `calc.v_semanal` hecha (V005 core.condicion_persona, api.cargar_asignaciones, seed 040 con
+  database\seed\csvsignaciones.csv y condiciones_persona.csv extraídos con scripts\extraer_condiciones.py).
+  Coincidencia may-dic: ate_dir_semana 431/450 = 95,8 %; pct_dir_final 438/450 = 97,3 %. Falta llegar a 98 %:
+  19 diferencias = 6 % ajustados a mano en el Excel + 4 minutos estándar por persona (60 en vez de 40)
+  + 8 horas BUK distintas del Excel + 1 otra. Esperando decisión de Andrés sobre ajustes manuales por persona.
+  Falta tests\sql_semanal.sql.
 
 ## Siguiente
 - B-05 (MODO PLAN: mostrar plan antes de programar), B-06; prioridad B-09 (vistas api.* para César).
@@ -33,6 +38,10 @@ Rama actual: feat/B-04-dotacion (sale de feat/B-03-parametros; PR por web porque
   Ojo: lanzar pg_ctl start desde PowerShell, no desde Git Bash (bash queda esperando).
 
 ## Errores conocidos / decisiones
+- **Horas del periodo (B-05):** el Excel usa el PROMEDIO de las horas de los meses del periodo (may-dic), no las de
+  diciembre (p. ej. 40 h may-jun + 30 h jul-dic -> 32,5 h). NAS = %NAS × promedio ponderado ANUAL. Tramo por promedio
+  anual (confirmado: 466/471 calzan).
+- **Grupal (B-05):** directa + grupal = ate_dir × (1 − %grupal) + ate_dir × %grupal × pacientes (sin redondeo).
 - **Promedio ponderado (B-04):** el Excel promedia con igual peso cada mes con contrato (reales + proyectados hasta
   fecha_termino o diciembre) y redondea hacia abajo (floor(x + 1e-9)). Ponderar por semanas da 454/466, peor.
   Las 10 diferencias son personas cuyas horas en el Excel de planificación no coinciden con el BUK (excepciones, multi-IT).
