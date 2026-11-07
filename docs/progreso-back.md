@@ -90,6 +90,32 @@ y fusiona su PR. El BACK no toca database\views\ mientras tanto.
 - Si sobra tiempo: usar data\csv\insumos.csv (Codex) para minutos, distribución y asignaciones por persona, como
   excepción documentada, y subir del 95,5 %.
 
+## Instalación en la VM de la demo (paso 5) · un solo comando
+Requisitos: Windows con PostgreSQL 16 instalado y su servicio corriendo en el puerto 5432. También Git, la clave del
+superusuario `postgres` y, solo para cargar datos de prueba, Python con `pip install --user openpyxl`.
+No usa Docker, no reinicia y no pide permisos de administrador.
+```powershell
+git clone https://github.com/Martin-ignaxiiooo/botathon.git C:\dev\botathon   # o git pull en main si ya existe
+cd C:\dev\botathon
+.\scripts\instalar_sin_docker.ps1 -SuperClave '<clave de postgres>' -CargarBukPrueba
+```
+1. Si no hay `.env`, lo crea desde `.env.example` con claves aleatorias para owner_planbot, bot_carga, web_lectura
+   y el JWT. Las claves no se muestran en pantalla y `.env` no se versiona.
+2. Crea el rol owner_planbot y la base planbot (UTF8, America/Santiago).
+3. Corre migraciones, funciones, vistas y semilla; los roles quedan con las claves de `.env`.
+4. Con `-CargarBukPrueba` carga `data\excel\Nac - Base contratos x mes.xlsx` (unos 3 minutos) y ejecuta
+   `api.recalcular(1)`. Sin ese parámetro, la base queda vacía para que cargue Blue Prism.
+5. Al final corre `.\scripts\test.ps1 -Modulo db`. Debe terminar con "Instalación lista".
+
+Notas:
+- Otros parámetros: `-Puerto 5433`, `-PgBin <ruta bin>`, `-SuperUsuario <rol>` y `-SinPruebas`.
+- Se puede repetir sin riesgo. Si `.env` ya existe, se reutiliza y las claves no cambian.
+- **Blue Prism (Lucas):** se conecta a `localhost:5432`, base `planbot`, usuario `bot_carga`, con la clave
+  `BOT_CARGA_PASSWORD` del `.env` de la VM. Se le pasa por mensaje privado, nunca por el repo ni el chat del equipo.
+  `bot_carga` tiene search_path `api, stg, public`, así que llama las funciones sin prefijo. Para ver la clave en
+  la VM: `Select-String BOT_CARGA_PASSWORD .env`.
+- **PostgREST:** se conecta como `web_lectura` (`WEB_LECTURA_PASSWORD`), en `api\postgrest.conf`.
+
 ## Cómo correr en este PC (laboratorio Duoc, sin admin, NO reiniciar)
 - Repo en `C:\dev\botathon`. Servicio `postgresql-x64-16` (puerto 5432) ya está en Running; superusuario `postgres`.
 - `.env` (no versionado): copiar `.env.example`, poner claves y `PG_SUPER_PASSWORD`; `PG_HOST`/`PG_PORT`/`PG_BIN`
