@@ -14,6 +14,10 @@ export const TIPOS = [
 ];
 
 let opciones = null; // {institutos: [{it, instituto}], areas: [], cargos: []}
+let promesaOpciones = null;
+
+/** Promesa que se cumple cuando las opciones (nombres de institutos, etc.) ya están cargadas. */
+export const esperarOpciones = () => promesaOpciones ?? Promise.resolve();
 
 async function cargarOpciones() {
   const filas = await getData('v_instituto_area_mes', {});
@@ -147,6 +151,7 @@ export function iniciarFiltros({ seccion, menu }) {
   let actual = { pagina: null, filtros: {} };
   let barra = null;
   const listas = cargarOpciones();
+  promesaOpciones = listas.then((o) => { opciones = o; });
 
   const emitir = () => {
     const nuevos = barra.leer();

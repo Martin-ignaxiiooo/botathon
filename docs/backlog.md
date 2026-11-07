@@ -76,4 +76,6 @@ Formato: `- [ ] ID · título` y debajo sus criterios. Al terminar una historia,
   - [x] Reglas vigentes de `v_parametros_vigentes` agrupadas por tabla, con versión, vigencia y búsqueda
   - [x] Escenarios con impacto antes/después por instituto (tabla y gráfico); mock en `escenarios.json`, api por RPC configurable en `config.js`
   - [x] Aprobar/Rechazar con diálogo accesible que exige un motivo
-- [ ] C-11 · Exportar CSV e imprimir (FRONT, 1 pt, could)
+- [x] C-11 · Exportar CSV e imprimir (FRONT, 1 pt, could)
+  - [x] Botón «Exportar CSV» en cada tabla (separador `;`, UTF-8 con BOM, formato es-CL como en pantalla)
+  - [x] Estilos `@media print` sin menú, filtros ni botones, con título, fecha y filtros aplicados; botón «Imprimir» en el encabezado

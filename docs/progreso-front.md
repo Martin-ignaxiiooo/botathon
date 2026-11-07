@@ -22,11 +22,13 @@ Rama actual: main (todo fusionado)
 - C-09 Parámetros y escenarios: reglas vigentes por tabla con búsqueda, escenarios con impacto antes/después, Aprobar/Rechazar con diálogo accesible que pide motivo (axe: 0 violaciones, también con el diálogo abierto)
 - `scripts\servir_web.ps1` ahora funciona también en Windows PowerShell 5.1 (antes solo en PowerShell 7)
 
+- C-11 Exportar CSV e imprimir: `js/exportar.js` (botón por tabla), `js/impresion.js` + `@media print` (cabecera con título, fecha y filtros), botón «Imprimir»
+
 ## En curso
-- —
+- Revisión del recorrido de `docs/demo.md` y pulido de Nacional (jurado)
 
 ## Siguiente
-- C-11 Exportar CSV e imprimir
+- Ensayo con la base real (`?modo=api`) cuando Andrés tenga las vistas; revisar claves de `v_parametros_vigentes`
 
 ## Cómo probar el front
 - Servir sin bloquear: `.\scripts\servir_web.ps1` (puerto 8080 por defecto, en segundo plano; `-Detener` lo apaga, `-Puerto` cambia el puerto). Es la única excepción a las carpetas de Claude Code en `AGENTS.md` (`scripts\` es del BACK); autorizada por César.
@@ -62,6 +64,10 @@ Rama actual: main (todo fusionado)
 - Correcciones hechas: ARIA de Tabulator (`accesibilizarTabulator` en ui.js: zona con scroll como `rowgroup`, orden por teclado), tablas con scroll horizontal enfocables y con nombre (`vigilarDesbordes`), estado «activado» de los botones del encabezado también con «✓», textos de los gráficos más grandes con letra grande (`ampliarTexto`).
 - Lectura fácil: cada pantalla llama `lecturaFacil(contenedor, frases)` (js\lectura.js); la caja existe siempre y el CSS la muestra solo con el botón activado. Solo Parámetros queda sin frases hasta C-09.
 - No se probó con lector de pantalla real ni con teclado físico: se verificó con axe, el árbol de roles y eventos simulados. Conviene un recorrido manual con Tab y NVDA antes de la demo. Los `ResizeObserver` no se entregan en Edge headless con tiempo virtual (solo afecta a pruebas automáticas).
+
+## Notas de C-11
+- El CSV sale de la tabla HTML que ya está en pantalla (también las de «Ver datos», aunque estén ocultas): lo exportado es lo mismo que se ve, con números es-CL (`1.234,5`); sirve para abrir en Excel en español. No exporta los datos crudos de la vista.
+- No se pudo generar/ver un PDF real (no hay poppler); la vista de impresión se revisó emulando las reglas `@media print` en pantalla (ancho A4). Conviene un «Imprimir → Guardar como PDF» manual antes de la demo.
 
 ## Notas de C-09 (escenarios: falta definir el contrato con Andrés)
 - El front espera dos funciones SQL expuestas por PostgREST; nombres provisorios en `config.rpc` (`rpc/listar_escenarios`, `rpc/decidir_escenario`). Hasta que existan, en modo api la sección de escenarios dice «todavía no están disponibles» y las reglas vigentes funcionan igual.
