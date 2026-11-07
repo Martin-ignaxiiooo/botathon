@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PlanBot · Planificación asistencial</title>
+  <meta name="description" content="Dashboard de planificación asistencial de Teletón: horas, atenciones y meta de gestión por instituto, área y profesional.">
+  <link rel="stylesheet" href="vendor/tabulator.min.css">
+  <link rel="stylesheet" href="css/base.css">
+  <script src="vendor/echarts.min.js"></script>
+  <script src="vendor/tabulator.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+  <a class="salto" href="#contenido">Saltar al contenido</a>
+
+  <header class="encabezado">
+    <button type="button" class="boton-menu" id="boton-menu" aria-expanded="false" aria-controls="menu-principal">
+      <span aria-hidden="true">☰</span> Menú
+    </button>
+    <p class="marca">PlanBot <span aria-hidden="true">·</span> <span class="marca-sub">Planificación asistencial</span></p>
+    <div class="herramientas" id="herramientas" role="group" aria-label="Opciones de visualización"></div>
+  </header>
+
+  <div class="app">
+    <nav class="menu" id="menu-principal" aria-label="Pantallas">
+      <ul>
+        <li><a href="#nacional" data-pagina="nacional">Nacional</a></li>
+        <li><a href="#instituto" data-pagina="instituto">Instituto</a></li>
+        <li><a href="#profesional" data-pagina="profesional">Profesional</a></li>
+        <li><a href="#cambios" data-pagina="cambios">Cambios</a></li>
+        <li><a href="#parametros" data-pagina="parametros">Parámetros</a></li>
+        <li><a href="#cuadratura" data-pagina="cuadratura">Cuadratura</a></li>
+      </ul>
+    </nav>
+
+    <main class="principal" id="principal">
+      <section id="filtros" class="filtros" aria-label="Filtros" hidden></section>
+      <div id="contenido" tabindex="-1"></div>
+    </main>
+  </div>
+
+  <div id="avisos" class="avisos" role="status" aria-live="polite" aria-atomic="false"></div>
+
+  <noscript><p class="aviso aviso-error">PlanBot necesita JavaScript para mostrar los datos.</p></noscript>
+</body>
+</html>

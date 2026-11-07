@@ -55,10 +55,10 @@ Formato: `- [ ] ID · título` y debajo sus criterios. Al terminar una historia,
 - [x] D-02 · Extractor de Excel a CSV (hecho: `data\extraer.py`, CSV en `data\csv`)
 - [x] D-03 · Mocks JSON de las 8 vistas en `web\mock\` (FRONT, 1 pt)
   - [x] Columnas exactas de `docs\contratos.md`; 3 institutos (131 San, 81 Con, 11 Ari), 4 áreas, 12 meses, 15 profesionales; meta = floor(atenciones × 0.9)
-- [ ] C-02 · Esqueleto web y cliente de datos (FRONT, 3 pts)
-  - [ ] index.html accesible, menú (Nacional, Instituto, Profesional, Cambios, Parámetros, Cuadratura), router por #hash
-  - [ ] config.js (modo mock/api), api.js getData(vista, filtros), manejo de carga y errores
-  - [ ] ECharts y Tabulator en web\vendor
+- [x] C-02 · Esqueleto web y cliente de datos (FRONT, 3 pts)
+  - [x] index.html accesible, menú (Nacional, Instituto, Profesional, Cambios, Parámetros, Cuadratura), router por #hash
+  - [x] config.js (modo mock/api), api.js getData(vista, filtros), manejo de carga y errores
+  - [x] ECharts y Tabulator en web\vendor
 - [ ] C-03 · Pantalla Nacional (FRONT, 5 pts)
   - [ ] Tarjetas de v_kpi; línea mensual con mayo marcado (42 h); barras por instituto (clic → instituto); apiladas directa/indirecta/NAS por área; tabla alternativa accesible
 - [ ] C-04 · Filtros globales sincronizados con la URL (FRONT, 3 pts)
