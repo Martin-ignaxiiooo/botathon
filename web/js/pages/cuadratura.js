@@ -31,16 +31,20 @@ const CAMPOS = {
 const nombreCampo = (c) => CAMPOS[c]?.texto ?? c;
 const CAMPOS_MENSUALES = Object.keys(CAMPOS).filter((c) => CAMPOS[c].mensual).length;
 
-// Causas probables de calc.cuadratura (la primera que aplica a cada persona-instituto). Una frase por código.
+// Causas probables de calc.cuadratura, con las descripciones oficiales de Andrés. La base usa la primera que
+// aplica, en este orden; las pantallas las muestran en el mismo orden.
 const CAUSAS = {
-  ajuste_individual: { texto: 'Ajuste individual', explicacion: 'Ajuste manual del Excel para esta persona que el reporte de RR.HH. no trae.' },
-  diferencia_explicada: { texto: 'Diferencia explicada', explicacion: 'Caso revisado: el Excel tiene un valor distinto al de la regla escrita.' },
-  periodo_ene_abr: { texto: 'Enero a abril', explicacion: 'De enero a abril el Excel aplica otra regla que el sistema todavía no replica (el Excel solo guarda el cálculo semanal de mayo a diciembre).' },
-  dias_adicionales: { texto: 'Días adicionales', explicacion: 'El Excel usa otras semanas hábiles que el sistema en ese mes (días adicionales, permisos o feriados).' },
-  multi_it: { texto: 'Más de un instituto', explicacion: 'La persona figura en más de un instituto, o en otro instituto en el Excel, y no se puede comparar fila a fila.' },
-  grupal: { texto: 'Atención grupal', explicacion: 'La persona tiene atención grupal y la fórmula del Excel da un valor distinto al del sistema.' },
-  otra: { texto: 'Sin causa conocida', explicacion: 'No coincide con ninguna causa conocida: hay que revisarla caso a caso.' },
+  diferencia_explicada: { texto: 'Diferencia explicada', explicacion: 'Diferencia ya analizada y aceptada tal cual (hoy solo 134744/11: el Excel dice 15 atenciones semanales y la fórmula da 14).' },
+  ajuste_individual: { texto: 'Ajuste individual', explicacion: 'El Excel tiene un ajuste hecho a mano para esta persona que el reporte de RR.HH. no trae.' },
+  periodo_ene_abr: { texto: 'Enero a abril', explicacion: 'De enero a abril el Excel usa un cálculo semanal distinto; el sistema aplica la regla vigente.' },
+  dias_adicionales: { texto: 'Días adicionales', explicacion: 'El Excel cuenta otras semanas hábiles (días adicionales, vacaciones o feriados distintos).' },
+  multi_it: { texto: 'Más de un instituto', explicacion: 'La persona trabaja en más de un instituto, o el Excel la tiene en un instituto distinto al del reporte.' },
+  grupal: { texto: 'Atención grupal', explicacion: 'La persona hace atención grupal y el Excel la calcula de otra forma.' },
+  otra: { texto: 'Sin causa conocida', explicacion: 'Sin causa conocida todavía; incluye personas del Excel que no vienen en el reporte.' },
 };
+const ORDEN_CAUSAS = Object.keys(CAUSAS);
+/** Posición de una causa en el orden oficial; las desconocidas van al final. */
+const posCausa = (c) => { const i = ORDEN_CAUSAS.indexOf(c); return i < 0 ? ORDEN_CAUSAS.length : i; };
 const causaInfo = (c) => CAUSAS[c] ?? { texto: c ?? 'Sin causa', explicacion: 'Causa todavía sin descripción.' };
 
 /** Porcentaje que nunca redondea hacia 100 %: 99,96 % se muestra como 99,9 %. */
@@ -230,10 +234,12 @@ function graficoPorMes(todasDif, base) {
 function seccionCausas(dif) {
   const conteo = new Map();
   dif.forEach((f) => conteo.set(f.causa, (conteo.get(f.causa) ?? 0) + 1));
-  const causas = [...conteo].sort((a, b) => b[1] - a[1]);
+  const extra = [...conteo.keys()].filter((c) => !(c in CAUSAS));
+  const causas = [...ORDEN_CAUSAS, ...extra].map((c) => [c, conteo.get(c) ?? 0]);
   return el('section', { class: 'tarjeta seccion', 'aria-labelledby': 'titulo-causas' },
     el('h2', { id: 'titulo-causas' }, '¿Por qué hay diferencias?'),
-    causas.length
+    el('p', { class: 'nota-grafico' }, 'A cada diferencia se le asigna la primera causa que aplica, en este orden.'),
+    dif.length
       ? el('dl', { class: 'causas' }, causas.map(([causa, n]) => el('div', {},
         el('dt', {}, `${causaInfo(causa).texto} (${num(n)})`), el('dd', {}, causaInfo(causa).explicacion))))
       : el('p', { class: 'estado-vacio' }, '✓ No hay diferencias que explicar.'));
@@ -245,7 +251,7 @@ function seccionTabla(dif) {
   const idSelect = idUnico('causa');
   const select = el('select', { id: idSelect },
     el('option', { value: '' }, `Todas (${num(dif.length)})`),
-    [...conteo].sort((a, b) => b[1] - a[1]).map(([causa, n]) =>
+    [...conteo].sort((a, b) => posCausa(a[0]) - posCausa(b[0])).map(([causa, n]) =>
       el('option', { value: causa ?? '' , 'data-causa': 'x' }, `${causaInfo(causa).texto} (${num(n)})`)));
   const estado = el('p', { class: 'nota-grafico', role: 'status' });
   const zonaTabla = el('div', { class: 'tabla-scroll' });
@@ -256,7 +262,7 @@ function seccionTabla(dif) {
   const dibujar = () => {
     const causa = select.value;
     const todas = [...(causa ? dif.filter((f) => (f.causa ?? '') === causa) : dif)]
-      .sort((a, b) => String(a.causa).localeCompare(String(b.causa)) || a.persona_id - b.persona_id || (a.mes ?? 0) - (b.mes ?? 0));
+      .sort((a, b) => posCausa(a.causa) - posCausa(b.causa) || a.persona_id - b.persona_id || (a.mes ?? 0) - (b.mes ?? 0));
     const filas = todas.slice(0, limite);
     estado.textContent = `Mostrando ${num(filas.length)} de ${num(todas.length)} diferencias${causa ? ` de esta causa (${num(dif.length)} en total)` : ''}.`;
     zonaMas.replaceChildren(...(todas.length > limite
