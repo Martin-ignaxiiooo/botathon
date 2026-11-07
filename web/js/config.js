@@ -5,6 +5,7 @@ const modoUrl = parametros.get('modo');
 const config = {
   modo: modoUrl === 'api' || modoUrl === 'mock' ? modoUrl : 'mock', // 'mock' | 'api'
   apiUrl: 'http://localhost:3000',
+  totalProfesionalesExcel: 471, // filas de Dotacion_Asistencial: base de la cuadratura
 };
 
 export default config;

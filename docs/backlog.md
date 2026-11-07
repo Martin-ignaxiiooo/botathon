@@ -70,7 +70,7 @@ Formato: `- [ ] ID · título` y debajo sus criterios. Al terminar una historia,
 - [x] D-05 · Pruebas SQL con 10 casos dorados de esperado.csv y prueba de forma de vistas (BACK/Andrés, 3 pts) → `tests\sql\`
 - [x] D-06 · CI en GitHub Actions (ubuntu-latest, servicio postgres:16, pwsh corre migrar.ps1 y test.ps1, ESLint) (FRONT, 2 pts)
 - [x] C-01 · postgrest.conf y prueba de endpoints (BACK/Andrés, 2 pts)
-- [ ] C-08 · Pantalla Cuadratura (FRONT, 2 pts, should)
-- [ ] C-10 · Accesibilidad y lectura fácil (FRONT, 2 pts, should)
+- [x] C-08 · Pantalla Cuadratura (FRONT, 2 pts, should)
+- [x] C-10 · Accesibilidad y lectura fácil (FRONT, 2 pts, should)
 - [ ] C-09 · Pantalla Parámetros y simulación (FRONT, 5 pts, should)
 - [ ] C-11 · Exportar CSV e imprimir (FRONT, 1 pt, could)
