@@ -26,6 +26,10 @@ En Inputs/Outputs del Code stage usar exactamente estos nombres; mapear cada ent
 | Ejecutar Función | connStr: Text; funcion: Text; argumentos: Collection con valor | resultado: Collection |
 | Carga Masiva | connStr: Text; tabla: Text; datos: Collection; tamanoLote: Number, inicial 500 | filasInsertadas: Number |
 | Calcular Hash | ruta: Text | hash: Text |
+| Crear Parametros (auxiliar) | modo Text (T1/T2/N1/N2/N4), texto1/texto2 Text, numero1..4 Number | parametros Collection posicional, valor Text o Number |
+| Leer Numero Resultado (auxiliar) | resultado Collection, columna Text | numero Number, esNulo Flag, filasResultado Number |
+| Preparar Carga (auxiliar) | validas/limpias/errores Collection | datosCarga Collection; leidas/filasValidas/filasConError/mensajesError Number |
+| Mover Archivo (Hash, auxiliar) | ruta/carpeta Text, cargaId Number | rutaDestino Text |
 
 Las Collections llegan como DataTable; Number es decimal. Dejar resultado como colección sin campos prefijados para recibir las columnas SQL. `valor` conserva el tipo de la celda: Number → decimal, Flag → bool, Date/DateTime → DateTime, Text → string; null/DBNull → NULL SQL. Una cadena vacía sigue siendo texto vacío. No escribir el texto `NULL`. Para NULL tipado ambiguo usar un cast explícito en SQL (`CAST(? AS date)`, por ejemplo). En colecciones BP de tipo fijo todos los valores de esa columna comparten tipo: separar consultas si se necesitan tipos distintos, o convertir mediante casts explícitos en SQL.
 
@@ -123,3 +127,11 @@ Revisión de `origin/feat/B-05-semanal` en `9f172cc`: existen `api.cargar_parame
 **Reglas:** Transformar Distribucion alerta con tolerancia 0.001; cargar_parametros usa 0.000001. Un total 1.0005 no alerta en C# y se rechaza en SQL. Los CSV actuales no exponen ese límite; acordar la tolerancia con Andrés antes de considerar válida una regla nueva. No se modificó ninguna de las dos políticas en esta revisión.
 
 Release/colas, permisos y datos reales de VM se verifican con [el guion E2E](../../tests/e2e/guion.md). Los .cs de este directorio siguen siendo referencia: no prueban qué versión está importada en el robot listo de Lucas.
+
+## 10. Construir los procesos P01–P05
+
+Seguir [guia_procesos.md](guia_procesos.md): páginas, Data Items, mapeos, SQL y recuperación del maestro. Crear/publicar las cuatro acciones auxiliares de la tabla anterior con los cuerpos de los métodos homónimos, sin pegar la clase completa. No cambian las entradas/salidas de las acciones originales.
+
+Actualización del estado de §9: B-07/B-08 ya publican detectar_cambios, mes_minimo_afectado y recalcular en api; B-09 publica las ocho vistas. El hash/versiones desplegados deben comprobarse en la VM. La corrección de con_error en origin/feat/B-04-con-error conserva errores de BP pero agrega **mensajes**: P05 reconcilia por filas distintas de BP cuando no hay rechazos adicionales BD. Si los hay, detener y conciliar, sin adivinar el número de fila original. No usar filasCore proyectadas como válidas del archivo.
+
+Crear Parametros evita rellenar a mano colecciones dinámicas de tipos mixtos: los casos de la guía usan todo Text o todo Number con casts SQL explícitos. Leer Numero Resultado distingue cero, DBNull y colección vacía; mínimo NULL no dispara recálculo. Preparar Carga convierte ISO a DateTime y cuenta una sola vez cada fila inválida. Mover Archivo usa ID/tiempo/nombre, no sobrescribe y requiere carpeta existente; solo se llama después de cerrar Excel y confirmar P05. El motivo de recálculo se establece con la RPC en una consulta SQL dependiente, en la misma conexión/transacción, según Q07 de la guía.

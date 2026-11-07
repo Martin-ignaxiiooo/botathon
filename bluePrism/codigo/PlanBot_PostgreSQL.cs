@@ -75,6 +75,65 @@ public class PlanBot_PostgreSQL
     }
     #endregion
 
+    // ACCIÓN auxiliar: Crear Parametros. T1/T2: Text; N1/N2/N4: Number.
+    public void CrearParametros(string modo, string texto1, string texto2, decimal numero1,
+        decimal numero2, decimal numero3, decimal numero4, out DataTable parametros)
+    {
+        if (modo != "T1" && modo != "T2" && modo != "N1" && modo != "N2" && modo != "N4")
+            throw new Exception("Modo de parámetros no admitido: " + modo);
+        bool texto = modo[0] == 'T';
+        int cantidad = Int32.Parse(modo.Substring(1), System.Globalization.CultureInfo.InvariantCulture);
+        parametros = new DataTable();
+        parametros.Columns.Add("nombre", typeof(string));
+        parametros.Columns.Add("valor", texto ? typeof(string) : typeof(decimal));
+        object[] valores = texto ? new object[] { texto1, texto2 } : new object[] { numero1, numero2, numero3, numero4 };
+        for (int i = 0; i < cantidad; i++) parametros.Rows.Add("p" + (i + 1), valores[i] ?? DBNull.Value);
+    }
+
+    // ACCIÓN auxiliar: Leer Numero Resultado. NULL no se convierte en un mes cero.
+    public void LeerNumeroResultado(DataTable resultado, string columna, out decimal numero,
+        out bool esNulo, out decimal filasResultado)
+    {
+        if (resultado == null) throw new Exception("Falta resultado.");
+        filasResultado = resultado.Rows.Count;
+        numero = 0; esNulo = true;
+        if (resultado.Rows.Count == 0) return;
+        if (resultado.Rows.Count != 1 || !resultado.Columns.Contains(columna))
+            throw new Exception("Se esperaba una fila y columna " + columna);
+        if (resultado.Rows[0].IsNull(columna)) return;
+        numero = Convert.ToDecimal(resultado.Rows[0][columna], System.Globalization.CultureInfo.InvariantCulture);
+        esNulo = false;
+    }
+
+    // ACCIÓN auxiliar: Preparar Carga. No cuenta mensajes como filas rechazadas.
+    public void PrepararCarga(DataTable validas, DataTable limpias, DataTable errores,
+        out DataTable datosCarga, out decimal leidas, out decimal filasValidas,
+        out decimal filasConError, out decimal mensajesError)
+    {
+        if (validas == null || limpias == null || errores == null || !errores.Columns.Contains("fila"))
+            throw new Exception("Faltan colecciones de carga o columna fila.");
+        datosCarga = validas.Clone();
+        string[] fechas = { "periodo", "fecha_ingreso", "fecha_termino" };
+        foreach (string campo in fechas) datosCarga.Columns[campo].DataType = typeof(DateTime);
+        foreach (DataRow origen in validas.Rows)
+        {
+            DataRow destino = datosCarga.NewRow();
+            foreach (DataColumn columna in validas.Columns)
+            {
+                object valor = origen[columna];
+                if (Array.IndexOf(fechas, columna.ColumnName) >= 0 && !Convert.IsDBNull(valor))
+                    valor = valor is DateTime ? valor : DateTime.ParseExact((string)valor, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+                destino[columna.ColumnName] = valor;
+            }
+            datosCarga.Rows.Add(destino);
+        }
+        System.Collections.Generic.HashSet<int> filas = new System.Collections.Generic.HashSet<int>();
+        foreach (DataRow error in errores.Rows) filas.Add(Convert.ToInt32(error["fila"], System.Globalization.CultureInfo.InvariantCulture));
+        leidas = limpias.Rows.Count; filasValidas = validas.Rows.Count;
+        filasConError = filas.Count; mensajesError = errores.Rows.Count;
+        if (filasValidas + filasConError != leidas) throw new Exception("Los conteos de filas no cuadran.");
+    }
+
     // ACCIÓN: Ejecutar Consulta. Copiar el cuerpo entre llaves.
     public void EjecutarConsulta(string connStr, string sql, DataTable parametros, out DataTable resultado)
     {
