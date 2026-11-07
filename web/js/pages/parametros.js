@@ -139,7 +139,7 @@ function tarjetaEscenario(esc) {
       if (!guardado) return;
       // La pantalla se dibuja de nuevo con el estado actualizado y el foco vuelve a este escenario.
       document.addEventListener('pagina-cambio', () => document.getElementById(idTitulo)?.focus(), { once: true });
-      window.dispatchEvent(new HashChangeEvent('hashchange'));
+      window.dispatchEvent(new window.HashChangeEvent('hashchange'));
     };
     tarjeta.append(el('div', { class: 'acciones' },
       el('button', { type: 'button', class: 'boton-primario', 'aria-label': `Aprobar el escenario ${esc.escenario_id}`, onclick: decidir('aprobar') }, 'Aprobar'),

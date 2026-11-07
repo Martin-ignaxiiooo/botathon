@@ -145,7 +145,7 @@ export function vigilarDesbordes(raiz) {
     const padre = nodo.parentElement?.closest('.tabla-scroll, .datos-grafico');
     if (padre) preparar(padre); // la tabla de un contenedor existente cambió (p. ej. al filtrar)
   };
-  new MutationObserver((cambios) => cambios.forEach((c) => c.addedNodes.forEach(mirar))).observe(raiz, { childList: true, subtree: true });
+  new window.MutationObserver((cambios) => cambios.forEach((c) => c.addedNodes.forEach(mirar))).observe(raiz, { childList: true, subtree: true });
   mirar(raiz);
 }
 

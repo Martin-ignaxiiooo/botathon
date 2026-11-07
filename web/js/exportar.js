@@ -58,6 +58,6 @@ export function vigilarTablas(raiz) {
     if (nodo.matches('table.tabla')) agregarBoton(nodo);
     nodo.querySelectorAll('table.tabla').forEach(agregarBoton);
   };
-  new MutationObserver((cambios) => cambios.forEach((c) => c.addedNodes.forEach(mirar))).observe(raiz, { childList: true, subtree: true });
+  new window.MutationObserver((cambios) => cambios.forEach((c) => c.addedNodes.forEach(mirar))).observe(raiz, { childList: true, subtree: true });
   mirar(raiz);
 }

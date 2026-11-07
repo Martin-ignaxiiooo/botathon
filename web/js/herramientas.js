@@ -40,7 +40,7 @@ export function iniciarHerramientas(zona) {
       aplicar(valor);
       guardarPreferencias({ ...leerPreferencias(), [opcion.clave]: valor });
       avisar(valor ? opcion.activado : opcion.desactivado, 'info');
-      if (opcion.redibuja) window.dispatchEvent(new HashChangeEvent('hashchange'));
+      if (opcion.redibuja) window.dispatchEvent(new window.HashChangeEvent('hashchange'));
     });
     zona.append(boton);
   }
