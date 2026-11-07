@@ -300,6 +300,15 @@ table.tabla tr.fila-total td, table.tabla tr.fila-total th { font-weight: 700; b
 table.tabla tr.fila-activa-tabla td { background: var(--azul-100); }
 table.tabla a[aria-current="true"] { font-weight: 700; }
 
+/* ---------- Pantalla Cuadratura (C-08) ---------- */
+.tarjeta-grande { margin-bottom: 1.25rem; border-left: 6px solid var(--azul-700); padding: 1.25rem 1.5rem; }
+.cifra-grande { margin: 0 0 .25rem; font-size: 1.5rem; font-weight: 600; color: var(--azul-900); line-height: 1.3; }
+.cifra-n { font-size: 3rem; font-weight: 800; color: var(--azul-700); }
+.campo-filtro { max-width: 22rem; margin-bottom: .5rem; }
+.causas { display: grid; gap: .6rem; margin: 0; }
+.causas dt { font-weight: 700; color: var(--azul-900); }
+.causas dd { margin: 0; color: var(--gris-700); }
+
 /* ---------- Lectura fácil (C-10) ---------- */
 .lectura-facil-caja {
   background: var(--blanco); border-left: 6px solid var(--azul-700);

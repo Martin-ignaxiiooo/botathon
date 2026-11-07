@@ -15,11 +15,13 @@ Rama actual: main (todo fusionado)
 
 - C-07 Cambios y errores: lista de cargas (archivo, errores, cambios, estado con ícono y texto), detalle por carga (`#cambios?carga=N`) con resumen, tabla de errores y tabla de cambios; textos de cambios compartidos en `js	extoCambios.js`
 
+- C-08 Cuadratura: tarjeta «N de 471 profesionales coinciden al 100 %», % de coincidencia por campo y por mes, explicación de causas y tabla de diferencias filtrable por causa
+
 ## En curso
 - —
 
 ## Siguiente
-- C-08 Cuadratura, luego C-10, C-09, C-11
+- C-10 Accesibilidad (lectura fácil, letra grande, revisión WCAG), luego C-09 Parámetros y C-11 Exportar
 
 ## Cómo probar el front
 - Servir sin bloquear: `Start-Process -WindowStyle Hidden python -ArgumentList '-m','http.server','8080' -WorkingDirectory web` y verificar con `Invoke-WebRequest http://localhost:8080 -UseBasicParsing`. Detenerlo al terminar.
@@ -41,6 +43,11 @@ Rama actual: main (todo fusionado)
 ## Notas de C-06
 - La pantalla pide `v_profesional_mes` completo solo para armar las sugerencias del buscador (con cientos de profesionales en la base real puede ser pesado: si pasa, pedir a Andrés una vista liviana de personas).
 - `describirCambio` (profesional.js) convierte los jsonb `antes`/`despues` en texto; si el cambio trae `instituto`, oculta `it`. Los tipos de cambio conocidos (alta, baja, cambio_jornada, cambio_cargo, cambio_it) tienen etiqueta; otros se muestran con el nombre del tipo. C-07 puede reutilizarlo (conviene moverlo a un módulo común).
+
+## Notas de C-08
+- `v_cuadratura` solo trae diferencias. N = `config.totalProfesionalesExcel` (471) − personas distintas con diferencia ≠ 0 (si la vista incluyera filas que coinciden, se ignoran).
+- % de coincidencia por campo = 1 − diferencias / (471 para campos sin mes, 471×12 para campos mensuales); por mes = 1 − diferencias / (471×5 campos mensuales). Es una aproximación: confirmar con Andrés la base real de comparaciones. Los porcentajes se truncan (99,96 % se ve 99,9 %, nunca 100,0 %) y el eje de los gráficos no parte en 0 (se avisa en la nota).
+- Causas conocidas (redondeo, regla_ene_abr, descuento_julio, asignacion_no_calza, atencion_grupal, colacion_contrato) vienen de `docseglas.md` (puntos abiertos); una causa nueva se muestra con su nombre y «Causa todavía sin descripción». Los valores reales de `causa` los define Andrés.
 
 ## API de los módulos (para quien siga)
 - `getData(vista, filtros)`: filtros `{it:[], area:[], cargo:[], persona:[], carga:[], desde, hasta}`; cada vista solo aplica los filtros que tiene (tabla `FILTRABLES` en api.js). `leerMock(nombre)` para JSON que no son vistas (escenarios).
