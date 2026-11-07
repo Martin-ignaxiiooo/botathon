@@ -19,11 +19,14 @@ Rama actual: main (todo fusionado)
 
 - C-10 Accesibilidad: botones «Lectura fácil» y «Letra grande» (aria-pressed, se recuerdan en el navegador), resumen de 3 a 5 frases en cada pantalla, auditoría WCAG 2.1 A/AA con axe-core (0 violaciones en 18 combinaciones de pantalla y estado)
 
+- C-09 Parámetros y escenarios: reglas vigentes por tabla con búsqueda, escenarios con impacto antes/después, Aprobar/Rechazar con diálogo accesible que pide motivo (axe: 0 violaciones, también con el diálogo abierto)
+- `scripts\servir_web.ps1` ahora funciona también en Windows PowerShell 5.1 (antes solo en PowerShell 7)
+
 ## En curso
 - —
 
 ## Siguiente
-- C-09 Parámetros (en modo plan; al hacerla agregar también su `lecturaFacil`) y C-11 Exportar
+- C-11 Exportar CSV e imprimir
 
 ## Cómo probar el front
 - Servir sin bloquear: `.\scripts\servir_web.ps1` (puerto 8080 por defecto, en segundo plano; `-Detener` lo apaga, `-Puerto` cambia el puerto). Es la única excepción a las carpetas de Claude Code en `AGENTS.md` (`scripts\` es del BACK); autorizada por César.
@@ -59,6 +62,14 @@ Rama actual: main (todo fusionado)
 - Correcciones hechas: ARIA de Tabulator (`accesibilizarTabulator` en ui.js: zona con scroll como `rowgroup`, orden por teclado), tablas con scroll horizontal enfocables y con nombre (`vigilarDesbordes`), estado «activado» de los botones del encabezado también con «✓», textos de los gráficos más grandes con letra grande (`ampliarTexto`).
 - Lectura fácil: cada pantalla llama `lecturaFacil(contenedor, frases)` (js\lectura.js); la caja existe siempre y el CSS la muestra solo con el botón activado. Solo Parámetros queda sin frases hasta C-09.
 - No se probó con lector de pantalla real ni con teclado físico: se verificó con axe, el árbol de roles y eventos simulados. Conviene un recorrido manual con Tab y NVDA antes de la demo. Los `ResizeObserver` no se entregan en Edge headless con tiempo virtual (solo afecta a pruebas automáticas).
+
+## Notas de C-09 (escenarios: falta definir el contrato con Andrés)
+- El front espera dos funciones SQL expuestas por PostgREST; nombres provisorios en `config.rpc` (`rpc/listar_escenarios`, `rpc/decidir_escenario`). Hasta que existan, en modo api la sección de escenarios dice «todavía no están disponibles» y las reglas vigentes funcionan igual.
+  - `listar_escenarios()` devuelve filas con: escenario_id, descripcion, parametro, valor_actual, valor_propuesto, estado (pendiente|borrador|aprobado|aplicado|rechazado), creado_por, creado_en, decision_motivo, impacto (jsonb: arreglo de {it, instituto, atenciones_antes, atenciones_despues, meta_antes, meta_despues, diferencia_meta}).
+  - `decidir_escenario(escenario_id, decision, motivo)` con decision = 'aprobar' | 'rechazar'; el motivo debe quedar en la auditoría (`planbot.motivo`), que el front no puede fijar por PostgREST.
+  - Son funciones nuevas fuera del Contrato 2: requieren PR con etiqueta `contrato` aprobado por Andrés y César.
+- En modo mock las decisiones viven solo en memoria (se pierden al recargar). Aprobar en el front solo cambia el estado; aplicar el escenario lo hace Blue Prism (`aplicar_escenario`, P09).
+- Lectura fácil y letra grande funcionan en esta pantalla; el diálogo es un `<dialog>` modal nativo (Esc cierra, el foco vuelve al botón).
 
 ## Nota sobre el backlog
 - Al cerrar C-07 marqué por error D-04, D-05, D-06 y C-01 (son de Codex y Andrés) por reemplazar un bloque de líneas; ya se devolvieron a «[ ]». Quien las termine debe marcarlas.

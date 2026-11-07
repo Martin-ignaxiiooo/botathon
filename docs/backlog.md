@@ -72,5 +72,8 @@ Formato: `- [ ] ID · título` y debajo sus criterios. Al terminar una historia,
 - [ ] C-01 · postgrest.conf y prueba de endpoints (BACK/Andrés, 2 pts)
 - [x] C-08 · Pantalla Cuadratura (FRONT, 2 pts, should)
 - [x] C-10 · Accesibilidad y lectura fácil (FRONT, 2 pts, should)
-- [ ] C-09 · Pantalla Parámetros y simulación (FRONT, 5 pts, should)
+- [x] C-09 · Pantalla Parámetros y simulación (FRONT, 5 pts, should)
+  - [x] Reglas vigentes de `v_parametros_vigentes` agrupadas por tabla, con versión, vigencia y búsqueda
+  - [x] Escenarios con impacto antes/después por instituto (tabla y gráfico); mock en `escenarios.json`, api por RPC configurable en `config.js`
+  - [x] Aprobar/Rechazar con diálogo accesible que exige un motivo
 - [ ] C-11 · Exportar CSV e imprimir (FRONT, 1 pt, could)
