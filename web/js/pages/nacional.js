@@ -8,7 +8,7 @@ import { dimensionArea } from '../dimension.js';
 import { hayFiltros } from '../filtros.js';
 import { lecturaFacil } from '../lectura.js';
 
-const COLORES_HORAS = ['#124a82', '#2f80c9', '#7b8794']; // directas, indirectas, NAS
+const COLORES_HORAS = ['#124a82', '#2f80c9', '#7b8794', '#b26b00']; // directas, indirectas, NAS, ausencias
 
 const sumar = (filas, campo) => filas.reduce((t, f) => t + Number(f[campo] || 0), 0);
 
@@ -111,11 +111,12 @@ function frasesNacional({ kpi, porMes, porInstArea, filtrado }) {
   if (porMes.length > 1) {
     const mayor = porMes.reduce((a, b) => (b.atenciones_dir > a.atenciones_dir ? b : a));
     const menor = porMes.reduce((a, b) => (b.atenciones_dir < a.atenciones_dir ? b : a));
-    frases.push(`El mes con más atenciones es ${nombreMes(mayor.mes)}.`, `El mes con menos atenciones es ${nombreMes(menor.mes)}.`);
+    frases.push(`El mes con más atenciones es ${nombreMes(mayor.mes)} y el que tiene menos es ${nombreMes(menor.mes)}.`);
   }
   if (kpi?.foja !== null && kpi?.foja !== undefined) {
     frases.push(`El % FOJA es ${pct(kpi.foja)}. Es la parte de las horas contratadas para atender pacientes.`);
   }
+  frases.push('En el gráfico de horas, las barras suman las horas contratadas. «Ausencias y feriados» son las horas de vacaciones, licencias y feriados, que no se usan para atender.');
   return frases;
 }
 
@@ -281,12 +282,19 @@ function graficoAreas(filas, tipos, dim) {
     { nombre: 'Horas directas', campo: 'horas_dir', tipo: 'directa', corto: 'directas' },
     { nombre: 'Horas indirectas', campo: 'horas_ind', tipo: 'indirecta', corto: 'indirectas' },
     { nombre: 'Horas NAS (no asistenciales)', campo: 'horas_nas', tipo: 'nas', corto: 'NAS' },
+    { nombre: 'Ausencias y feriados', campo: 'horas_aus', tipo: 'ausencias', corto: 'ausencias y feriados' },
   ];
-  const series = todas.filter((t) => !tipos.length || tipos.includes(t.tipo));
+  // Ausencias y feriados = horas contratadas - (directas + indirectas + NAS): así las barras suman lo contratado.
+  // Las ausencias no se cargan a NAS (decisión acordada con el back), por eso se muestran aparte.
+  const agregadas = agrupar(filas.map((f) => ({ ...f, grupo: f[dim.campo] ?? '' })), 'grupo',
+    ['horas_dir', 'horas_ind', 'horas_nas', 'horas_contratadas'])
+    .map((g) => ({ ...g, horas_aus: Math.max(0, g.horas_contratadas - (g.horas_dir + g.horas_ind + g.horas_nas)) }));
+  const hayAusencias = agregadas.some((g) => g.horas_aus >= 0.5);
+  const series = todas.filter((t) => (!tipos.length || tipos.includes(t.tipo))
+    && (t.tipo !== 'ausencias' || hayAusencias || tipos.includes('ausencias')));
   const colores = todas.map((t, i) => [t, COLORES_HORAS[i]]).filter(([t]) => series.includes(t)).map(([, c]) => c);
   const total = (r) => series.reduce((t, s) => t + r[s.campo], 0);
-  const grupos = agrupar(filas.map((f) => ({ ...f, grupo: f[dim.campo] ?? '' })), 'grupo', series.map((s) => s.campo))
-    .sort((a, b) => total(b) - total(a));
+  const grupos = agregadas.sort((a, b) => total(b) - total(a));
   const lista = series.map((s) => s.corto).join(', ').replace(/, ([^,]*)$/, ' y $1');
   const horizontal = grupos.length > 6; // con muchos cargos las barras van en horizontal para leer los nombres
   const nombres = grupos.map((r) => dim.nombre(r.grupo));
@@ -317,7 +325,9 @@ function graficoAreas(filas, tipos, dim) {
     alto: horizontal ? Math.max(320, grupos.length * 30 + 80) : 320,
     ariaLabel: `Gráfico de barras apiladas con las horas ${lista} de cada ${dim.singular} en el período. `
       + grupos.map((r) => `${dim.nombre(r.grupo)}: ${series.map((s) => `${num(r[s.campo])} ${s.corto}`).join(', ')}`).join('; ') + '.',
-    nota: tipos.length ? `Filtro de tipo de atención activo: solo horas ${lista}.` : null,
+    nota: tipos.length
+      ? `Filtro de tipo de hora activo: solo ${lista}.`
+      : (hayAusencias ? 'Las barras suman las horas contratadas. «Ausencias y feriados» = contratadas − (directas + indirectas + NAS): vacaciones, licencias, permisos y feriados.' : null),
     opcion,
     tabla: {
       caption: `Horas del período por ${dim.singular}, según tipo de hora`,

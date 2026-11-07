@@ -151,7 +151,7 @@ def calcular(meta_pct=META_PCT, mes_jornada=MES_JORNADA_42, param_cargo=None):
             h_ind = pct_ind * disp * sem_cal
             filas.append(dict(
                 persona_id=p["id"], it=e["it"], area=e["area"], cargo=cargo, mes=m,
-                horas_contratadas=hc, h_dir=h_dir, h_ind=h_ind, h_nas=hc - h_dir - h_ind,
+                horas_contratadas=hc, h_dir=h_dir, h_ind=h_ind, h_nas=pnas_asig * disp * sem_cal,
                 pct_dir_final=pct_dir, ate_sem=ate_sem, ate=ate, ate_ind=ate_i,
                 sem_hab=sem_hab, meta=piso(ate * meta_pct), foja=h_dir / hc,
             ))
