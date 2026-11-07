@@ -304,42 +304,42 @@ def v_cuadratura():
         f, mes = con_fila(pid, rng.randint(5, 12))
         s = {"meta": f["meta"], "plan_ate_dir": f["ate"],
              "meta_dir_ind": piso((f["ate"] + f["ate_ind"]) * META_PCT)}[campo]
-        return agregar(pid, campo, mes, s, rng.choice([-1, 1]), "redondeo")
+        return agregar(pid, campo, mes, s, rng.choice([-1, 1]), "otra")
 
     def ene_abr():
         pid = rng.choice(pool)
         f, mes = con_fila(pid, rng.randint(1, 4))
         campo = rng.choice(["plan_ate_dir", "plan_ate_dir_ind"])
         s = f["ate"] if campo == "plan_ate_dir" else f["ate"] + f["ate_ind"]
-        return agregar(pid, campo, mes, s, rng.choice([-1, 1]) * rng.randint(4, 12), "regla_ene_abr")
+        return agregar(pid, campo, mes, s, rng.choice([-1, 1]) * rng.randint(4, 12), "periodo_ene_abr")
 
     def julio():
         pid = rng.choice(pool)
         f, mes = con_fila(pid, 7)
-        return agregar(pid, "semhab", 7, f["sem_hab"], rng.choice([-0.1, -0.2]), "descuento_julio", 1)
+        return agregar(pid, "semhab", 7, f["sem_hab"], rng.choice([-0.1, -0.2]), "dias_adicionales", 1)
 
     def asignacion():
         pid = rng.choice(pool)
         f, _ = con_fila(pid, 12)
         return agregar(pid, "pct_dir_final", None, f["pct_dir_final"],
-                       rng.choice([-1, 1]) * round(rng.uniform(0.02, 0.05), 3), "asignacion_no_calza", 4)
+                       rng.choice([-1, 1]) * round(rng.uniform(0.02, 0.05), 3), "ajuste_individual", 4)
 
     def grupal():
         pid = rng.choice(ed)
         f, _ = con_fila(pid, 12)
-        return agregar(pid, "ate_dir_semana", None, f["ate_sem"], -rng.randint(2, 4), "atencion_grupal")
+        return agregar(pid, "ate_dir_semana", None, f["ate_sem"], -rng.randint(2, 4), "grupal")
 
     def colacion():
         pid = rng.choice(pool)
         f, _ = con_fila(pid, 12)
-        return agregar(pid, "ate_dir_semana", None, f["ate_sem"], rng.choice([-1, 1]), "colacion_contrato")
+        return agregar(pid, "ate_dir_semana", None, f["ate_sem"], rng.choice([-1, 1]), "diferencia_explicada")
 
-    hacer(8, "redondeo", redondeo)
-    hacer(7, "regla_ene_abr", ene_abr)
-    hacer(4, "descuento_julio", julio)
-    hacer(4, "asignacion_no_calza", asignacion)
-    hacer(4, "atencion_grupal", grupal)
-    hacer(3, "colacion_contrato", colacion)
+    hacer(8, "otra", redondeo)
+    hacer(7, "periodo_ene_abr", ene_abr)
+    hacer(4, "dias_adicionales", julio)
+    hacer(4, "ajuste_individual", asignacion)
+    hacer(4, "grupal", grupal)
+    hacer(3, "diferencia_explicada", colacion)
     assert len(out) == 30
     rng.shuffle(out)
     return out
