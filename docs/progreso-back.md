@@ -1,6 +1,6 @@
 # Progreso BACK (Andrés · Claude Code)
 Última actualización: 2026-11-07 · por: Claude Code
-Rama actual: feat/B-06-plan-mes (sale de feat/B-05-semanal; PR por web porque gh no está instalado)
+Rama actual: feat/B-07-B-08-cambios (sale de feat/B-06-plan-mes; PR por web porque gh no está instalado)
 Reparto 7-nov: B-09 (vistas api.*, database\views\) lo hace el Codex de César en feat/B-09-vistas; el BACK revisa
 y fusiona su PR. El BACK no toca database\views\ mientras tanto.
 
@@ -53,9 +53,30 @@ y fusiona su PR. El BACK no toca database\views\ mientras tanto.
     SemHab en 100 % de los meses con valor, con techo a 1 decimal en mayo y julio (inferido).
     Pendientes: zona extrema y valores para altas.
 
+- B-07 · `api.detectar_cambios(carga_id)` y `api.mes_minimo_afectado(carga_id)` (database\functions\050).
+  - Compara contra la carga 'buk' anterior que tenga filas, usando solo meses reales del BUK.
+  - Reglas por tipo:
+    - jornada y cargo: solo en (persona, it, mes) presentes en las dos cargas;
+    - cambio_it: mismo mes, otro IT;
+    - alta: persona nueva;
+    - baja: pierde meses al final;
+    - cambio_vigencia: cambia fecha_ingreso o fecha_termino; mes = el de la fecha más temprana.
+  - Escribe en core.cambios y se puede re-ejecutar. mes_minimo_afectado da 1 en la primera carga y NULL si no hay
+    cambios (en ese caso Blue Prism NO llama a recalcular).
+  - Casos D-04: 5/5 iguales a data\buk\esperado_cambios.csv (database\evidencia\b07\casos_cambios.md).
+- B-08 · `api.recalcular(desde_mes)` -> table(filas, ms) (database\functions\060): llama a calc.calcular_plan en la
+  transacción de la llamada; los meses anteriores no se tocan. Registra en audit.log (motivo = planbot.motivo).
+  Base real desde mes 3: 4.447 filas en 125 ms.
+  - GRANT EXECUTE a bot_carga en las 3 funciones; web_lectura no las tiene.
+  - tests\sql\030_cambios_recalcular.sql en verde.
+- Ojo al compilar a mano: hacerlo como owner_planbot o con migrar.ps1. Si se compila como postgres, la función
+  queda con otro dueño y migrar falla con "debe ser dueño".
+
 ## Siguiente
-- B-07 + B-08 (detectar_cambios, mes_minimo_afectado, recalcular en api, GRANT bot_carga), corrección de con_error
-  en cargar_dotacion, instalación en la VM con un comando. Luego revisar y fusionar el PR de B-09 (Codex).
+- Corrección de con_error en cargar_dotacion, instalación en la VM con un comando. Luego revisar y fusionar el PR
+  de B-09 (Codex).
+- Si sobra tiempo: usar data\csv\insumos.csv (Codex) para minutos, distribución y asignaciones por persona, como
+  excepción documentada, y subir del 95,5 %.
 
 ## Cómo correr en este PC (laboratorio Duoc, sin admin, NO reiniciar)
 - Repo en `C:\dev\botathon`. Servicio `postgresql-x64-16` (puerto 5432) ya está en Running; superusuario `postgres`.
