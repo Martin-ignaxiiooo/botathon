@@ -72,6 +72,10 @@ def comparar(carpeta, esperados):
     caso('archivo_repetido',duplicado['duplicado'] and duplicado['estado']=='archivo repetido','sin nueva carga ni recálculo')
     sin=leer_json(carpeta/'sin_cambios/resumen.json')
     caso('minimo_NULL',sin['mes_minimo'] is None and 'recalculo' not in sin and not sin['duplicado'],'otra huella con misma dotación: NULL no llama recalcular')
+    reinicio={(int(r['persona_id']),int(r['it']),int(r['mes'])): r['fila']
+              for r in leer_json(carpeta/'reinicio_01.json')}
+    caso('reinicio_01',reinicio==antes,
+         f'reiniciar_demo.ps1 recupera {len(reinicio)} filas; comparación exacta con 01 sin calculado_en')
     with (carpeta/'diferencias_back.csv').open('w',encoding='utf-8',newline='') as f:
         w=csv.DictWriter(f,fieldnames=['caso','persona_id','mes','campo','esperado','obtenido'])
         w.writeheader(); w.writerows(diferencias)

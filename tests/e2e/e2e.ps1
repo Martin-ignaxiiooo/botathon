@@ -1,5 +1,5 @@
 ﻿#requires -Version 5.1
-# Siempre crea su propio cluster y restaura en otra base; nunca usa la VM activa.
+# Siempre crea su propio cluster; reinicia solo esa base con el script de Andrés.
 param([string]$PgBin='C:\Program Files\PostgreSQL\16\bin',
       [string]$Salida=(Join-Path ([IO.Path]::GetTempPath()) ('PlanBot_E2E_'+[Guid]::NewGuid().ToString('N'))))
 $ErrorActionPreference='Stop'
@@ -48,7 +48,17 @@ function Simular-E2e([string]$Archivo,[string]$Caso,[string]$Base='planbot') {
     return $r
 }
 function Script-E2e([string]$Archivo,[string[]]$Opciones,[string]$NombreLog) {
-    $a=@('-NoProfile','-File',('"'+$Archivo+'"'))+$Opciones
+    # Utility debe vivir en el ámbito global del proceso PS5.1: el back carga
+    # Get-FileHash en scripts anidados. No se modifica el snapshot de Andrés.
+    $arranque=Join-Path $Salida 'ejecutar_script.ps1'
+    $textoArranque=@'
+param([string]$ScriptObjetivo)
+Import-Module (Join-Path $PSHOME 'Modules\Microsoft.PowerShell.Utility\Microsoft.PowerShell.Utility.psd1') -Force -Global -ErrorAction Stop
+& $ScriptObjetivo @args
+exit $LASTEXITCODE
+'@
+    [IO.File]::WriteAllText($arranque,$textoArranque,(New-Object Text.UTF8Encoding($false)))
+    $a=@('-NoProfile','-File',('"'+$arranque+'"'),('"'+$Archivo+'"'))+$Opciones
     $p=Start-Process -FilePath $hostPs -ArgumentList $a -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $Salida ($NombreLog+'.log')) -RedirectStandardError (Join-Path $Salida ($NombreLog+'.err'))
     $handleScript=$p.Handle
     if(-not $p.WaitForExit(120000)) { Stop-Process -Id $p.Id; throw "Timeout $NombreLog" }
@@ -90,13 +100,11 @@ try {
     $zip=[IO.Compression.ZipFile]::Open($igual,[IO.Compression.ZipArchiveMode]::Update)
     try { $entry=$zip.CreateEntry('planbot_e2e.txt'); $w=New-Object IO.StreamWriter($entry.Open()); try {$w.Write('Misma dotacion; prueba NULL')} finally {$w.Dispose()} } finally {$zip.Dispose()}
     $sin=Simular-E2e $igual 'sin_cambios'
-    # Restauracion a una NUEVA base del mismo cluster privado: no DROP ni limpieza ajena.
-    & (Join-Path $PgBin 'createdb.exe') -w -h 127.0.0.1 -p $puerto -U integracion_admin -O owner_planbot planbot_errores
-    if ($LASTEXITCODE -ne 0) { throw 'No se creo destino de restauracion' }
-    & (Join-Path $PgBin 'pg_restore.exe') -w -h 127.0.0.1 -p $puerto -U owner_planbot -d planbot_errores --exit-on-error (Join-Path $Salida '01.dump') *> (Join-Path $Salida 'restaurar.log')
-    if ($LASTEXITCODE -ne 0) { throw 'Restauracion de 01 fallo' }
-    $r03=Simular-E2e (Join-Path $raizE2e 'data\buk\03_errores.xlsx') '03' 'planbot_errores'
-    $conexion.Base='planbot_errores'
+    # La conexión del snapshot de scripts/.env apunta exclusivamente al cluster
+    # privado ya comprobado por data_directory. Nunca reiniciar la VM activa.
+    Script-E2e (Join-Path $fuente 'scripts\reiniciar_demo.ps1') @('-Archivo',('"'+$original+'"'),'-Modo','nativo') 'reiniciar_demo'
+    $null=Consultar-E2e $planSql 'reinicio_01.json'
+    $r03=Simular-E2e (Join-Path $raizE2e 'data\buk\03_errores.xlsx') '03'
     $null=Consultar-E2e ("SELECT coalesce(json_agg(e),'[]'::json) FROM stg.error_fila e WHERE carga_id="+[long]$r03.carga_id+';') 'errores.json'
     & python (Join-Path $raizE2e 'tools\vm\comparar_e2e.py') $Salida (Join-Path $raizE2e 'data\buk')
     $codigoE2e=$LASTEXITCODE

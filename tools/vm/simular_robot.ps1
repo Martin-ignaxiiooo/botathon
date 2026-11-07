@@ -1,4 +1,4 @@
-﻿#requires -Version 5.1
+#requires -Version 5.1
 # Contingencia; Blue Prism sigue siendo el camino principal. No mueve el Excel.
 param(
     [string]$Archivo,
@@ -75,7 +75,7 @@ ON CONFLICT(hash) DO NOTHING RETURNING carga_id;
         & $python (Join-Path $PSScriptRoot 'preparar_buk.py') $Archivo $Catalogos $entrada
         if ($LASTEXITCODE -ne 0) { throw 'Fallo lector Excel; consultar stderr, sin continuar la carga.' }
         $puente=Join-Path $Salida 'PrepararBuk.exe'
-        & $csc /nologo /langversion:5 /warnaserror /r:System.dll /r:System.Data.dll /r:System.Xml.dll "/out:$puente" (Join-Path $PSScriptRoot 'PrepararBuk.cs') (Join-Path $raizRobot 'bluePrism\codigo\PlanBot_Limpieza.cs') (Join-Path $raizRobot 'bluePrism\codigo\PlanBot_Validador.cs') (Join-Path $raizRobot 'bluePrism\codigo\PlanBot_PostgreSQL.cs') | Out-Host
+        & $csc /nologo /noconfig /langversion:5 /warnaserror /r:System.dll /r:System.Data.dll /r:System.Xml.dll "/out:$puente" (Join-Path $PSScriptRoot 'PrepararBuk.cs') (Join-Path $raizRobot 'bluePrism\codigo\PlanBot_Limpieza.cs') (Join-Path $raizRobot 'bluePrism\codigo\PlanBot_Validador.cs') (Join-Path $raizRobot 'bluePrism\codigo\PlanBot_PostgreSQL.cs') | Out-Host
         if ($LASTEXITCODE -ne 0) { throw 'No compilan los Code stages originales; no sustituir su logica.' }
         & $puente $entrada ([string]$resumen.carga_id) $Salida
         if ($LASTEXITCODE -ne 0) { throw 'Fallaron limpieza/validacion originales C#.' }
@@ -111,12 +111,16 @@ SELECT row_to_json(r) FROM contexto c CROSS JOIN LATERAL api.recalcular(
 '@
             $resumen.recalculo=(Invoke-RobotPsql @conexion -ArchivoSql $consulta -Variables @{carga=$id;mes=$corte.mes}) | ConvertFrom-Json
         }
-        $consulta=Write-RobotSql $sqlRuta @'
-UPDATE stg.carga SET estado='cargada',leidas=CAST(:'leidas' AS integer),validas=CAST(:'validas' AS integer),
- con_error=CAST(:'errores' AS integer) WHERE carga_id=CAST(:'carga' AS bigint);
-SELECT api.cuadratura();
-'@
-        $resumen.cuadratura=Invoke-RobotPsql @conexion -ArchivoSql $consulta -Variables @{carga=$id;leidas=$conteos.leidas;validas=$conteos.validas;errores=$conteos.con_error}
+        # El back es dueño del cierre y sus contadores. El robot solo los lee;
+        # una discrepancia exige conciliación, nunca sobrescribirla con BP.
+        $consulta=Write-RobotSql $sqlRuta "SELECT row_to_json(c) FROM (SELECT leidas,validas,con_error,estado FROM stg.carga WHERE carga_id=CAST(:'carga' AS bigint)) c;"
+        $resumen.cierre=Invoke-RobotPsql @conexion -ArchivoSql $consulta -Variables @{carga=$id} | ConvertFrom-Json
+        foreach($campo in @('leidas','validas','con_error')) {
+            if ([int]$resumen.cierre.$campo -ne [int]$conteos.$campo) { throw "Contador BD $campo difiere de BP: conciliar sin sobrescribirlo." }
+        }
+        if ($resumen.cierre.estado -ne 'cargada') { throw 'La BD no confirmo estado cargada; conciliar.' }
+        $consulta=Write-RobotSql $sqlRuta 'SELECT api.cuadratura();'
+        $resumen.cuadratura=Invoke-RobotPsql @conexion -ArchivoSql $consulta
         $resumen.estado='cargada'
     }
 } catch {

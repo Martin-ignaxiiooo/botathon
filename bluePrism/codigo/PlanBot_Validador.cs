@@ -51,10 +51,12 @@ public class PlanBot_Validador
         string[] campos = { "it", "instituto", "persona_id", "area", "sub_area", "centro_costo", "periodo", "tipo_contrato", "tipo_trabajador", "fecha_ingreso", "fecha_termino", "horas_semanales", "cargo", "dias_jornada", "ndias", "cod_esp" };
         foreach (string campo in campos) if (!limpias.Columns.Contains(campo)) throw new Exception("Falta columna " + campo);
         if (!limpias.Columns.Contains("fila") || !institutos.Columns.Contains("it") || !cargos.Columns.Contains("cargo_origen")) throw new Exception("Faltan fila o columnas de catálogo.");
-        HashSet<long> its = new HashSet<long>();
-        foreach (DataRow r in institutos.Rows) { long it; if (!Entero(r["it"], out it)) throw new Exception("IT inválido en catálogo."); its.Add(it); }
-        HashSet<string> catalogo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (DataRow r in cargos.Rows) if (Texto(r["cargo_origen"]) != "") catalogo.Add(Texto(r["cargo_origen"]));
+        // Conjuntos mediante Dictionary (mscorlib): referencias exactas de BP,
+        // sin depender de System.Core que csc.rsp puede incluir implícitamente.
+        Dictionary<long, bool> its = new Dictionary<long, bool>();
+        foreach (DataRow r in institutos.Rows) { long it; if (!Entero(r["it"], out it)) throw new Exception("IT inválido en catálogo."); its[it] = true; }
+        Dictionary<string, bool> catalogo = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        foreach (DataRow r in cargos.Rows) if (Texto(r["cargo_origen"]) != "") catalogo[Texto(r["cargo_origen"])] = true;
         if (its.Count == 0 || catalogo.Count == 0) throw new Exception("Catálogos vacíos: no se validará sin referencias.");
         validas = new DataTable();
         validas.Columns.Add("carga_id", typeof(long));
@@ -63,7 +65,7 @@ public class PlanBot_Validador
         errores = new DataTable();
         errores.Columns.Add("carga_id", typeof(long)); errores.Columns.Add("fila", typeof(int)); errores.Columns.Add("persona_id", typeof(long));
         errores.Columns.Add("campo", typeof(string)); errores.Columns.Add("valor", typeof(string)); errores.Columns.Add("motivo", typeof(string));
-        HashSet<string> vistos = new HashSet<string>(StringComparer.Ordinal);
+        Dictionary<string, bool> vistos = new Dictionary<string, bool>(StringComparer.Ordinal);
         foreach (DataRow r in limpias.Rows)
         {
             int antes = errores.Rows.Count;
@@ -87,13 +89,14 @@ public class PlanBot_Validador
             else if (horas < 1 || horas > 45) ErrorFila(errores, carga, r, pid, "horas_semanales", "Horas Semanales = " + Texto(r["horas_semanales"]) + ": debe estar entre 1 y 45");
             if (tieneTermino && !terminoOk) ErrorFila(errores, carga, r, pid, "fecha_termino", "Fecha Término debe ser una fecha válida");
             else if (tieneTermino && ingresoOk && termino <= ingreso) ErrorFila(errores, carga, r, pid, "fecha_termino", "Fecha Término debe ser posterior a Fecha Ingreso");
-            if (!itOk || !its.Contains(it)) ErrorFila(errores, carga, r, pid, "it", "IT no existe en el catálogo de institutos");
-            if (!catalogo.Contains(Texto(r["cargo"]))) ErrorFila(errores, carga, r, pid, "cargo", "Cargo sin homologar: " + Texto(r["cargo"]));
+            if (!itOk || !its.ContainsKey(it)) ErrorFila(errores, carga, r, pid, "it", "IT no existe en el catálogo de institutos");
+            if (!catalogo.ContainsKey(Texto(r["cargo"]))) ErrorFila(errores, carga, r, pid, "cargo", "Cargo sin homologar: " + Texto(r["cargo"]));
             if (!ndiasVacio && !ndiasOk) ErrorFila(errores, carga, r, pid, "ndias", "Ndias debe ser un número entero int");
             if (pidOk && itOk && periodoOk)
             {
                 string clave = persona.ToString(CultureInfo.InvariantCulture) + "|" + it.ToString(CultureInfo.InvariantCulture) + "|" + periodo.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-                if (!vistos.Add(clave)) ErrorFila(errores, carga, r, pid, "persona_id", "Fila duplicada (persona_id, it, periodo)");
+                if (vistos.ContainsKey(clave)) ErrorFila(errores, carga, r, pid, "persona_id", "Fila duplicada (persona_id, it, periodo)");
+                else vistos.Add(clave, true);
             }
             if (errores.Rows.Count != antes) continue;
             DataRow v = validas.NewRow();

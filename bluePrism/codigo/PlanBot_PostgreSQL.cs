@@ -127,8 +127,9 @@ public class PlanBot_PostgreSQL
             }
             datosCarga.Rows.Add(destino);
         }
-        System.Collections.Generic.HashSet<int> filas = new System.Collections.Generic.HashSet<int>();
-        foreach (DataRow error in errores.Rows) filas.Add(Convert.ToInt32(error["fila"], System.Globalization.CultureInfo.InvariantCulture));
+        // Dictionary está en mscorlib; no exige System.Core fuera de Code Options.
+        System.Collections.Generic.Dictionary<int, bool> filas = new System.Collections.Generic.Dictionary<int, bool>();
+        foreach (DataRow error in errores.Rows) filas[Convert.ToInt32(error["fila"], System.Globalization.CultureInfo.InvariantCulture)] = true;
         leidas = limpias.Rows.Count; filasValidas = validas.Rows.Count;
         filasConError = filas.Count; mensajesError = errores.Rows.Count;
         if (filasValidas + filasConError != leidas) throw new Exception("Los conteos de filas no cuadran.");
