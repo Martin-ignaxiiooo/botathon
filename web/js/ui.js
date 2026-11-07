@@ -72,7 +72,7 @@ export function tablaDatos({ caption, columnas, filas, id }) {
     el('th', { scope: 'col', class: c.numerica ? 'num' : null }, c.titulo)));
   const cuerpo = filas.map((f) => el('tr', {}, columnas.map((c) => {
     const bruto = typeof c.valor === 'function' ? c.valor(f) : f[c.campo];
-    const celda = c.formato ? c.formato(bruto) : texto(bruto); // formato recibe solo el valor (así sirve num, pct...)
+    const celda = c.formato ? c.formato(bruto) : (bruto instanceof Node ? bruto : texto(bruto)); // formato recibe solo el valor (así sirve num, pct...)
     return el('td', { class: c.numerica ? 'num' : null }, celda);
   })));
   return el('table', { class: 'tabla', id }, el('caption', {}, caption),

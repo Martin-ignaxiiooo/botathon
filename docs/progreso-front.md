@@ -13,11 +13,13 @@ Rama actual: main (todo fusionado)
 
 - C-06 Profesional: buscador por persona_id con sugerencias (datalist), ficha con trayectoria, tarjetas, meta mensual con marcas de cambios, línea de tiempo desde `v_cambios`, tabla mes a mes con total
 
+- C-07 Cambios y errores: lista de cargas (archivo, errores, cambios, estado con ícono y texto), detalle por carga (`#cambios?carga=N`) con resumen, tabla de errores y tabla de cambios; textos de cambios compartidos en `js	extoCambios.js`
+
 ## En curso
 - —
 
 ## Siguiente
-- C-07 Cambios y errores (antes confirmar con Andrés el hueco de `archivo` en `v_cambios`), luego C-08, C-10, C-09, C-11
+- C-08 Cuadratura, luego C-10, C-09, C-11
 
 ## Cómo probar el front
 - Servir sin bloquear: `Start-Process -WindowStyle Hidden python -ArgumentList '-m','http.server','8080' -WorkingDirectory web` y verificar con `Invoke-WebRequest http://localhost:8080 -UseBasicParsing`. Detenerlo al terminar.
@@ -57,5 +59,5 @@ Rama actual: main (todo fusionado)
   - `v_cuadratura`: 30 diferencias de 11 personas; causas: redondeo, regla_ene_abr, descuento_julio, asignacion_no_calza, atencion_grupal, colacion_contrato (los "471" de la tarjeta es constante del front).
   - `escenarios.json` NO es contrato (lo definirá Andrés): escenario_id, descripcion, parametro, valor_actual, valor_propuesto, estado (pendiente|aprobado), creado_por, creado_en, decision_motivo, impacto[] por instituto (atenciones y meta antes/después).
 - Hueco resuelto: horas por área (contrato v1.1).
-- Hueco abierto (consultar con Andrés antes de C-07): `v_cambios` no trae `archivo`, una carga sin errores no tiene nombre de archivo disponible.
+- Hueco abierto (sigue sin resolver en el contrato): `v_cambios` no trae `archivo` ni hay vista de cargas con estado. La pantalla Cambios toma el archivo de `v_errores_carga` (si la carga no tuvo errores muestra «Archivo no informado») y deduce el estado de los conteos (con errores / con cambios / sin novedades). Pedir a Andrés una vista de cargas (carga_id, archivo, tipo, estado, recibido_en, leidas, validas, con_error) o agregar `archivo` a `v_cambios`.
 - Nacional lee `meta_gestion`, `mes_cambio_jornada` y `jornada_legal_horas_desde_mayo` de `v_parametros_vigentes` (nada fijo en el código). Si en la base real esas claves se llaman distinto, la tarjeta cae a meta/atenciones y la marca de jornada desaparece: confirmar nombres de clave con Andrés.
