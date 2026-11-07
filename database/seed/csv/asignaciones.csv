@@ -1,0 +1,896 @@
+persona_id,it,tipo,horas
+71027,101,Actividades Coordinación ULAB,1.0
+71027,101,Asignación 4,0.25
+71132,131,Docencia DMN,0.25
+71132,131,Asignación 4,0.25
+71146,131,Asignación 4,0.25
+71232,131,Desarrollo técnico,4.25
+71247,51,Líder Equipo,2.0
+71247,51,Asignación 4,0.25
+71269,11,Líder Equipo,2.0
+71279,131,Asignación 4,0.25
+71292,131,Desarrollo técnico,0.25
+71306,11,Comité paritario,0.5
+71306,11,Actividades de Coordinacion,10.0
+71317,131,Por autorizar DMN y VP,0.25
+71317,131,Asignación 4,0.25
+71318,51,Líder Equipo,2.0
+71318,51,Asignación 4,0.25
+71333,131,CEA,0.25
+71333,131,Asignación 4,0.25
+71342,61,Líder Equipo,2.0
+71342,131,Asignación 4,0.25
+71372,131,Desarrollo técnico,2.5
+71372,131,Asignación 4,0.25
+71391,131,Asignación 4,0.25
+71404,131,Asignación 4,0.25
+71414,131,Asignación 4,0.25
+71420,101,Tutor docente,1.0
+71420,101,Coordinador docente,1.0
+71420,101,Asignación 4,0.25
+71425,91,Mesas Tecnicas SSYC,0.5
+71425,91,Asignación 4,0.25
+71427,51,Asignación 4,0.25
+71458,131,Asignación 4,0.25
+71485,41,Tutor docente,1.0
+71485,41,Asignación 4,0.25
+71489,51,Mesas Tecnicas SSYC,0.5
+71489,51,Asignación 4,0.25
+71505,91,Tutor docente,1.0
+71505,91,Asignación 4,0.25
+71509,101,Asignación 4,0.25
+71537,131,Por autorizar DMN y VP,0.25
+71544,131,Asignación 4,0.25
+71555,131,Tutor docente,1.0
+71555,131,Asignación 4,0.25
+71558,51,Dirigente Sindical,10.0
+71558,51,Asignación 4,0.25
+71568,131,Asignación 4,0.25
+71575,101,Líder Equipo,2.0
+71578,81,Responsable técnico,1.0
+71578,81,Asignación 4,0.25
+71580,11,GMFM (Local) Por IT,1.0
+71580,11,Tutor docente,1.0
+71580,11,Asignación 4,0.25
+71585,71,Mesas Tecnicas SSYC,0.5
+71585,71,Actividades Coordinación ULAB,1.0
+71585,71,Asignación 4,0.25
+71600,51,Asignación 4,0.25
+71603,51,Asignación 4,0.25
+71613,131,Mesas Tecnicas SDM,0.5
+71646,101,Responsable técnico,1.0
+71646,101,Asignación 4,0.25
+71650,131,Responsable técnico,1.0
+71650,131,Asignación 4,0.25
+71662,11,Responsable técnico,1.0
+71662,11,Mesas Tecnicas SSYC,0.5
+71662,11,Actividades de Coordinacion,2.0
+71663,51,Asignación 4,0.25
+71664,101,Líder Equipo,2.0
+71666,51,Coordinador docente,2.0
+71666,51,Tutor docente,1.0
+71666,51,GMFM (Local) Por IT,1.0
+71666,51,Asignación 4,0.25
+71686,101,Responsable técnico,1.0
+71686,101,Asignación 4,0.25
+71697,81,Tutor docente,1.0
+71697,81,Asignación 4,0.25
+71711,131,Tutor docente,1.0
+71711,131,Asignación 4,0.25
+71720,51,Asignación 4,0.25
+71722,22,Coordinador docente,1.0
+71722,22,Comité paritario,0.5
+71722,22,Asignación 4,0.25
+71743,81,Actividades de Coordinacion,1.0
+71761,91,Responsable técnico,1.0
+71761,91,Mesas Tecnicas SSYC,0.5
+71761,91,Coordinación Tetca/tetco/ Uta(Local) por IT,1.25
+71761,91,Asignación 4,0.25
+71763,101,Comité paritario,0.5
+71763,101,Acreditación,1.0
+71763,101,Asignación 4,0.25
+71779,21,Asignación 4,0.25
+71780,131,Asignación 4,0.25
+71793,131,Coordinación WeeFIM (Local) por IT,1.0
+71793,131,Actividades de Coordinacion,2.0
+71793,131,Asignación 4,0.25
+71798,71,Tutor docente,1.0
+71798,71,Coordinador docente,1.0
+71798,71,Asignación 4,0.25
+71807,41,Tutor docente,1.0
+71807,41,Dirigente Sindical,10.0
+71807,41,Asignación 4,0.25
+71816,131,Investigación,2.0
+71816,131,Mesas Tecnicas SDM,0.5
+71816,131,Desarrollo técnico,8.0
+71816,131,Asignación 4,0.25
+71820,71,Asignación 4,0.25
+71853,12,Acreditación,6.0
+71855,21,Acreditación,7.0
+71879,131,GMFM (Local) Por IT,1.0
+71879,131,Asignación 4,0.25
+71883,71,Mesas Tecnicas SSYC,0.5
+71883,71,Asignación 4,0.25
+71884,91,Líder Equipo,2.0
+71887,11,Responsable técnico,1.0
+71887,11,Mesas Tecnicas SSYC,0.5
+71887,11,Actividades Coordinación ULAB,1.0
+71906,131,Asignación 4,0.25
+71926,131,Coordinación Tetca/tetco/ Uta(Local) por IT,1.0
+71926,131,Dirigente Sindical,8.0
+71926,131,Asignación 4,0.25
+71932,12,Coordinador docente,1.0
+71932,12,Coordinación Tetca/tetco/ Uta(Local) por IT,1.0
+71932,12,Asignación 4,0.25
+71939,101,Asignación 4,0.25
+71948,131,Asignación 4,0.25
+71949,131,Mesas Tecnicas SDM,0.5
+71949,131,Docencia DMN,10.75
+71949,131,Asignación 4,0.25
+71960,81,Responsable técnico,1.0
+71961,81,Tutor docente,1.0
+71961,81,CEA,0.25
+71961,81,Actividades de Coordinacion,2.5
+71961,81,Asignación 4,0.25
+71962,91,Asignación 4,0.25
+71973,81,Comité paritario,0.5
+71973,81,Mesas Tecnicas SDM,0.5
+71983,101,Mesas Tecnicas SSYC,0.5
+71983,101,Responsable técnico,1.0
+71999,41,Mesas Tecnicas SSYC,0.5
+71999,41,Asignación 4,0.25
+72042,21,Asignación 4,0.25
+72048,51,Comité paritario,0.5
+72052,131,Desarrollo técnico AM,5.0
+72052,131,Investigación AM,4.0
+72052,131,Coordinador Kinesiologia,15.0
+72052,131,Asignación 4,0.25
+72092,81,Líder Equipo,2.0
+72092,81,Tutor docente,1.0
+72092,81,Comité paritario,0.5
+72092,81,Asignación 4,0.25
+72094,31,Mesas Tecnicas SSYC,0.5
+72094,31,Asignación 4,0.25
+72108,41,Coordinador docente,1.0
+72108,41,Tutor docente,1.0
+72108,41,Comité paritario,0.5
+72108,41,Asignación 4,0.25
+72111,131,Asignación 4,0.25
+72114,131,Asignación 4,0.25
+72121,61,Tutor docente,1.0
+72121,61,GMFM (Local) Por IT,1.0
+72121,61,Asignación 4,0.25
+72124,81,Líder Equipo,2.0
+72124,81,Tutor docente,1.0
+72125,91,Tutor docente,1.0
+72125,91,Asignación 4,0.25
+72128,131,Tutor docente,1.0
+72128,131,Asignación 4,0.25
+72180,91,Acreditación,12.0
+72181,91,Tutor docente,1.0
+72181,91,GMFM (Local) Por IT,1.0
+72181,91,Asignación 4,0.25
+72188,22,Asignación 4,0.25
+72189,41,Responsable técnico,1.0
+72189,41,Asignación 4,0.25
+72190,41,Actividades de Coordinacion,18.0
+72190,41,Asignación 4,0.25
+72202,101,Tutor docente,1.0
+72202,101,Actividades Coordinación ULAB,1.0
+72202,101,Asignación 4,0.25
+72205,131,Líder Equipo,2.0
+72205,131,Mesas Tecnicas SDM,0.5
+72205,131,Docencia DMN,2.25
+72205,131,Asignación 4,0.25
+72210,141,Coordinación WeeFIM (Local) por IT,1.0
+72210,141,GMFM (Local) Por IT,1.0
+72210,141,Actividades de Coordinacion,1.0
+72210,141,Asignación 4,0.25
+72216,71,Comité paritario,0.5
+72216,71,Asignación 4,0.25
+72231,131,Asignación 4,0.25
+72251,12,Coordinación Tetca/tetco/ Uta(Local) por IT,1.0
+72251,12,Tutor docente,1.0
+72251,12,Asignación 4,0.25
+72253,81,Responsable técnico,1.0
+72253,81,Acreditación,2.0
+72253,81,Asignación 4,0.25
+72264,131,Coordinación WeeFIM (Local) por IT,1.0
+72264,131,Asignación 4,0.25
+72268,51,Responsable técnico,1.0
+72268,51,Tutor docente,1.0
+72268,51,Asignación 4,0.25
+72276,71,Tutor docente,1.0
+72276,71,Comité paritario,0.5
+72276,71,Asignación 4,0.25
+72291,141,Tutor docente,1.0
+72291,141,Actividades Coordinación ULAB,1.0
+72291,141,Asignación 4,0.25
+72302,131,Asignación 4,0.25
+72303,131,Líder Equipo,2.0
+72303,131,Docencia DMN,2.75
+72303,131,Asignación 4,0.25
+72317,131,Desarrollo técnico,2.0
+72317,131,Asignación 4,0.25
+72352,51,Asignación 4,0.25
+72365,41,Mesas Tecnicas SSYC,0.5
+72365,41,Actividades de Coordinacion,15.0
+72365,41,Asignación 4,0.25
+72371,41,Actividades Coordinación ULAB,1.0
+72371,41,Asignación 4,0.25
+72379,51,Coordinación WeeFIM (Local) por IT,1.0
+72379,51,Comité paritario,0.5
+72379,51,Investigación,2.0
+72396,41,Asignación 4,0.25
+72409,131,Asignación 4,0.25
+72414,11,Responsable técnico,1.0
+72414,11,Coordinación WeeFIM (Local) por IT,1.0
+72414,11,Tutor docente,1.0
+72414,11,Asignación 4,0.25
+72421,81,Tutor docente,1.0
+72421,81,Asignación 4,0.25
+72429,21,Responsable técnico,1.0
+72429,21,Responsable técnico,1.0
+72429,21,Responsable Tecnico (2do Programa),1.0
+72429,21,Asignación 4,0.25
+72458,51,Asignación 4,0.25
+72466,81,Asignación 4,0.25
+72472,41,Tutor docente,1.0
+72472,41,Asignación 4,0.25
+72476,71,Mesas Tecnicas SSYC,0.5
+72476,71,Tutor docente,1.0
+72476,71,Actividades de Coordinacion,1.0
+72476,71,Asignación 4,0.25
+72479,51,Asignación 4,0.25
+72507,101,Asignación 4,0.25
+72508,101,Comité paritario,0.5
+72508,101,Acreditación,10.0
+72508,101,Asignación 4,0.25
+72524,131,Tutor docente,1.0
+72524,131,Asignación 4,0.25
+72538,131,Asignación 4,0.25
+72560,131,Tutor docente,1.0
+72560,131,Asignación 4,0.25
+72579,141,Responsable técnico,1.0
+72579,141,Mesas Tecnicas SSYC,0.5
+72579,141,Asignación 4,0.25
+72598,81,Asignación 4,0.25
+72612,81,Tutor docente,1.0
+72612,81,Asignación 4,0.25
+72614,111,Coordinación WeeFIM (Local) por IT,1.0
+72614,111,Mesas Tecnicas SDM,0.5
+72614,111,Asignación 4,0.25
+72631,101,GMFM (Local) Por IT,1.0
+72631,101,Dirigente Sindical,10.0
+72631,101,Asignación 4,0.25
+72633,131,Tutor docente,1.0
+72633,131,Responsable técnico,1.0
+72633,131,Asignación 4,0.25
+72636,91,Tutor docente,1.0
+72636,91,Asignación 4,0.25
+72657,91,Responsable técnico,1.0
+72657,91,Mesas Tecnicas SSYC,0.5
+72657,91,Actividades de Coordinacion,0.25
+72657,91,Asignación 4,0.25
+72682,101,Tutor docente,1.0
+72682,101,Asignación 4,0.25
+72694,131,Tutor docente,1.0
+72694,131,Asignación 4,0.25
+72695,71,Tutor docente,1.0
+72695,71,Asignación 4,0.25
+72716,12,Mesas Tecnicas SDM,0.5
+72716,12,Coordinación WeeFIM (Local) por IT,1.0
+72716,12,Tutor docente,1.0
+72716,12,Asignación 4,0.25
+72721,131,Desarrollo técnico,2.25
+72721,131,Asignación 4,0.25
+72741,111,Comité paritario,0.5
+72741,111,GMFM (Local) Por IT,1.0
+72741,111,Asignación 4,0.25
+72760,81,Comité paritario,0.5
+72760,81,Asignación 4,0.25
+72762,81,Tutor docente,1.0
+72762,81,Comité paritario,0.5
+72762,81,Asignación 4,0.25
+72765,131,Investigación,2.0
+72765,131,Asignación 4,0.25
+72773,31,Coordinación Tetca/tetco/ Uta(Local) por IT,1.0
+72773,31,Acreditación,1.0
+72773,31,Asignación 4,0.25
+72788,101,Asignación 4,0.25
+72791,81,Comité paritario,0.5
+72791,81,Acreditación,2.0
+72802,51,Asignación 4,0.25
+72834,91,Tutor docente,1.0
+72834,91,Asignación 4,0.25
+72837,51,Asignación 4,0.25
+72847,21,Coordinador docente,1.0
+72847,21,Tutor docente,1.0
+72847,21,Coordinación Tetca/tetco/ Uta(Local) por IT,2.0
+72847,21,Asignación 4,0.25
+72870,81,Asignación 4,0.25
+72873,131,Coordinador Kinesiologia,15.0
+72873,131,Asignación 4,0.25
+72884,22,Mesas Tecnicas SSYC,0.5
+72884,22,Coordinación WeeFIM (Local) por IT,1.0
+72884,22,Asignación 4,0.25
+72892,91,Tutor docente,1.0
+72892,91,Mesas Tecnicas SDM,0.5
+72892,91,Asignación 4,0.25
+72897,131,Asignación 4,0.25
+72904,41,GMFM (Local) Por IT,1.0
+72904,41,Tutor docente,1.0
+72904,41,Asignación 4,0.25
+72927,131,Tutor docente,1.0
+72927,131,Asignación 4,0.25
+72939,21,Tutor docente,1.0
+72939,21,Asignación 4,0.25
+72989,31,Coordinación WeeFIM (Local) por IT,1.0
+72989,31,Comité paritario,0.5
+72989,31,Acreditación,1.0
+72989,31,Asignación 4,0.25
+72990,81,Mesas Tecnicas SDM,0.5
+72990,81,Tutor docente,1.0
+72990,81,Actividades de Coordinacion,4.0
+72990,81,Asignación 4,0.25
+73021,131,Tutor docente,1.0
+73021,131,Coordinador docente,1.0
+73021,131,Asignación 4,0.25
+73024,131,Tutor docente,1.0
+73024,131,Asignación 4,0.25
+73064,31,Responsable técnico,1.0
+73064,31,Mesas Tecnicas SSYC,0.5
+73064,31,Comité paritario,0.5
+73064,31,Asignación 4,0.25
+73086,22,Coordinación Tetca/tetco/ Uta(Local) por IT,1.0
+73086,22,Comité paritario,0.5
+73086,22,Asignación 4,0.25
+73089,131,Asignación 4,0.25
+73095,81,Tutor docente,1.0
+73095,81,Actividades de Coordinacion,1.0
+73095,81,Asignación 4,0.25
+73115,131,Responsable técnico,1.0
+73115,131,Actividades de Coordinacion,1.0
+73115,131,Asignación 4,0.25
+73133,131,Tutor docente,1.0
+73133,131,Asignación 4,0.25
+73142,111,Responsable técnico,1.0
+73142,111,Asignación 4,0.25
+73152,141,Tutor docente,1.0
+73152,141,Mesas Tecnicas SDM,0.5
+73152,141,Asignación 4,0.25
+73176,71,Tutor docente,1.0
+73176,71,Comité paritario,0.5
+73176,71,Asignación 4,0.25
+73182,51,Líder Equipo,2.0
+73182,51,Actividades de Coordinacion,0.25
+73182,51,Asignación 4,0.25
+73184,21,Tutor docente,1.0
+73184,21,Mesas Tecnicas SDM,0.5
+73184,21,Asignación 4,0.25
+73204,91,Mesas Tecnicas SSYC,0.5
+73204,91,Asignación 4,0.25
+73206,81,Coordinación WeeFIM (Local) por IT,1.0
+73206,81,Mesas Tecnicas SSYC,0.5
+73206,81,Actividades de Coordinacion,2.0
+73206,81,Asignación 4,0.25
+73218,22,Mesas Tecnicas SSYC,0.5
+73218,22,Asignación 4,0.25
+73222,131,Desarrollo técnico,0.25
+73222,131,Asignación 4,0.25
+73224,71,Acreditación,10.0
+73243,131,Tutor docente,1.0
+73243,131,Comité paritario,0.5
+73243,131,Asignación 4,0.25
+73244,131,Tutor docente,1.0
+73244,131,Asignación 4,0.25
+73248,131,Asignación 4,0.25
+73258,131,Tutor docente,1.0
+73258,131,Asignación 4,0.25
+73859,51,Responsable técnico,1.0
+73859,51,Mesas Tecnicas SDM,0.5
+73859,51,Asignación 4,0.25
+74031,11,Responsable técnico,1.0
+74031,11,Mesas Tecnicas SSYC,0.5
+74031,11,Actividades de Coordinacion,2.0
+74031,11,Asignación 4,0.25
+74091,81,Tutor docente,1.0
+74091,81,Actividades de Coordinacion,1.0
+74091,81,Asignación 4,0.25
+74158,12,Mesas Tecnicas SSYC,0.5
+74158,12,Asignación 4,0.25
+74202,41,Líder Equipo,2.0
+74202,41,Asignación 4,0.25
+74347,91,Tutor docente,1.0
+74347,91,Asignación 4,0.25
+74414,131,Tutor docente,1.0
+74414,131,Asignación 4,0.25
+74478,91,Líder Equipo,2.0
+74478,91,Asignación 4,0.25
+74613,91,Asignación 4,0.25
+74662,81,Mesas Tecnicas SSYC,0.5
+74662,81,Responsable técnico,1.0
+74662,81,Actividades de Coordinacion,2.0
+74662,81,Asignación 4,0.25
+74739,81,Responsable técnico,1.0
+74739,81,Asignación 4,0.25
+74761,131,Asignación 4,0.25
+74972,131,Asignación 4,0.25
+75085,131,Líder Equipo,2.0
+75085,131,Docencia DMN,2.5
+75085,131,Asignación 4,0.25
+76846,51,Asignación 4,0.25
+76852,11,Coordinación Tetca/tetco/ Uta(Local) por IT,1.0
+76852,11,Asignación 4,0.25
+78660,91,Responsable técnico,1.0
+78660,91,Mesas Tecnicas SSYC,0.5
+78660,91,Asignación 4,0.25
+79037,41,Responsable técnico,1.0
+79037,41,Tutor docente,1.0
+79037,41,Asignación 4,0.25
+79170,141,Responsable técnico,1.0
+79170,141,Acreditación,5.0
+79170,141,Asignación 4,0.25
+79173,141,Coordinación Tetca/tetco/ Uta(Local) por IT,1.0
+79173,141,Tutor docente,1.0
+79173,141,Acreditación,0.5
+79173,141,Asignación 4,0.25
+79180,141,Líder Equipo,2.0
+79180,141,Comité paritario,0.5
+79180,141,Acreditación,2.5
+79180,141,Asignación 4,0.25
+79516,41,Asignación 4,0.25
+79740,131,Tutor docente,1.0
+79740,131,Asignación 4,0.25
+79815,41,Asignación 4,0.25
+107016,91,Tutor docente,1.0
+107016,91,Actividades Coordinación ULAB,2.0
+107016,91,Asignación 4,0.25
+107980,131,Tutor docente,1.0
+107980,131,Coordinador docente,1.0
+107980,131,Asignación 4,0.25
+108634,71,Responsable técnico,1.0
+108634,71,Tutor docente,1.0
+108634,71,Asignación 4,0.25
+109083,131,Asignación 4,0.25
+109202,81,Tutor docente,1.0
+109202,81,Asignación 4,0.25
+109491,101,Responsable técnico,1.0
+109491,101,Asignación 4,0.25
+109620,71,Tutor docente,1.0
+109620,71,Asignación 4,0.25
+109686,31,Responsable técnico,1.0
+109686,31,GMFM (Local) Por IT,1.0
+109686,31,Comité paritario,0.5
+109686,31,Asignación 4,0.25
+109702,141,Responsable técnico,1.0
+109702,141,Responsable técnico,1.0
+109702,141,Actividades Coordinación ULAB,1.0
+109702,141,Asignación 4,0.25
+109828,101,Asignación 4,0.25
+109915,101,Tutor docente,1.0
+109915,101,Responsable técnico,1.0
+109915,101,Comité paritario,0.5
+109915,101,Asignación 4,0.25
+110143,91,Tutor docente,1.0
+110143,91,Coordinación Tetca/tetco/ Uta(Local) por IT,1.0
+110143,91,Asignación 4,0.25
+110225,51,Investigación,2.0
+110225,51,Asignación 4,0.25
+110236,21,Responsable técnico,1.0
+110236,21,Tutor docente,1.0
+110236,21,Responsable Tecnico (2do Programa),1.0
+110236,21,Asignación 4,0.25
+110377,51,Mesas Tecnicas SSYC,0.5
+110377,51,Responsable técnico,1.0
+110377,51,Asignación 4,0.25
+110618,131,Tutor docente,1.0
+110618,131,Asignación 4,0.25
+110655,131,Tutor docente,1.0
+110655,131,Asignación 4,0.25
+110666,71,Líder Equipo,2.0
+110666,71,Asignación 4,0.25
+111485,131,Asignación 4,0.25
+111576,51,Actividades de Coordinacion,1.0
+111576,51,Asignación 4,0.25
+111842,131,Asignación 4,0.25
+111962,131,Asignación 4,0.25
+112428,131,Tutor docente,1.0
+112428,131,Asignación 4,0.25
+112469,131,Tutor docente,1.0
+112469,131,Asignación 4,0.25
+112503,101,Comité paritario,0.5
+112503,101,Asignación 4,0.25
+113010,111,Asignación 4,0.25
+113053,101,Coordinación Tetca/tetco/ Uta(Local) por IT,1.0
+113053,101,Comité paritario,0.5
+113053,101,Asignación 4,0.25
+113088,21,Asignación 4,0.25
+113109,131,Actividades de Coordinacion,1.0
+113109,131,Asignación 4,0.25
+113208,131,Tutor docente,1.0
+113208,131,Asignación 4,0.25
+113435,131,Tutor docente,1.0
+113435,131,Asignación 4,0.25
+113638,131,Tutor docente,1.0
+113638,131,Asignación 4,0.25
+114021,51,Asignación 4,0.25
+114717,71,Comité paritario,0.5
+114717,71,Tutor docente,1.0
+114717,71,Asignación 4,0.25
+115142,131,Líder Equipo,2.0
+115142,131,Mesas Tecnicas SDM,0.5
+115142,131,Docencia DMN,2.75
+115142,131,Asignación 4,0.25
+115143,131,Líder Equipo,2.0
+115143,131,Asignación 4,0.25
+115391,81,Comité paritario,0.5
+115391,81,Tutor docente,1.0
+115391,81,Asignación 4,0.25
+115421,51,Asignación 4,0.25
+115510,61,Coordinación WeeFIM (Local) por IT,1.0
+115510,61,Responsable técnico,1.0
+115510,61,Por autorizar DMN y VP,0.5
+115510,61,Asignación 4,0.25
+115740,131,Desarrollo técnico,0.25
+115772,81,Mesas Tecnicas SDM,0.5
+115772,81,Tutor docente,1.0
+115772,81,Asignación 4,0.25
+115890,71,Mesas Tecnicas SSYC,0.5
+115890,71,Responsable técnico,1.0
+115890,71,Actividades de Coordinacion,1.0
+115890,71,Asignación 4,0.25
+115921,12,Asignación 4,0.25
+115934,21,Asignación 4,0.25
+116464,71,Tutor docente,1.0
+116464,71,Asignación 4,0.25
+116625,81,Asignación 4,0.25
+116678,131,Tutor docente,1.0
+116678,131,Asignación 4,0.25
+116715,81,Asignación 4,0.25
+116810,81,Asignación 4,0.25
+116877,111,Mesas Tecnicas SSYC,0.5
+116877,111,Responsable técnico,1.0
+116877,111,Asignación 4,0.25
+116929,131,Líder Equipo,2.0
+116929,131,Investigación,2.75
+116929,131,Asignación 4,0.25
+117024,131,Tutor docente,1.0
+117024,131,Asignación 4,0.25
+117051,91,Asignación 4,0.25
+117133,91,Coordinador docente,2.0
+117133,91,Tutor docente,1.0
+117133,91,Asignación 4,0.25
+117400,71,Tutor docente,1.0
+117400,71,Asignación 4,0.25
+117401,71,Comité paritario,0.5
+117401,71,Responsable técnico,1.0
+117401,71,Asignación 4,0.25
+117412,31,Mesas Tecnicas SSYC,0.5
+117412,31,Comité paritario,0.5
+117412,31,Actividades Coordinación ULAB,1.0
+117412,31,Asignación 4,0.25
+117438,12,Líder Equipo,2.0
+118111,21,Tutor docente,1.0
+118111,21,Asignación 4,0.25
+118349,111,Mesas Tecnicas SSYC,0.5
+118349,111,Responsable técnico,1.0
+118349,111,Asignación 4,0.25
+118590,51,Tutor docente,1.0
+118590,51,Coordinación Tetca/tetco/ Uta(Local) por IT,1.0
+118590,51,Asignación 4,0.25
+118632,71,Tutor docente,1.0
+118632,71,Asignación 4,0.25
+118770,131,Líder Equipo,2.0
+118770,131,Docencia DMN,14.75
+118770,131,Asignación 4,0.25
+118877,31,Comité paritario,0.5
+118877,31,Acreditación,5.0
+118877,31,Asignación 4,0.25
+119621,91,Comité paritario,0.5
+119621,91,Actividades de Coordinacion,4.5
+119621,91,Asignación 4,0.25
+119794,131,Comité paritario,0.5
+119794,131,Asignación 4,0.25
+119795,131,Asignación 4,0.25
+119820,31,Responsable técnico,1.0
+119820,31,Mesas Tecnicas SSYC,0.5
+119820,31,Asignación 4,0.25
+119828,131,Asignación 4,0.25
+119838,101,Responsable técnico,1.0
+119838,101,Mesas Tecnicas SSYC,0.5
+119838,101,Responsable Tecnico (2do Programa),1.0
+119838,101,Asignación 4,0.25
+120026,71,Mesas Tecnicas SSYC,0.5
+120026,71,Asignación 4,0.25
+120096,41,Tutor docente,1.0
+120096,41,Asignación 4,0.25
+120466,11,Coordinación Tetca/tetco/ Uta(Local) por IT,1.0
+120466,11,Tutor docente,1.0
+120466,11,Comité paritario,0.5
+120466,11,Asignación 4,0.25
+120788,131,Investigación,2.0
+120788,131,Asignación 4,0.25
+121047,131,Líder Equipo,2.0
+121047,131,Mesas Tecnicas SDM,0.5
+121047,131,Docencia DMN,20.5
+121047,131,Asignación 4,0.25
+121081,81,Responsable técnico,1.0
+121081,81,Por autorizar DMN y VP,1.0
+121081,81,Asignación 4,0.25
+121152,141,Asignación 4,0.25
+121159,131,Asignación 4,0.25
+121286,11,Responsable técnico,1.0
+121286,11,Asignación 4,0.25
+121434,31,Comité paritario,0.5
+121434,31,Asignación 4,0.25
+121444,131,Asignación 4,0.25
+121608,12,Asignación 4,0.25
+121679,51,Asignación 4,0.25
+121723,101,Comité paritario,0.5
+121723,101,Asignación 4,0.25
+121970,131,Asignación 4,0.25
+122175,131,Asignación 4,0.25
+122239,71,Coordinación Tetca/tetco/ Uta(Local) por IT,1.0
+122239,71,Asignación 4,0.25
+122293,111,Coordinación Tetca/tetco/ Uta(Local) por IT,1.0
+122293,111,Comité paritario,0.5
+122293,111,Asignación 4,0.25
+122314,131,Asignación 4,0.25
+122569,22,Comité paritario,0.5
+122569,22,Acreditación,6.0
+122569,22,Asignación 4,0.25
+122599,12,Responsable técnico,1.0
+122599,12,Tutor docente,1.0
+122599,12,Por autorizar DMN y VP,8.0
+122599,12,Asignación 4,0.25
+122601,71,Mesas Tecnicas SSYC,0.5
+122601,71,Responsable técnico,1.0
+122601,71,Comité paritario,0.5
+122601,71,Asignación 4,0.25
+122722,51,Asignación 4,0.25
+122809,131,Asignación 4,0.25
+123027,131,Asignación 4,0.25
+123065,131,Asignación 4,0.25
+123241,81,Asignación 4,0.25
+123389,81,Asignación 4,0.25
+123727,21,Acreditación,7.0
+123727,21,Asignación 4,0.25
+123762,71,Responsable técnico,1.0
+123762,71,Coordinación Tetca/tetco/ Uta(Local) por IT,1.0
+123762,71,Asignación 4,0.25
+123771,101,Asignación 4,0.25
+123781,51,Asignación 4,0.25
+124396,81,Responsable técnico,1.0
+124396,81,Asignación 4,0.25
+124453,131,Asignación 4,0.25
+124500,51,Asignación 4,0.25
+124938,22,Responsable técnico,1.0
+124938,22,Mesas Tecnicas SDM,0.5
+124938,22,Comité paritario,0.5
+124938,22,Asignación 4,0.25
+125085,81,Tutor docente,1.0
+125085,81,Asignación 4,0.25
+125101,131,Asignación 4,0.25
+125103,91,Tutor docente,1.0
+125103,91,Responsable técnico,1.0
+125103,91,Asignación 4,0.25
+125129,21,Líder Equipo,2.0
+125129,21,Investigación,2.0
+125129,21,Tutor docente,1.0
+125129,21,Asignación 4,0.25
+125231,131,Asignación 4,0.25
+125342,141,Asignación 4,0.25
+125371,131,Asignación 4,0.25
+125428,12,Actividades de Coordinacion,2.0
+125428,12,Asignación 4,0.25
+125429,131,Asignación 4,0.25
+125460,141,Actividades de Coordinacion,0.5
+125460,141,Asignación 4,0.25
+125649,81,Comité paritario,0.5
+125649,81,Asignación 4,0.25
+125679,131,Asignación 4,0.25
+125792,71,Responsable técnico,1.0
+125792,71,Asignación 4,0.25
+125810,131,Asignación 4,0.25
+125812,51,Tutor docente,1.0
+125812,51,Asignación 4,0.25
+125925,131,Responsable técnico,1.0
+125925,131,Asignación 4,0.25
+125926,131,Asignación 4,0.25
+126037,81,Asignación 4,0.25
+126049,131,Asignación 4,0.25
+126057,51,Tutor docente,1.0
+126057,51,Investigación,2.0
+126057,51,Asignación 4,0.25
+126202,21,Tutor docente,1.0
+126202,21,Mesas Tecnicas SSYC,0.5
+126202,21,Asignación 4,0.25
+126259,101,Mesas Tecnicas SSYC,0.5
+126259,101,Actividades de Coordinacion,0.5
+126259,101,Asignación 4,0.25
+126264,81,Coordinación Tetca/tetco/ Uta(Local) por IT,1.0
+126264,81,Asignación 4,0.25
+126494,51,Asignación 4,0.25
+126506,21,Tutor docente,1.0
+126506,21,Responsable técnico,1.0
+126506,21,Asignación 4,0.25
+126765,131,Responsable técnico,1.0
+126765,131,Asignación 4,0.25
+126903,91,Tutor docente,1.0
+126903,91,Comité paritario,0.5
+126903,91,Asignación 4,0.25
+126975,22,Mesas Tecnicas SSYC,0.5
+126975,22,Asignación 4,0.25
+126984,81,Actividades de Coordinacion,20.0
+126984,81,Asignación 4,0.25
+127092,131,Responsable técnico,1.0
+127092,131,Asignación 4,0.25
+127551,71,Asignación 4,0.25
+127696,131,Asignación 4,0.25
+128044,91,Tutor docente,1.0
+128044,91,Responsable técnico,1.0
+128044,91,Asignación 4,0.25
+128174,131,Asignación 4,0.25
+128607,131,Asignación 4,0.25
+128608,131,Responsable técnico,1.0
+128608,131,Asignación 4,0.25
+128670,71,Asignación 4,0.25
+128671,101,Coordinación Tetca/tetco/ Uta(Local) por IT,1.0
+128671,101,Asignación 4,0.25
+128894,131,Asignación 4,0.25
+128966,141,Responsable técnico,1.0
+128966,141,Acreditación,3.6666666666666665
+128966,141,Asignación 4,0.25
+128967,12,Responsable técnico,1.0
+128967,12,Comité paritario,0.5
+128967,12,Asignación 4,0.25
+128970,12,Asignación 4,0.25
+128976,131,Desarrollo técnico,0.25
+128976,131,Asignación 4,0.25
+129012,21,Asignación 4,0.25
+129024,51,Asignación 4,0.25
+129024,131,Mesas Tecnicas SDM,0.5
+129024,131,Asignación 4,0.25
+129105,131,Responsable técnico,1.0
+129105,131,Asignación 4,0.25
+129289,131,Responsable técnico,1.0
+129289,131,Asignación 4,0.25
+129290,111,Comité paritario,0.5
+129290,111,Acreditación,4.0
+129290,111,Asignación 4,0.25
+129328,11,Asignación 4,0.25
+129444,131,Coordinacion Casa acogida,3.0
+129444,131,Asignación 4,0.25
+129482,22,Responsable técnico,1.0
+129482,22,Coordinación Tetca/tetco/ Uta(Local) por IT,1.0
+129482,22,Comité paritario,0.5
+129482,22,Asignación 4,0.25
+129489,12,GMFM (Local) Por IT,1.0
+129489,12,Tutor docente,1.0
+129489,12,Asignación 4,0.25
+129631,131,Asignación 4,0.25
+129657,131,Tutor docente,1.0
+129657,131,Asignación 4,0.25
+129911,12,Mesas Tecnicas SSYC,0.5
+129911,12,Responsable técnico,1.0
+129911,12,Actividades Coordinación ULAB,1.0
+129911,12,Asignación 4,0.25
+129971,12,Responsable técnico,1.0
+129971,12,Mesas Tecnicas SSYC,0.5
+129999,51,Coordinación Tetca/tetco/ Uta(Local) por IT,1.0
+129999,51,Asignación 4,0.25
+130084,51,Asignación 4,0.25
+130131,41,Responsable técnico,1.0
+130131,41,Mesas Tecnicas SSYC,0.5
+130131,41,Asignación 4,0.25
+130325,101,Asignación 4,0.25
+130344,131,Tutor docente,1.0
+130344,131,Asignación 4,0.25
+130501,131,Asignación 4,0.25
+130714,131,Asignación 4,0.25
+130717,131,Asignación 4,0.25
+130882,131,Responsable técnico,1.0
+130882,131,Asignación 4,0.25
+131012,141,Comité paritario,0.5
+131012,141,Tutor docente,1.0
+131012,141,Coordinador docente,1.0
+131012,141,Asignación 4,0.25
+131127,131,Responsable técnico,1.0
+131127,131,Asignación 4,0.25
+131497,131,Asignación 4,0.25
+131823,141,Responsable técnico,1.0
+132575,81,Mesas Tecnicas SSYC,0.5
+132575,81,Asignación 4,0.25
+132759,81,Mesas Tecnicas SDM,0.5
+132759,81,Tutor docente,1.0
+132759,81,Asignación 4,0.25
+132818,31,Acreditación,3.0
+132818,31,Asignación 4,0.25
+132922,111,Mesas Tecnicas SSYC,0.5
+132922,111,Actividades Coordinación ULAB,1.0
+132942,51,Mesas Tecnicas SSYC,0.5
+132942,51,Actividades Coordinación ULAB,1.0
+132942,51,Asignación 4,0.25
+132962,41,Asignación 4,0.25
+133003,131,Asignación 4,0.25
+133070,12,Responsable técnico,1.0
+133070,12,Asignación 4,0.25
+133073,111,Mesas Tecnicas SSYC,0.5
+133073,111,Asignación 4,0.25
+133151,111,Responsable técnico,1.0
+133151,111,Acreditación,1.0
+133151,111,Asignación 4,0.25
+133182,71,Asignación 4,0.25
+133302,41,Responsable técnico,1.0
+133302,41,Asignación 4,0.25
+133388,41,Responsable técnico,1.0
+133388,41,Asignación 4,0.25
+133549,81,GMFM (Local) Por IT,1.0
+133549,81,Asignación 4,0.25
+133661,51,Asignación 4,0.25
+133818,22,GMFM (Local) Por IT,1.0
+133818,22,Responsable técnico,1.0
+133818,22,Acreditación,2.0
+133818,22,Asignación 4,0.25
+133939,22,Responsable técnico,1.0
+133939,22,Actividades Coordinación ULAB,1.0
+133939,22,Asignación 4,0.25
+134003,101,Asignación 4,0.25
+134069,131,Asignación 4,0.25
+134344,71,Actividades de Coordinacion,1.0
+134344,71,Asignación 4,0.25
+134561,131,Tutor docente,1.0
+134561,131,Asignación 4,0.25
+134647,131,Asignación 4,0.25
+134744,11,Mesas Tecnicas SSYC,0.5
+134746,41,Líder Equipo,2.0
+134746,41,Investigación,5.0
+134746,41,Asignación 4,0.25
+134833,131,Responsable técnico,1.0
+135005,131,Asignación 4,0.25
+135247,131,Asignación 4,0.25
+135270,81,Asignación 4,0.25
+135315,131,Asignación 4,0.25
+135434,131,Asignación 4,0.25
+136329,111,Acreditación,4.0
+136329,111,Asignación 4,0.25
+136333,51,Mesas Tecnicas SSYC,0.5
+136333,51,Actividades de Coordinacion,9.0
+136506,131,Responsable técnico,1.0
+136506,131,Asignación 4,0.25
+136616,101,Responsable técnico,1.0
+136616,101,Asignación 4,0.25
+136849,141,Asignación 4,0.25
+136894,31,Responsable técnico,1.0
+136894,31,Coordinación Tetca/tetco/ Uta(Local) por IT,1.0
+136894,31,Por autorizar DMN y VP,0.5
+136894,31,Asignación 4,0.25
+136898,51,Líder Equipo,2.0
+136947,131,Asignación 4,0.25
+137057,21,Asignación 4,0.25
+137128,131,Tutor docente,1.0
+137128,131,Asignación 4,0.25
+137140,51,Asignación 4,0.25
+137142,91,Responsable técnico,1.0
+137142,91,Mesas Tecnicas SSYC,0.5
+137142,91,Actividades Coordinación ULAB,1.0
+137142,91,Asignación 4,0.25
+137147,131,Asignación 4,0.25
+137479,31,Responsable técnico,1.0
+137480,91,Actividades de Coordinacion,1.5
+137480,91,Asignación 4,0.25
+137503,41,Mesas Tecnicas SSYC,0.5
+137503,41,Asignación 4,0.25
+137566,101,Asignación 4,0.25
+137732,11,Líder Equipo,2.0
+137851,131,Asignación 4,0.25
+137977,131,Asignación 4,0.25
+138240,21,Mesas Tecnicas SSYC,0.5
+138240,21,Asignación 4,0.25
+138294,12,Responsable técnico,1.0
+138294,12,Asignación 4,0.25
+138629,22,Responsable técnico,1.0
+139549,61,Mesas Tecnicas SSYC,0.5
+140619,141,Mesas Tecnicas SSYC,0.5
+140619,141,Actividades Coordinación ULAB,1.5

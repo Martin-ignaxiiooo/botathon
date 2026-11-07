@@ -1,0 +1,60 @@
+ carga_id |     archivo     | estado  | leidas | validas | con_error 
+----------+-----------------+---------+--------+---------+-----------
+       21 | 03_errores.xlsx | cargada |   3124 |    3119 |         5
+(1 fila)
+
+   origen   | filas | persona_it 
+------------+-------+------------
+ buk        |  3119 |        465
+ proyectado |  2215 |        443
+(2 filas)
+
+        tipo         | persona_id | it  | mes |                  detalle                   
+---------------------+------------+-----+-----+--------------------------------------------
+ cargo_sin_homologar |      71146 | 131 |   1 | {"cargo": "CARGO INEXISTENTE", "filas": 1}
+ duplicado           |      71232 | 131 |   1 | {"filas": 2}
+(2 filas)
+
+ persona_id |      campo      |        valor         |                           motivo                           
+------------+-----------------+----------------------+------------------------------------------------------------
+      71027 | horas_semanales | 0                    | cargar_dotacion: fila sin persona, IT, periodo u horas > 0
+      71132 | fecha_termino   | 2015-03-31           | cargar_dotacion: fecha término anterior a fecha ingreso
+      71146 | cargo           | CARGO INEXISTENTE    | cargar_dotacion: cargo sin homologar
+      71232 | persona_id      | 71232/131/2026-01-01 | cargar_dotacion: fila duplicada (persona_id, it, periodo)
+      71247 | horas_semanales | cuarenta             | horas_semanales no es numérico
+(5 filas)
+
+ comparables | ate_ok | ate_pct | pdf_ok 
+-------------+--------+---------+--------
+         450 |    431 |    95.8 |    438
+(1 fila)
+
+ persona_id | it  |                                   meses                                    |     cargo_ultimo      
+------------+-----+----------------------------------------------------------------------------+-----------------------
+      71027 | 101 | 2:32b 3:32b 4:32b 5:32b 6:32b 7:32b 8:32p 9:32p 10:32p 11:32p 12:32p       | ASISTENTE SOCIAL
+      71132 | 131 | 2:22b 3:22b 4:22b 5:22b 6:22b 7:22b 8:22p 9:22p 10:22p 11:22p 12:22p       | MEDICO FISIATRA
+      71146 | 131 | 2:30b 3:30b 4:30b 5:30b 6:30b 7:30b 8:30p 9:30p 10:30p 11:30p 12:30p       | PSICOLOGO
+      71232 | 131 | 1:21b 2:21b 3:21b 4:21b 5:21b 6:21b 7:21b 8:21p 9:21p 10:21p 11:21p 12:21p | MEDICO FISIATRA
+      71247 |  51 | 2:30b 3:30b 4:30b 5:30b 6:30b 7:30b 8:30p 9:30p 10:30p 11:30p 12:30p       | MEDICO FISIATRA
+      71279 | 131 | 1:44b 2:44b 3:44b 4:44b 5:42b 6:42b 7:42b 8:42p 9:42p 10:42p 11:42p 12:42p | KINESIOLOGO
+      71555 | 131 | 1:40b 2:40b 3:40b 4:40b 5:40b 6:40b 7:40b 8:40p 9:40p 10:40p 11:40p 12:40p | TERAPEUTA OCUPACIONAL
+(7 filas)
+
+ persona_id | it  | periodo | horas_periodo | horas_fin |         cargo         | tramo | pct_dir_final | ate_dir_semana | ate_ind_semana 
+------------+-----+---------+---------------+-----------+-----------------------+-------+---------------+----------------+----------------
+      71027 | 101 | ene_abr |        32.000 |        32 | ASISTENTE SOCIAL      |     2 |      0.568750 |             27 |              9
+      71027 | 101 | may_dic |        32.000 |        32 | ASISTENTE SOCIAL      |     2 |      0.568750 |             27 |              9
+      71132 | 131 | ene_abr |        22.000 |        22 | MEDICO FISIATRA       |     2 |      0.618293 |             19 |              5
+      71132 | 131 | may_dic |        22.000 |        22 | MEDICO FISIATRA       |     2 |      0.618293 |             19 |              5
+      71146 | 131 | ene_abr |        30.000 |        30 | PSICOLOGO             |     2 |      0.578571 |             21 |              8
+      71146 | 131 | may_dic |        30.000 |        30 | PSICOLOGO             |     2 |      0.578571 |             21 |              8
+      71232 | 131 | ene_abr |        21.000 |        21 | MEDICO FISIATRA       |     3 |      0.485565 |             15 |              4
+      71232 | 131 | may_dic |        21.000 |        21 | MEDICO FISIATRA       |     3 |      0.485565 |             15 |              4
+      71247 |  51 | ene_abr |        30.000 |        30 | MEDICO FISIATRA       |     2 |      0.589063 |             26 |              8
+      71247 |  51 | may_dic |        30.000 |        30 | MEDICO FISIATRA       |     2 |      0.589063 |             26 |              8
+      71279 | 131 | ene_abr |        44.000 |        44 | KINESIOLOGO           |     1 |      0.642169 |             39 |              8
+      71279 | 131 | may_dic |        42.000 |        42 | KINESIOLOGO           |     1 |      0.630802 |             37 |              7
+      71555 | 131 | ene_abr |        40.000 |        40 | TERAPEUTA OCUPACIONAL |     1 |      0.610088 |             34 |              7
+      71555 | 131 | may_dic |        40.000 |        40 | TERAPEUTA OCUPACIONAL |     1 |      0.610088 |             34 |              7
+(14 filas)
+
