@@ -3,6 +3,8 @@ import { iniciarRouter } from './router.js';
 import { iniciarFiltros } from './filtros.js';
 import { iniciarHerramientas } from './herramientas.js';
 import { vigilarDesbordes } from './ui.js';
+import { vigilarTablas } from './exportar.js';
+import { iniciarImpresion } from './impresion.js';
 
 const menu = document.getElementById('menu-principal');
 const botonMenu = document.getElementById('boton-menu');
@@ -18,6 +20,8 @@ new ResizeObserver(() => requestAnimationFrame(() => {
   document.documentElement.style.setProperty('--alto-encabezado', `${encabezado.offsetHeight}px`);
 })).observe(encabezado);
 vigilarDesbordes(document.getElementById('principal'));
+vigilarTablas(document.getElementById('principal'));
+iniciarImpresion({ cabecera: document.getElementById('cabecera-impresion'), herramientas: document.getElementById('herramientas') });
 
 function ajustarMenu() {
   menu.hidden = pantallaChica.matches;

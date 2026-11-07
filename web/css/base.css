@@ -327,6 +327,40 @@ table.tabla a[aria-current="true"] { font-weight: 700; }
 .dialogo textarea[aria-invalid="true"] { border-color: var(--error); border-width: 2px; }
 .acciones-dialogo { display: flex; justify-content: flex-end; gap: .75rem; margin-top: 1rem; }
 
+/* ---------- Exportar e imprimir (C-11) ---------- */
+.barra-tabla { display: flex; justify-content: flex-end; margin-bottom: .35rem; }
+.boton-exportar { padding: .25rem .7rem; font-size: .85rem; }
+.solo-impresion { display: none; }
+
+@media print {
+  @page { margin: 14mm; }
+  html { font-size: 11pt; }
+  body { background: #ffffff; color: #000000; }
+  .salto, .encabezado, .menu, #filtros, #avisos, .boton-menu, .herramientas, dialog,
+  button, .acciones, .barra-tabla, .nota-grafico, .resumen-filtros, .campo-filtro, .buscador,
+  .tabulator-footer .tabulator-footer-contents { display: none !important; }
+  .app { display: block; }
+  .principal { padding: 0; }
+  .solo-impresion { display: block; border-bottom: 2px solid #000000; margin-bottom: 1rem; padding-bottom: .5rem; }
+  .solo-impresion p { margin: 0 0 .15rem; }
+  .impresion-marca { font-weight: 700; font-size: 10pt; }
+  .impresion-titulo { font-size: 20pt; margin: .1rem 0; color: #000000; }
+  .tarjeta, .grupo-parametros, .lectura-facil-caja { box-shadow: none !important; border: 1px solid #888888; break-inside: avoid; }
+  .grilla-kpi { grid-template-columns: repeat(3, 1fr); }
+  .grilla-graficos { grid-template-columns: 1fr; }
+  .grafico canvas, .grafico { max-width: 100% !important; }
+  .grafico canvas { width: 100% !important; height: auto !important; }
+  .datos-grafico[hidden] { display: none !important; }
+  .tabla-scroll, .datos-grafico, .tabla-tabulator { overflow: visible !important; }
+  table.tabla thead th { background: #eeeeee; color: #000000; }
+  table.tabla thead { display: table-header-group; }
+  table.tabla tr { break-inside: avoid; }
+  a { color: #000000; text-decoration: none; }
+  .estado-texto { border: 1px solid #555555; background: #ffffff !important; color: #000000 !important; }
+  h1 { font-size: 16pt; }
+  details > *:not(summary) { display: block; }
+}
+
 /* ---------- Lectura fácil (C-10) ---------- */
 .lectura-facil-caja { display: none; }
 html.lectura-facil .lectura-facil-caja { display: block; }
