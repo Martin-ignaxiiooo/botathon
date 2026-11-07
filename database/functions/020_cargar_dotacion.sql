@@ -20,6 +20,9 @@ DECLARE
     v_n        int;
     v_leidas   int;
     v_ult_mes  int;
+    v_robot    int;
+    v_base     int;
+    v_repetidos int;
 BEGIN
     SELECT c.tipo INTO v_tipo FROM stg.carga c WHERE c.carga_id = p_carga_id;
     IF v_tipo IS NULL THEN
@@ -143,14 +146,26 @@ BEGIN
         dias_semana = EXCLUDED.dias_semana, origen = EXCLUDED.origen, carga_id = EXCLUDED.carga_id,
         actualizado_en = now();
 
-    -- leidas = filas en stg + filas que el robot rechazó antes (errores que no son de esta función)
-    -- con_error = todas las filas con error de la carga (robot + esta función)
+    -- Conteos (regla en docs\progreso-back.md):
+    --   robot = errores que Blue Prism dejó en stg.error_fila (motivo sin prefijo 'cargar_dotacion:')
+    --   base  = errores que detectó esta función (prefijo 'cargar_dotacion:')
+    --   repetidos = errores del robot con el mismo (persona_id, campo) que un error de la base: la fila llegó
+    --               también a stg.buk_fila y ya está contada en base (y en las leídas de stg.buk_fila)
+    --   con_error = robot + base − repetidos;  leidas = filas de stg.buk_fila + robot − repetidos
+    SELECT count(*) FILTER (WHERE e.motivo NOT LIKE 'cargar_dotacion:%'),
+           count(*) FILTER (WHERE e.motivo LIKE 'cargar_dotacion:%'),
+           count(*) FILTER (WHERE e.motivo NOT LIKE 'cargar_dotacion:%' AND EXISTS (
+               SELECT 1 FROM stg.error_fila d
+               WHERE d.carga_id = p_carga_id AND d.motivo LIKE 'cargar_dotacion:%'
+                 AND d.persona_id IS NOT DISTINCT FROM e.persona_id AND d.campo IS NOT DISTINCT FROM e.campo))
+    INTO v_robot, v_base, v_repetidos
+    FROM stg.error_fila e WHERE e.carga_id = p_carga_id;
+
     UPDATE stg.carga c
     SET estado = 'cargada',
-        leidas = v_leidas + (SELECT count(*) FROM stg.error_fila e
-                             WHERE e.carga_id = p_carga_id AND e.motivo NOT LIKE 'cargar_dotacion:%'),
+        leidas = v_leidas + v_robot - v_repetidos,
         validas = v_filas,
-        con_error = (SELECT count(*) FROM stg.error_fila e WHERE e.carga_id = p_carga_id)
+        con_error = v_robot + v_base - v_repetidos
     WHERE c.carga_id = p_carga_id;
 
     filas := v_filas;
