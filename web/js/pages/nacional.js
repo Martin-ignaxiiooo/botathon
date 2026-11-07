@@ -310,7 +310,7 @@ function graficoAreas(filas, tipos, dim) {
   };
   const opcion = opcionBase(horizontal ? {
     ...base,
-    grid: { left: 8, right: 16, top: 40, bottom: 8, containLabel: true },
+    grid: { left: 8, right: 44, top: 64, bottom: 8, containLabel: true }, // la leyenda de 4 series ocupa dos líneas
     xAxis: { type: 'value', axisLabel: { formatter: (v) => num(v) } },
     yAxis: { type: 'category', inverse: true, data: nombres, axisLabel: { width: 190, overflow: 'truncate' } },
   } : {

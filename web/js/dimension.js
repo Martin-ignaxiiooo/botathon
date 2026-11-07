@@ -14,10 +14,15 @@ export const POR_CARGO = {
 
 const simplificar = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-/** area == instituto en todas las filas que traen área (algunas filas con error vienen sin área). */
+/**
+ * area == instituto en casi todas las filas que traen área. Se tolera una minoría: las filas con error vienen
+ * sin área y, tras un traslado de instituto (cambio_it), la persona conserva el área de su sede anterior.
+ */
 export function areaEsInstituto(filas) {
   const conArea = filas.filter((f) => f.area);
-  return conArea.length > 0 && conArea.every((f) => simplificar(f.area) === simplificar(f.instituto));
+  if (!conArea.length) return false;
+  const iguales = conArea.filter((f) => simplificar(f.area) === simplificar(f.instituto)).length;
+  return iguales / conArea.length >= 0.95;
 }
 
 let guardada = null;

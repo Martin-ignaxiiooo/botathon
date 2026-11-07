@@ -396,7 +396,7 @@ def escenarios():
     return [
         dict(escenario_id=1,
              descripcion="Subir la meta de gestión de 90 % a 92 % de las atenciones planificadas",
-             parametro="param.general.meta_gestion", valor_actual="0.9", valor_propuesto="0.92",
+             parametro="param.general.meta", valor_actual="0.9", valor_propuesto="0.92",
              estado="pendiente", creado_por="planificador", creado_en="2026-11-03T16:40:00-03:00",
              decision_motivo=None, impacto=impacto(BASE, e1)),
         dict(escenario_id=2,

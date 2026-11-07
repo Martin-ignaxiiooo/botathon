@@ -2,7 +2,7 @@
   {
     "escenario_id": 1,
     "descripcion": "Subir la meta de gestión de 90 % a 92 % de las atenciones planificadas",
-    "parametro": "param.general.meta_gestion",
+    "parametro": "param.general.meta",
     "valor_actual": "0.9",
     "valor_propuesto": "0.92",
     "estado": "pendiente",
