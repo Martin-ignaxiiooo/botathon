@@ -19,14 +19,18 @@ Rama actual: feat/B-05-semanal (sale de feat/B-04-dotacion; PR por web porque gh
 
 ## En curso
 - B-05 · `calc.v_semanal` hecha (V005 core.condicion_persona, api.cargar_asignaciones, seed 040 con
-  database\seed\csvsignaciones.csv y condiciones_persona.csv extraídos con scripts\extraer_condiciones.py).
-  Coincidencia may-dic: ate_dir_semana 431/450 = 95,8 %; pct_dir_final 438/450 = 97,3 %. Falta llegar a 98 %:
-  19 diferencias = 6 % ajustados a mano en el Excel + 4 minutos estándar por persona (60 en vez de 40)
-  + 8 horas BUK distintas del Excel + 1 otra. Esperando decisión de Andrés sobre ajustes manuales por persona.
-  Falta tests\sql_semanal.sql.
+  database\seed\csv\asignaciones.csv y condiciones_persona.csv extraídos con scripts\extraer_condiciones.py).
+  tests\sql\010_semanal.sql (guardia >= 95,5 % + caso sintético 137732) en verde.
+  Coincidencia may-dic: ate_dir_semana 425/450 = 94,4 % con horas de dic (v0) -> 431/450 = 95,8 % con promedio
+  may-dic (v1), 0 aciertos perdidos; pct_dir_final 430 -> 438/450. Criterio >= 98 % ABIERTO.
+  Evidencia completa en database\evidencia\b05\LEEME.md (scripts\casos_buk.ps1 + scripts\evidencia_b05.ps1).
+  19 diferencias v1: 4 distribución por área (TO ULAB/UTA, EDUCADOR UTA), 4 minutos 60 vs 40, 8 horas BUK ≠ Excel,
+  1 sin fila en param (71613), 1 cambio de cargo (72365), 1 otra (134744). Sin excepciones por persona.
+  Pendiente César: confirmar regla "horas del periodo = promedio may-dic" y homologación cargo + sub_area.
+  Casos D-04: 01/02/03 cargan con conteos correctos (03: 3124 leídas, 3119 válidas, 5 con error).
 
 ## Siguiente
-- B-05 (MODO PLAN: mostrar plan antes de programar), B-06; prioridad B-09 (vistas api.* para César).
+- B-06 (MODO PLAN: mostrar plan antes de programar), C-01, B-07+B-08; prioridad B-09 (vistas api.* para César).
 
 ## Cómo correr en este PC (laboratorio Duoc, sin admin, NO reiniciar)
 - Repo en `C:\dev\botathon`. Servicio `postgresql-x64-16` (puerto 5432) ya está en Running; superusuario `postgres`.
@@ -38,9 +42,10 @@ Rama actual: feat/B-05-semanal (sale de feat/B-04-dotacion; PR por web porque gh
   Ojo: lanzar pg_ctl start desde PowerShell, no desde Git Bash (bash queda esperando).
 
 ## Errores conocidos / decisiones
-- **Horas del periodo (B-05):** el Excel usa el PROMEDIO de las horas de los meses del periodo (may-dic), no las de
-  diciembre (p. ej. 40 h may-jun + 30 h jul-dic -> 32,5 h). NAS = %NAS × promedio ponderado ANUAL. Tramo por promedio
-  anual (confirmado: 466/471 calzan).
+- **Horas del periodo (B-05, por confirmar con César):** el Excel usa el PROMEDIO de las horas de los meses del
+  periodo (may-dic, incluye proyectados), no las de diciembre (40 h may-jun + 30 h jul-dic -> 32,5 h): 9/9 filas
+  "Cambio jornada" calzan exacto. NAS = %NAS × promedio ponderado ANUAL. Tramo por promedio anual: INFERIDO (la hoja no
+  tiene fórmulas; 17 filas discriminan y todas favorecen el promedio, 0 en contra).
 - **Grupal (B-05):** directa + grupal = ate_dir × (1 − %grupal) + ate_dir × %grupal × pacientes (sin redondeo).
 - **Promedio ponderado (B-04):** el Excel promedia con igual peso cada mes con contrato (reales + proyectados hasta
   fecha_termino o diciembre) y redondea hacia abajo (floor(x + 1e-9)). Ponderar por semanas da 454/466, peor.
@@ -49,7 +54,7 @@ Rama actual: feat/B-05-semanal (sale de feat/B-04-dotacion; PR por web porque gh
   (p. ej. último mes mayo sin fecha_termino) se considera egresado y no se proyecta. Cada carga BUK es una foto completa:
   core.dotacion_mes se reemplaza por lo real de esa carga + su proyección.
 - Cargar la base real para pruebas: `.\scripts\cargar_buk_prueba.ps1` (requiere `pip install --user openpyxl`;
-  `-Forzar` para recargar el mismo archivo, `-Archivo datauk_original.xlsx` para otra base).
+  `-Forzar` para recargar el mismo archivo, `-Archivo data\buk\01_original.xlsx` para otra base).
 - **Homologación de cargos (B-03):** el BUK 2026 tiene solo 15 cargos y todos calzan por nombre con param_cargo.
   Dudosos: EDUCADOR (BUK Cod_Esp ULAB; existe EDUCADOR NAS 0.30 y EDUCADOR ULAB NAS 0.50; se eligió EDUCADOR porque la
   hoja de planificación muestra %NAS ~0.30) y MEDICO GENERAL (igual a MEDICO GENERAL FI). `cod_esp` homologado = el

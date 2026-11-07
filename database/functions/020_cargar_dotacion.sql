@@ -1,7 +1,7 @@
 -- Contrato 2 · cargar_dotacion(p_carga_id bigint) returns table(filas int, alertas int). Lo llama P02.
 -- Pasa stg.buk_fila (carga tipo 'buk') a core.persona y core.dotacion_mes.
 -- * mes = month(periodo); dias_semana = length(dias_jornada) o ndias; cargo -> param.cargo_homologado.
--- * Fila sin persona/IT/periodo u horas <= 0 -> stg.error_fila. Cargo sin homologar -> core.alerta y se omite.
+-- * Fila sin persona/IT/periodo, horas <= 0 o fecha_termino < fecha_ingreso -> stg.error_fila. Cargo sin homologar -> core.alerta y se omite.
 --   Duplicado (persona, it, mes) en la misma carga -> core.alerta y se toma el de más horas.
 -- * Cada carga BUK es una foto completa: core.dotacion_mes queda igual a lo real de esta carga + proyección.
 -- * Proyección ago-dic (docs\progreso-back.md): cada persona-IT presente en el último mes de la carga
@@ -18,7 +18,6 @@ DECLARE
     v_filas    int;
     v_alertas  int := 0;
     v_n        int;
-    v_errores  int;
     v_leidas   int;
     v_ult_mes  int;
 BEGIN
@@ -45,18 +44,27 @@ BEGIN
     INSERT INTO stg.error_fila (carga_id, fila, persona_id, campo, valor, motivo)
     SELECT p_carga_id, f.fila, f.persona_id,
            CASE WHEN f.persona_id IS NULL THEN 'persona_id' WHEN f.it IS NULL THEN 'it'
-                WHEN f.periodo IS NULL THEN 'periodo' ELSE 'horas_semanales' END,
-           coalesce(f.horas_semanales::text, ''),
-           'cargar_dotacion: fila sin persona, IT, periodo u horas > 0'
+                WHEN f.periodo IS NULL THEN 'periodo'
+                WHEN f.horas_semanales IS NULL OR f.horas_semanales <= 0 THEN 'horas_semanales'
+                ELSE 'fecha_termino' END,
+           CASE WHEN f.fecha_termino < f.fecha_ingreso THEN f.fecha_termino::text
+                ELSE coalesce(f.horas_semanales::text, '') END,
+           CASE WHEN f.fecha_termino < f.fecha_ingreso THEN 'cargar_dotacion: fecha término anterior a fecha ingreso'
+                ELSE 'cargar_dotacion: fila sin persona, IT, periodo u horas > 0' END
     FROM t_fila f
     WHERE f.persona_id IS NULL OR f.it IS NULL OR f.periodo IS NULL
-       OR f.horas_semanales IS NULL OR f.horas_semanales <= 0;
-    GET DIAGNOSTICS v_errores = ROW_COUNT;
+       OR f.horas_semanales IS NULL OR f.horas_semanales <= 0
+       OR f.fecha_termino < f.fecha_ingreso;
     DELETE FROM t_fila f
     WHERE f.persona_id IS NULL OR f.it IS NULL OR f.periodo IS NULL
-       OR f.horas_semanales IS NULL OR f.horas_semanales <= 0;
+       OR f.horas_semanales IS NULL OR f.horas_semanales <= 0
+       OR f.fecha_termino < f.fecha_ingreso;
 
-    -- Cargos sin homologar: una alerta por persona-IT-cargo
+    -- Cargos sin homologar: error por fila (stg.error_fila) y una alerta por persona-IT-cargo (core.alerta)
+    INSERT INTO stg.error_fila (carga_id, fila, persona_id, campo, valor, motivo)
+    SELECT p_carga_id, f.fila, f.persona_id, 'cargo', f.cargo, 'cargar_dotacion: cargo sin homologar'
+    FROM t_fila f
+    WHERE NOT EXISTS (SELECT 1 FROM param.cargo_homologado h WHERE upper(h.cargo_origen) = f.cargo_norm);
     INSERT INTO core.alerta (carga_id, tipo, persona_id, it, mes, detalle)
     SELECT p_carga_id, 'cargo_sin_homologar', f.persona_id, f.it, min(f.mes),
            jsonb_build_object('cargo', min(f.cargo), 'filas', count(*))
@@ -74,6 +82,14 @@ BEGIN
     FROM t_fila f GROUP BY f.persona_id, f.it, f.mes HAVING count(*) > 1;
     GET DIAGNOSTICS v_n = ROW_COUNT;
     v_alertas := v_alertas + v_n;
+
+    -- Filas duplicadas descartadas (se conserva la de más horas) -> stg.error_fila
+    INSERT INTO stg.error_fila (carga_id, fila, persona_id, campo, valor, motivo)
+    SELECT p_carga_id, x.fila, x.persona_id, 'persona_id', x.persona_id || '/' || x.it || '/' || x.periodo,
+           'cargar_dotacion: fila duplicada (persona_id, it, periodo)'
+    FROM (SELECT f.*, row_number() OVER (PARTITION BY f.persona_id, f.it, f.mes
+                                         ORDER BY f.horas_semanales DESC, f.fila) AS rn FROM t_fila f) x
+    WHERE x.rn > 1;
 
     CREATE TEMP TABLE t_real ON COMMIT DROP AS
     SELECT DISTINCT ON (f.persona_id, f.it, f.mes)
@@ -127,8 +143,14 @@ BEGIN
         dias_semana = EXCLUDED.dias_semana, origen = EXCLUDED.origen, carga_id = EXCLUDED.carga_id,
         actualizado_en = now();
 
+    -- leidas = filas en stg + filas que el robot rechazó antes (errores que no son de esta función)
+    -- con_error = todas las filas con error de la carga (robot + esta función)
     UPDATE stg.carga c
-    SET estado = 'cargada', leidas = v_leidas, validas = v_filas, con_error = v_errores
+    SET estado = 'cargada',
+        leidas = v_leidas + (SELECT count(*) FROM stg.error_fila e
+                             WHERE e.carga_id = p_carga_id AND e.motivo NOT LIKE 'cargar_dotacion:%'),
+        validas = v_filas,
+        con_error = (SELECT count(*) FROM stg.error_fila e WHERE e.carga_id = p_carga_id)
     WHERE c.carga_id = p_carga_id;
 
     filas := v_filas;

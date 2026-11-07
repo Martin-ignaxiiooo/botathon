@@ -48,6 +48,12 @@ BEGIN
     INSERT INTO stg.buk_fila (carga_id, it, persona_id, periodo, horas_semanales, cargo)
     VALUES (v_carga, 21, 900004, DATE '2026-07-01', 40, 'CARGO INEXISTENTE'),
            (v_carga, 21, 900005, DATE '2026-07-01', 0, 'KINESIOLOGO');
+    -- 900006: fecha de término anterior al ingreso -> error de fila
+    INSERT INTO stg.buk_fila (carga_id, it, persona_id, periodo, fecha_ingreso, fecha_termino, horas_semanales, cargo)
+    VALUES (v_carga, 21, 900006, DATE '2026-07-01', DATE '2020-01-01', DATE '2015-03-31', 40, 'KINESIOLOGO');
+    -- error que ya dejó el robot (fila ilegible que no llegó a stg.buk_fila)
+    INSERT INTO stg.error_fila (carga_id, fila, persona_id, campo, valor, motivo)
+    VALUES (v_carga, 99, 900007, 'horas_semanales', 'cuarenta', 'horas_semanales no es numérico');
 
     SELECT * INTO r FROM api.cargar_dotacion(v_carga);
     IF r.filas <> 19 THEN RAISE EXCEPTION 'DOTACION: filas = % (se esperan 19)', r.filas; END IF;
@@ -57,6 +63,17 @@ BEGIN
     IF v_n <> 1 THEN RAISE EXCEPTION 'DOTACION: falta alerta de cargo sin homologar'; END IF;
     SELECT count(*) INTO v_n FROM stg.error_fila WHERE carga_id = v_carga AND persona_id = 900005;
     IF v_n <> 1 THEN RAISE EXCEPTION 'DOTACION: falta error de fila por horas 0'; END IF;
+    SELECT count(*) INTO v_n FROM stg.error_fila WHERE carga_id = v_carga AND persona_id = 900006 AND campo = 'fecha_termino';
+    IF v_n <> 1 THEN RAISE EXCEPTION 'DOTACION: falta error de fila por fecha término < ingreso'; END IF;
+    SELECT count(*) INTO v_n FROM stg.error_fila WHERE carga_id = v_carga AND persona_id = 900004 AND campo = 'cargo';
+    IF v_n <> 1 THEN RAISE EXCEPTION 'DOTACION: falta error de fila por cargo sin homologar'; END IF;
+    SELECT count(*) INTO v_n FROM stg.error_fila WHERE carga_id = v_carga AND persona_id = 900001 AND campo = 'persona_id';
+    IF v_n <> 1 THEN RAISE EXCEPTION 'DOTACION: falta error de fila por duplicado'; END IF;
+    -- conteos: 23 filas en stg + 1 rechazada por el robot; 19 válidas; 5 con error (4 de la función + 1 del robot)
+    SELECT leidas, validas, con_error INTO r FROM stg.carga WHERE carga_id = v_carga;
+    IF r.leidas <> 24 OR r.validas <> 19 OR r.con_error <> 5 THEN
+        RAISE EXCEPTION 'DOTACION: conteos de stg.carga leidas/validas/con_error = %/%/% (se esperan 24/19/5)', r.leidas, r.validas, r.con_error;
+    END IF;
 
     -- Foto completa: solo quedan las personas de esta carga
     SELECT count(DISTINCT persona_id) INTO v_n FROM core.dotacion_mes;

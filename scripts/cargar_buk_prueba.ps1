@@ -33,6 +33,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Falló buk_a_csv.py (¿falta openpyxl? pip ins
 
 # En Docker el CSV se lee desde /planbot/logs (montado en docker-compose.yml)
 $rutaCsv = if ($modo -eq 'docker') { 'logs/buk_prueba.csv' } else { $csv -replace '\\', '/' }
+$rutaErr = $rutaCsv + '.errores.csv'   # filas rechazadas por buk_a_csv.py (como haría el robot)
 $llamar = if ($SinDotacion) { "\echo 'Carga' :carga 'sin cargar_dotacion'" } else { 'SELECT * FROM api.cargar_dotacion(:carga);' }
 $nombreSql = $nombre -replace "'", "''"
 
@@ -51,7 +52,10 @@ CREATE TEMP TABLE t_buk (it int, instituto text, persona_id bigint, area text, s
 INSERT INTO stg.buk_fila (carga_id, it, instituto, persona_id, area, sub_area, centro_costo, periodo, tipo_contrato,
     tipo_trabajador, fecha_ingreso, fecha_termino, horas_semanales, cargo, dias_jornada, ndias, cod_esp)
 SELECT :carga, * FROM t_buk;
-UPDATE stg.carga SET leidas = (SELECT count(*) FROM t_buk), estado = 'validada' WHERE carga_id = :carga;
+CREATE TEMP TABLE t_err (fila int, persona_id bigint, campo text, valor text, motivo text) ON COMMIT DROP;
+\copy t_err FROM '$rutaErr' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8')
+INSERT INTO stg.error_fila (carga_id, fila, persona_id, campo, valor, motivo) SELECT :carga, * FROM t_err;
+UPDATE stg.carga SET leidas = (SELECT count(*) FROM t_buk) + (SELECT count(*) FROM t_err), estado = 'validada' WHERE carga_id = :carga;
 \echo 'Carga buk' :carga
 $llamar
 COMMIT;

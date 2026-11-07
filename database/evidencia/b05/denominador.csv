@@ -1,0 +1,21 @@
+fila_excel,persona_id,it,cambio_jornada,hs_dic_excel,horas_periodo_excel,horas_dic_buk,horas_prom_may_dic_buk,serie_may_dic_buk,AX_consistente,igual_hs_dic,igual_prom_buk,igual_dic_buk
+37,115444,12,,36.0,36.0,42,42.000000,5:42 6:42 7:42 8:42p 9:42p 10:42p 11:42p 12:42p,True,True,False,False
+38,115444,111,Disminución,6.0,6.0,,,,True,True,False,False
+60,137356,22,Aumento,30.0,30.0,30,27.500000,5:20 6:20 7:30 8:30p 9:30p 10:30p 11:30p 12:30p,True,True,False,True
+67,139458,22,,15.0,15.0,,,,True,True,False,False
+68,139458,61,,12.0,12.0,27,27.000000,5:27 6:27 7:27 8:27p 9:27p 10:27p 11:27p 12:27p,True,True,False,False
+84,129024,131,Aumento,26.0,26.0,32,32.000000,5:32 6:32 7:32 8:32p 9:32p 10:32p 11:32p 12:32p,True,True,False,False
+85,129024,31,Disminución,6.0,6.0,,,,True,True,False,False
+109,134746,41,,34.0,34.0,40,40.000000,5:40 6:40 7:40 8:40p 9:40p 10:40p 11:40p 12:40p,True,True,False,False
+110,134746,31,,6.0,6.0,,,,True,True,False,False
+115,72365,41,Aumento,40.0,39.5,40,39.500000,5:38 6:38 7:40 8:40p 9:40p 10:40p 11:40p 12:40p,True,False,True,False
+140,126057,51,Aumento,42.0,41.75,42,41.750000,5:40 6:42 7:42 8:42p 9:42p 10:42p 11:42p 12:42p,True,False,True,False
+219,73206,81,Aumento,42.0,41.5,42,41.500000,5:40 6:40 7:42 8:42p 9:42p 10:42p 11:42p 12:42p,True,False,True,False
+257,119621,91,Disminución,40.0,40.25,40,40.250000,5:42 6:40 7:40 8:40p 9:40p 10:40p 11:40p 12:40p,True,False,True,False
+316,71342,131,,17.0,17.0,35,35.000000,5:35 6:35 7:35 8:35p 9:35p 10:35p 11:35p 12:35p,True,True,False,False
+317,71342,61,,18.0,18.0,,,,True,True,False,False
+332,72721,131,Disminución,23.0,23.5,23,23.500000,5:25 6:25 7:23 8:23p 9:23p 10:23p 11:23p 12:23p,True,False,True,False
+359,125926,131,Disminución,35.0,35.625,35,35.625000,5:40 6:35 7:35 8:35p 9:35p 10:35p 11:35p 12:35p,True,False,True,False
+383,79740,131,Disminución,30.0,31.25,30,31.250000,5:35 6:35 7:30 8:30p 9:30p 10:30p 11:30p 12:30p,True,False,True,False
+384,73258,131,Disminución,30.0,32.5,30,32.500000,5:40 6:40 7:30 8:30p 9:30p 10:30p 11:30p 12:30p,True,False,True,False
+464,72210,141,Disminución,35.0,36.75,35,36.750000,5:42 6:42 7:35 8:35p 9:35p 10:35p 11:35p 12:35p,True,False,True,False
