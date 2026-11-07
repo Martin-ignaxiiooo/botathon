@@ -1,10 +1,46 @@
 # Instalación de PlanBot en la VM de demo
 
-Objetivo: Windows 11 de 64 bits, PowerShell 7 y Blue Prism 7.5.1. Ejecutar comandos desde la raíz del repositorio salvo que se indique otra ruta. Mantener claves fuera de Git y de los logs. Esta guía describe el despliegue integrado: este clon ya recibió el dashboard del trabajo paralelo, pero aún no incluye SQL, scripts ni compose. Obtener esos componentes de Andrés antes de intentar levantar el sistema. No sustituirlos por esquemas SQL inventados.
+Objetivo: Windows 11 de 64 bits y Blue Prism 7.5.1. Los scripts de tools\vm funcionan con Windows PowerShell 5.1 y PowerShell 7. Ejecutar desde la raíz salvo indicación. Mantener claves fuera de Git y de los logs. Usar un repositorio integrado con el back de Andrés y el front actualizado; este worktree puede no contener ambos. No sustituir componentes ausentes por esquemas SQL inventados.
+
+## Arranque de demo en un comando (Tarea 11)
+
+Requiere PostgreSQL 16 ya instalado/en ejecución, psql, Python 3, driver psqlODBC x64 y el repositorio integrado con scripts\instalar_sin_docker.ps1 (versión de un comando de Andrés), scripts\servir_web.ps1, SQL y web. El lanzador no instala Blue Prism/PostgreSQL/ODBC ni modifica sus servicios. Coordinar instalación y carga inicial en una base de demo; nunca ejecutar el bootstrap sobre trabajo activo sin acuerdo.
+
+Si falta la base, proporcionar la clave administrativa en memoria, sin escribirla en argumentos o historial:
+
+```powershell
+$credencialPg = Get-Credential -UserName postgres -Message 'Administrador PostgreSQL de esta VM'
+$env:PG_SUPER_PASSWORD = $credencialPg.GetNetworkCredential().Password
+.\tools\vm\levantar_demo.ps1
+# Si los componentes están en otro clon integrado:
+# .\tools\vm\levantar_demo.ps1 -RaizRepo C:\dev\botathon
+```
+
+El lanzador consulta primero pg_database. Solo si confirma ausencia llama al instalador de Andrés; un fallo de conexión no se trata como base ausente. El instalador puede crear .env con claves aleatorias. Si se desea cargar BUK y calcular al crear una base nueva, agregar -CargarBukPrueba; con base existente ese parámetro no recarga datos ni migra. La carga habitual corresponde a Blue Prism. .env se importa en memoria para el arranque y sus valores prevalecen; el entorno previo del llamador se restaura al terminar. No editar .env mientras haya procesos usando sus claves.
+
+Después crea C:\PlanBot\entrada\{planificacion,buk,asignaciones}, procesados, errores, logs, respaldo, preparar y runtime. Busca C:\tools\postgrest.exe; si falta, descarga Windows x64 del [release oficial v16.5](https://github.com/PostgREST/postgrest/releases/tag/v16.5), con comprobación de digest cuando GitHub lo publica. Puede usarse un binario ya instalado o -DirectorioHerramientas con permisos de escritura. No descarga binarios al repositorio.
+
+Crea C:\PlanBot\runtime\postgrest.conf desde api\postgrest.conf, sustituyendo esquema/rol/puerto/CORS y retirando URI/JWT. **La plantilla api aún no está publicada en las referencias revisadas**: en ese caso informa y usa tools\vm\postgrest.conf.example, sin escribir en api\. La clave de web_lectura se pasa al hijo por PGRST_DB_URI en su entorno, escapada como URI; no queda en el conf ni en los argumentos. Solo publica api, escucha 127.0.0.1:3000 y permite origen http://localhost:8080. Ver [configuración oficial de PostgREST](https://docs.postgrest.org/en/stable/references/configuration.html).
+
+PostgREST y scripts\servir_web.ps1 se lanzan ocultos, en segundo plano. El hijo PostgREST recibe la carpeta de psql en PATH para encontrar libpq.dll; el PATH del llamador se restaura. Logs y registro de procesos propios quedan en runtime\. Si 3000/8080 están ocupados, no reinicia ni adopta el proceso ajeno: el verificador comprueba lo que responde y coteja los KPI HTTP con SQL. Abrir **http://localhost:8080/?modo=api#nacional**, confirmar «En vivo: base de datos» y usar «Actualizar datos» después de una carga. Un HTTP 200 no certifica el modo visual ni el recorrido BP. Para ensayos aislados se admiten -PuertoApi/-PuertoWeb; los valores predeterminados son 3000/8080. Cambiar puertos no cambia config.js del front: ese ensayo solo certifica HTTP/SQL, no su conexión visual.
+
+Para diagnóstico independiente, verificar_vm.ps1 es **solo lectura**, no importa .env ni escribe archivos. Usa PG_HOST/PG_PORT/PG_BIN, POSTGRES_DB/POSTGRES_USER y claves del entorno:
+
+```powershell
+$env:BOT_CARGA_PASSWORD = (Get-Credential -UserName bot_carga).GetNetworkCredential().Password
+$env:WEB_LECTURA_PASSWORD = (Get-Credential -UserName web_lectura).GetNetworkCredential().Password
+$env:POSTGRES_PASSWORD = (Get-Credential -UserName owner_planbot).GetNetworkCredential().Password
+.\tools\vm\verificar_vm.ps1
+.\tools\vm\detener_demo.ps1
+```
+
+Las claves nunca se imprimen. El propietario se usa únicamente para contar calc.plan_mes; bot_carga y web_lectura conservan sus permisos. Muestra verde/rojo por carpeta, registro ODBC de 64 bits, puerto PostgreSQL (5432 por defecto), login, ocho funciones contractuales, ocho vistas leídas como web_lectura, plan poblado, JSON/CORS de PostgREST y web PlanBot. Exit 0 exige todo verde; exit 1 deja pendientes explícitos, incluidas funciones opcionales aún no entregadas. No ejecuta RPC. No confundir un rojo por falta de simular/cuadratura con caída del servicio.
+
+detener_demo.ps1 solo detiene procesos registrados por levantar_demo, comparando PID, hora de inicio y ejecutable para evitar PID reutilizado. **No detiene PostgreSQL, Blue Prism ni servicios ajenos**, ni borra datos o claves. Tras un arranque fallido también puede usarse para retirar procesos propios. Limpiar las variables de claves del entorno al terminar el ensayo; para reabrir con claves nuevas, detener/levantar los procesos propios.
 
 ## 1. Preparar la VM
 
-Instalar Blue Prism 7.5.1 con su licencia, conexión a su propia base Blue Prism y Runtime Resource operativo. La base **planbot** es distinta de la base interna de Blue Prism. Instalar PowerShell 7 y comprobar `$PSVersionTable.PSVersion`; los comandos deben ejecutarse con `pwsh`, no Windows PowerShell 5.1. Para casos de prueba instalar Python 3 y `python -m pip install openpyxl`.
+Instalar Blue Prism 7.5.1 con su licencia, conexión a su propia base Blue Prism y Runtime Resource operativo. La base **planbot** es distinta de la base interna de Blue Prism. Comprobar `$PSVersionTable.PSVersion`: el arranque tools\vm y los scripts recientes de Andrés admiten 5.1; PowerShell 7 es opcional. Para casos de prueba instalar Python 3 y `python -m pip install openpyxl`.
 
 Elegir Docker o instalación nativa. En VM, Docker requiere virtualización anidada/WSL disponible en el host; si no está habilitada, usar instalación nativa. Requisitos oficiales: [Docker Desktop en Windows](https://docs.docker.com/desktop/setup/install/windows-install/).
 
