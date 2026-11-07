@@ -369,6 +369,13 @@ table.tabla a[aria-current="true"] { font-weight: 700; }
 .linea-estado { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin: -.25rem 0 1rem; color: var(--gris-700); }
 .linea-estado button { padding: .2rem .7rem; font-size: .9rem; }
 
+/* ---------- Modo planificador (B-12) ---------- */
+.modo-planificador { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; margin-bottom: 1rem; padding: .7rem 1rem; }
+.modo-planificador .estado-texto, .modo-planificador-texto { margin: 0; }
+.boton-inactivo { background: var(--gris-100); color: var(--gris-700); border: 1px dashed var(--gris-600); cursor: pointer; }
+.boton-inactivo:hover { background: var(--gris-200); }
+.nota-decision { align-self: center; font-weight: 600; color: var(--alerta); }
+
 /* ---------- Lectura fácil (C-10) ---------- */
 .lectura-facil-caja { display: none; }
 html.lectura-facil .lectura-facil-caja { display: block; }

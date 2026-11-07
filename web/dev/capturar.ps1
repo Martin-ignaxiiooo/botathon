@@ -1,8 +1,9 @@
 # Captura una pantalla del dashboard a escala 2 con Edge sin ventana (herramienta de desarrollo).
 # Requiere la web servida (scripts\servir_web.ps1) y, para -Modo api, el back local con PostgREST en :3000.
 # Guarda el PNG en docs\capturas.
-# Uso: .\web\dev\capturar.ps1 -Nombre 01-nacional -Ruta '#nacional' [-Modo api|mock] [-Paso ninguno|efecto|profesionales|dialogo|impresion]
+# Uso: .\web\dev\capturar.ps1 -Nombre 01-nacional -Ruta '#nacional' [-Modo api|mock] [-Paso ninguno|efecto|profesionales|escenario|dialogo|impresion]
 #                             [-Ancho 1440] [-Alto 0 (0 = mide la pantalla)] [-Prev '<json del KPI anterior>' (solo -Paso efecto)]
+#                             [-Token '<JWT de planificador>' (solo pruebas locales; no se guarda)] [-Boton Aprobar|Rechazar (-Paso dialogo)]
 param(
     [Parameter(Mandatory)] [string] $Nombre,
     [Parameter(Mandatory)] [string] $Ruta,
@@ -10,7 +11,9 @@ param(
     [string] $Paso = 'ninguno',
     [int] $Ancho = 1440,
     [int] $Alto = 0,
-    [string] $Prev = ''
+    [string] $Prev = '',
+    [string] $Token = '',
+    [string] $Boton = 'Rechazar'
 )
 $ErrorActionPreference = 'Stop'
 $edge = 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
@@ -22,6 +25,8 @@ $perfil = Join-Path $env:TEMP ('edge-cap-' + [guid]::NewGuid().ToString('N').Sub
 function Url([int] $alto) {
     $q = "r=$([uri]::EscapeDataString($Ruta))&modo=$Modo&paso=$Paso&ancho=$Ancho&alto=$alto"
     if ($Prev) { $q += "&prev=$([uri]::EscapeDataString($Prev))" }
+    if ($Token) { $q += "&tok=$([uri]::EscapeDataString($Token))" }
+    if ($Boton) { $q += "&boton=$([uri]::EscapeDataString($Boton))" }
     "http://localhost:8080/dev/captura.html?$q"
 }
 
