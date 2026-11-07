@@ -28,7 +28,7 @@ La **meta de gestión** es `floor(atenciones planificadas × porcentaje vigente)
 | `.github\` | CI PostgreSQL/pwsh y ESLint |
 | `docs\` | Contexto, contratos, reglas, instalación y progreso |
 
-Este clon contiene los entregables de apoyo y el dashboard integrado desde el trabajo paralelo. `database\`, `scripts\`, `api\` y `docker-compose.yml` todavía deben integrarse; los comandos siguientes requieren esos componentes. El generador crea original/errores, detecta que la fuente actual solo contiene enero–julio y se detiene antes de inventar meses: falta resolver la base anual para D-04.
+Este clon contiene los entregables de apoyo y el dashboard integrado desde el trabajo paralelo. `database\`, `scripts\`, `api\` y `docker-compose.yml` todavía deben integrarse; los comandos siguientes requieren esos componentes. D-04 genera y verifica original, cambios y errores sobre enero–julio, sin crear una base anual sintética.
 
 ## Requisitos e instalación en Windows
 
@@ -49,7 +49,7 @@ Sin Docker: instalar PostgreSQL 16 con cliente psql, PostgREST y un servidor est
 ## Demo de cinco minutos
 
 1. Preparar base/robot con [la instalación](docs/instalacion.md), cargar reglas por P00 y respaldar el estado limpio.
-2. Generar los casos con `python data\generar_casos.py` una vez resuelta la cobertura anual; entregar `01_original.xlsx` a `C:\PlanBot\entrada\buk` y ejecutar P01–P05.
+2. Generar los casos con `python data\generar_casos.py`; entregar `01_original.xlsx` a `C:\PlanBot\entrada\buk` y ejecutar P01–P05.
 3. Abrir `http://localhost:8080` con `modo: 'api'` en la configuración del dashboard y mostrar Nacional.
 4. Entregar `02_cambios.xlsx`, mostrar Cambios y el efecto desde los meses vigentes.
 5. Ensayar errores, archivo repetido y escenario de meta 85 % siguiendo [tests/e2e/guion.md](tests/e2e/guion.md). La simulación debe preceder a la aprobación.

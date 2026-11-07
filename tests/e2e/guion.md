@@ -1,6 +1,6 @@
 # D-07 · Ensayo de punta a punta
 
-Ejecutar en la VM Windows con Blue Prism 7.5.1, PostgreSQL preparado y dashboard en modo API. Registrar hora, archivo, hash y carga_id de cada ensayo. **No marcar OK antes de observar el resultado.** Usar una base de demo restaurable; no mezclar cargas anteriores. El Excel BUK fuente actual solo trae enero–julio: el paso 3 requiere resolver la base anual antes del ensayo.
+Ejecutar en la VM Windows con Blue Prism 7.5.1, PostgreSQL preparado y dashboard en modo API. Registrar hora, archivo, hash y carga_id de cada ensayo. **No marcar OK antes de observar el resultado.** Usar una base de demo restaurable; no mezclar cargas anteriores. Los casos BUK usan enero–julio: cargo desde marzo, alta desde abril, jornada 40 → 30 desde mayo, baja desde junio y traslado desde julio.
 
 | Paso | Acción | Resultado esperado | Resultado real | OK |
 |---|---|---|---|---|
@@ -115,7 +115,7 @@ SELECT * FROM api.v_parametros_vigentes ORDER BY tabla, clave;
 SELECT * FROM api.v_nacional_mes ORDER BY mes;
 ```
 
-Para cambios de IT el CSV usa el IT **destino**. Confirmar esa convención con Andrés, pues el contrato fija la columna pero no su sentido en un traslado. En la baja no deben quedar meses desde agosto; en el alta deben aparecer julio–diciembre. Un cambio de cargo puede modificar varias magnitudes; comparar contra reglas vigentes, no solo un total nacional. Si el motor actualiza metadatos de todas las filas durante el recálculo, documentar esa diferencia antes de aceptar el chequeo de invariancia.
+Para cambios de IT el CSV usa el IT **destino**. Confirmar esa convención con Andrés, pues el contrato fija la columna pero no su sentido en un traslado. En la baja no deben quedar meses desde junio; en el alta deben aparecer abril–julio. Un cambio de cargo puede modificar varias magnitudes; comparar contra reglas vigentes, no solo un total nacional. Si el motor actualiza metadatos de todas las filas durante el recálculo, documentar esa diferencia antes de aceptar el chequeo de invariancia.
 
 ## Respaldo previo a la demo
 
