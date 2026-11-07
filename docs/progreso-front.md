@@ -29,6 +29,11 @@ Rama actual: main (todo fusionado)
 
 - Prueba con la base real y correcciones (rama `feat/front-api`): claves de parámetros, `area` = sede → agrupar por cargo, valores JSON, cargo nulo, textos de cambios (ver «Prueba con la base real»)
 
+- Gráficos de horas con la 4.ª categoría «Ausencias y feriados» = horas_contratadas − (horas_dir + horas_ind + horas_nas), para que las barras sumen lo contratado (decisión de César: las ausencias no se cargan a NAS). El filtro «Tipo de hora» la incluye y Lectura fácil la explica. Mocks: la parte que no es dir/ind/NAS es la colación (≈3 %).
+
+- Cuadratura con datos reales (B-10): titular **95,55 %** = % de atenciones directas planificadas de mayo a diciembre que coinciden con el Excel; se calcula en el front como 1 − (diferencias de `plan_ate_dir` mes ≥ 5 con `sistema` no nulo) / (filas de `v_profesional_mes` mes ≥ 5) = 1 − 158/3.553, igual al valor de `api.cuadratura()` (comprobado con la base local; `api.cuadratura()` no es llamable por `web_lectura`, así que el valor no sale de una vista). Frase para cada una de las 7 causas de `calc.cuadratura` (`ajuste_individual`, `diferencia_explicada`, `periodo_ene_abr`, `dias_adicionales`, `multi_it`, `grupal`, `otra`; en la base de demo aparecen 6, falta `dias_adicionales`). Gráficos por campo y por mes con denominadores del plan y sin contar las filas con `sistema` nulo (358: la persona figura en otro instituto o sin dotación); la tabla muestra de a 100 diferencias (hay 1.518). Mocks con los códigos de causa reales.
+  - Ojo: `v_cuadratura` guarda la comparación del momento en que se ejecutó `api.cuadratura()`; si después se carga otro BUK sin volver a ejecutarla, el titular mezcla un plan nuevo con diferencias viejas. Para mostrarla, ejecutar `SELECT api.cuadratura();` justo antes.
+
 ## En curso
 - —
 

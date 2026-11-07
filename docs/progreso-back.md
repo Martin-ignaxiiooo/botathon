@@ -1,6 +1,6 @@
 # Progreso BACK (Andrés · Claude Code)
 Última actualización: 2026-11-07 · por: Claude Code
-Rama actual: feat/D-05-casos-dorados (desde main; B-11 va aparte en feat/B-11-auditoria, PR #7)
+Rama actual: feat/B-12-escenarios (desde main con B-10 #6, B-11 #7 y D-05 #8 fusionados)
 Reparto 7-nov: B-09 (vistas api.*, database\views\) lo hace el Codex de César en feat/B-09-vistas; el BACK revisa
 y fusiona su PR. El BACK no toca database\views\ mientras tanto.
 
@@ -95,6 +95,13 @@ y fusiona su PR. El BACK no toca database\views\ mientras tanto.
   - Base real: 1.518 diferencias, 135 personas (ajuste 950, multi_it 338, grupal 88, ene-abr 65, explicada 50, otra 27).
     Las 5 persona-IT del Excel con otro IT que el BUK (p. ej. 71342/61) salen multi_it.
   - instalar_sin_docker.ps1 -CargarBukPrueba ahora corre también api.cuadratura(). tests\sql\040_cuadratura.sql.
+- B-11 · Auditoría con triggers (database\functions\080_auditoria.sql) hecha.
+  - Trigger `auditar` AFTER INSERT/UPDATE/DELETE FOR EACH ROW en todas las tablas de param.* (se agrega solo a las
+    nuevas al correr migrar.ps1), core.asignacion y calc.escenario → `audit.registrar()` (SECURITY DEFINER).
+  - audit.log: tabla esquema.tabla, operacion insert|update|delete, usuario session_user, motivo
+    current_setting('planbot.motivo') o NULL, antes/despues jsonb. UPDATE sin cambios no se registra (semilla repetible).
+  - calc.plan_mes NO tiene trigger: recalcular() deja una sola fila resumen (B-08).
+  - Instalación desde cero: la semilla queda registrada como insert con motivo NULL. tests\sql\050_auditoria.sql.
 - D-05 · Casos dorados (tests\sql\060_casos_dorados.sql) hecha. 10 persona-IT del Excel que el sistema reproduce
   exacto, calculadas en CI desde sus 70 filas BUK embebidas (solo persona_id): 71853/12, 72379/51, 76852/11 (arica),
   73182/51, 71509/101, 132962/41, 72253/81, 125926/131, 71425/91 (grupal 55 %), 71132/131. Cubre cambio de jornada,
@@ -102,7 +109,7 @@ y fusiona su PR. El BACK no toca database\views\ mientras tanto.
   Generador: se armó con una consulta a la carga BUK local 63 (filas copiadas tal cual al test).
 
 ## Siguiente
-- B-12 escenarios (si queda tiempo). B-11 en PR #7.
+- B-12 escenarios (tope 1,5 h; congelado a las 7:00).
 - Si sobra tiempo: usar data\csv\insumos.csv (Codex) para minutos, distribución y asignaciones por persona, como
   excepción documentada, y subir del 95,5 %.
 
