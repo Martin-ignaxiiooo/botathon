@@ -29,6 +29,8 @@ Rama actual: main (todo fusionado)
 
 - Prueba con la base real y correcciones (rama `feat/front-api`): claves de parámetros, `area` = sede → agrupar por cargo, valores JSON, cargo nulo, textos de cambios (ver «Prueba con la base real»)
 
+- Gráficos de horas con la 4.ª categoría «Ausencias y feriados» = horas_contratadas − (horas_dir + horas_ind + horas_nas), para que las barras sumen lo contratado (decisión de César: las ausencias no se cargan a NAS). El filtro «Tipo de hora» la incluye y Lectura fácil la explica. Mocks: la parte que no es dir/ind/NAS es la colación (≈3 %).
+
 ## En curso
 - —
 

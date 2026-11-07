@@ -12,6 +12,7 @@ export const TIPOS = [
   { valor: 'directa', texto: 'Directa' },
   { valor: 'indirecta', texto: 'Indirecta' },
   { valor: 'nas', texto: 'NAS (no asistencial)' },
+  { valor: 'ausencias', texto: 'Ausencias y feriados' },
 ];
 
 let opciones = null; // {institutos: [{it, instituto}], areas: [], cargos: []}
@@ -92,7 +93,7 @@ function construir(opc, emitir) {
   const hasta = campoSelect({ id: 'f-hasta', etiqueta: 'Mes hasta', opcionesLista: meses });
   hasta.select.value = '12';
   const tipo = campoSelect({
-    id: 'f-tipo', etiqueta: 'Tipo de atención (horas)', vacio: 'Todos',
+    id: 'f-tipo', etiqueta: 'Tipo de hora', vacio: 'Todos',
     opcionesLista: TIPOS.map((t) => ({ valor: t.valor, texto: t.texto })),
   });
 
