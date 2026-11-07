@@ -252,6 +252,26 @@ table.tabla td.num, table.tabla th.num { text-align: right; font-variant-numeric
 .boton-limpiar { align-self: flex-end; }
 .resumen-filtros { margin: .5rem 0 0; font-size: .9rem; color: var(--gris-700); }
 
+/* ---------- Pantalla Instituto (C-05) ---------- */
+.seccion { margin-top: 1rem; }
+.selector-metrica { border: 0; padding: 0; margin: 0 0 .75rem; display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; align-items: center; }
+.selector-metrica legend { font-size: .85rem; font-weight: 600; color: var(--gris-700); padding: 0; margin-bottom: .25rem; float: left; margin-right: 1rem; }
+.opcion-radio { display: inline-flex; align-items: center; gap: .4rem; cursor: pointer; }
+.opcion-radio input { width: 1.1rem; height: 1.1rem; }
+.boton-area { border: 0; background: none; padding: 0; text-align: left; font-weight: 600; color: var(--azul-700); text-decoration: underline; width: 100%; }
+.boton-area:hover { background: none; color: var(--azul-900); }
+.tabla-tabulator { font-size: .92rem; }
+.tabulator { border: 1px solid var(--gris-200); border-radius: var(--radio); font-family: inherit; }
+.tabulator .tabulator-header { background: var(--azul-100); color: var(--azul-900); border-bottom: 2px solid var(--azul-700); }
+.tabulator .tabulator-header .tabulator-col { background: var(--azul-100); }
+.tabulator .tabulator-header .tabulator-col:focus-visible { outline: 3px solid var(--foco); outline-offset: -3px; }
+.tabulator .tabulator-header .tabulator-col .tabulator-col-content { padding: .5rem .6rem; }
+.tabulator .tabulator-row .tabulator-cell { padding: .5rem .6rem; }
+.tabulator .tabulator-row.fila-activa, .tabulator .tabulator-row.fila-activa .tabulator-cell { background: var(--azul-100); }
+.tabulator .tabulator-row { cursor: pointer; }
+.tabulator .tabulator-footer { background: var(--gris-100); border-top: 2px solid var(--azul-700); font-weight: 700; color: var(--azul-900); }
+.tabulator .tabulator-footer .tabulator-calcs-holder, .tabulator .tabulator-footer .tabulator-calcs-holder .tabulator-row { background: var(--gris-100); }
+
 /* ---------- Lectura fácil (C-10) ---------- */
 .lectura-facil-caja {
   background: var(--blanco); border-left: 6px solid var(--azul-700);

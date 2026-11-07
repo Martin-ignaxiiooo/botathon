@@ -62,7 +62,7 @@ Formato: `- [ ] ID · título` y debajo sus criterios. Al terminar una historia,
 - [x] C-03 · Pantalla Nacional (FRONT, 5 pts)
   - [x] Tarjetas de v_kpi; línea mensual con mayo marcado (42 h); barras por instituto (clic → instituto); apiladas directa/indirecta/NAS por área; tabla alternativa accesible
 - [x] C-04 · Filtros globales sincronizados con la URL (FRONT, 3 pts)
-- [ ] C-05 · Pantalla Instituto y área (FRONT, 3 pts)
+- [x] C-05 · Pantalla Instituto y área (FRONT, 3 pts)
 - [ ] C-06 · Pantalla Profesional con historial de cambios (FRONT, 3 pts)
 - [ ] C-07 · Pantalla Cambios y errores de carga (FRONT, 3 pts)
 - [ ] D-04 · Bases de prueba en `data\buk\` (FRONT, 3 pts)
