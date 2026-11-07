@@ -4,6 +4,9 @@ Rama actual: `codex/trabajo`, integrada con origin/main/275847b (PR #12 y #13) m
 
 ## Hecho
 
+- Tarea 6: docs/demo.md incorpora **Supuestos del MVP**, solo documentación: vigencia mensual/corte global y promedio por período con ejemplo 32,5 h; contrato repetido sin suma, alerta/error del back, pares reales únicos en BUK vs repetidos de Excel y comparación por semanas/alternativa más cercana; 134744/11 diferencia explicada con B vigente. Se indica parametrización y validación con Teletón, separando explícitamente la política del back de los Code stages. No se cambia código por estos supuestos ni se reabre AX. Revisión contra la instrucción de César y diff sin errores; las pruebas del código no se repiten por una edición documental.
+
+
 - Tarea 4, dependencia comprobada por fetch: origin/main continúa en 275847b y **no contiene database/demo/llamadas_robot.sql**. El archivo y tests/sql/100_llamadas_robot.sql están en origin/docs/cierre-back-demo/b61042e, todavía sin integrar. Se leyó el borrador y la nota «Para Lucas»: retirar UPDATE Q08 de contadores y leerlos de stg.carga, Q09 solo estado error, P06 opcional y motivos BP sin prefijo cargar_dotacion:. El simulador ya lee los contadores; **guia_procesos.md pendiente de actualizar contra la versión que Andrés publique en main**, sin inventar archivo/contrato ni fusionar su rama sin aprobación. No se declara la tarea 4 aprobada.
 - Tarea 5: README e instalación reescritos contra el flujo integrado real: requisitos Git/PG16/psqlODBC64/Python-openpyxl, clon C:\dev\botathon, PG_SUPER_PASSWORD por nombre, arranque idempotente/verificación, Credential Manager PlanBot_Postgres/ConnStrSinClave, token capturado solo en memoria, reiniciar_demo/consultas_demo y contingencia. Eliminadas instrucciones obsoletas de componentes ausentes, servidores en consola bloqueante y creación SQL manual con prompts. Docker queda alternativa separada de puertos nativos. Enlaces locales comprobados y todos los ejemplos PS parseados con Windows PowerShell 5.1; sin ejecutar reinicios en la VM activa ni afirmar Check Code aprobado.
 
@@ -108,34 +111,17 @@ El corte **global** sí se respeta (enero/febrero intactos). Revisar con Andrés
 
 ## Siguiente
 
-- Retomar cola autorizada: terminar simular_robot.ps1 y tests/e2e/e2e.ps1 (trabajo en curso conservado sin incluir en el commit urgente); compilar C# con referencias estrictas de BP; README/instalación final y sección Supuestos del MVP en demo, solo documental. Anotar diferencias de SQL «para Andrés» sin editar database.
-
-- Lucas: crear/publicar auxiliares y procesos siguiendo guia_procesos.md; Check Code, configurar catálogos aprobados y ensayar 01/03 en VM con Andrés. César/Lucas: ejecutar guion único docs/demo.md con la misma pestaña y guardar evidencia real. No asumir que el .cs ya está importado en el release; lector de pantalla y PDF requieren validación humana.
-
-- Andrés: revisar B-09 y coordinar fusión con sus ramas B-06/B-07/B-08. César/Lucas: ejecutar secuencia completa en VM con evidencia y release real. Faltan escenarios/cuadratura y conciliar contadores BP; no cambiar B.
-- La instancia persistente/PostgREST previamente reasignada sigue a cargo del otro agente. Por autorización nueva, T11 entrega scripts de arranque y los prueba en puertos privados; todos los servicios propios de ensayo quedaron detenidos. Puertos ajenos 3000 y 5433 no se intervienen. Recorrido real BP/dashboard en la VM sigue pendiente de equipo y ventana.
-
-- Andrés: entregar cambios/mes mínimo, cálculo mensual/recálculo y ocho vistas API con GRANT a web_lectura; resolver contadores BP y verificar claves de parámetros/tolerancia con César/Lucas. Publicar SHA integrado antes del ensayo. Escenarios/cuadratura completos pendientes adicionales.
-- Lucas: facilitar release/versiones de objetos, VM y driver ODBC 64 bits; Check Code y probar llamadas Number→bigint/fechas. César: desplegar front main validado, acordar mapeo de parámetros y aportar URL PostgREST/origen del dashboard. Falta respuesta sobre acceso y ventana coordinada. Ejecutar primero catálogo y GET; solo después, con snapshot y responsables disponibles, P00 + 01 → snapshot → 02 y restaurar 01 → 03 según tests/e2e/guion.md. No se enviaron mensajes al equipo ni se usaron servicios compartidos.
-
-- Resolver con César qué disponibilidad/vigencia rige B: mensual, promedio may–dic o AX autorizado. Se necesita regla confirmada o Excel con las fórmulas originales. Revisar si BA18=15 de 134744/11 es excepción aprobada o se debe corregir la fuente a 14. La mejora AX es diagnóstica; v1.1 ya está localizada en 0fb3a93 y no se modifica.
-
-- Acordar cómo consolidar/identificar los contratos repetidos 137356/22 y 72190/41 antes de exigir unicidad persona/IT en insumos. Se consultó a César; se conservaron las 471 filas para no perder información de origen.
-- Validar homologación cargo+área y la excepción 71613/131 con Andrés; revisar nueve residuos NAS, seis semanales activas y cinco metas. El CSV de 31 campos no incluye %NAS+asignaciones ni overrides grupales/BF: no sustituye todos los insumos de las capas aisladas.
-
-- Entregar a Andrés docs/verificacion.md: resolver claves ambiguas, fórmula grupal y datos individuales; recibir export real de calc.plan_mes y ejecutar --plan.
-
-- Ensayar pitch (395 palabras) y demo (cinco minutos) con el release real; completar tiempos y evidencia humana antes del jurado.
-
-- Ensayar D-07 en la VM con Blue Prism y el back integrado: contrastar api.v_cambios y api.v_errores_carga con los CSV, y verificar recálculo desde cada vigencia.
+- **PR PENDIENTE DE ABRIR EN LA WEB**: gh no tiene sesión. Rama codex/trabajo publicada; abrir PR hacia main con el título pedido «fix(vm): JWT, reinstalación, PostgREST fijo, verificar_vm y casos regenerados». Descripción en %TEMP%\PlanBot_PR_codex_trabajo.md; debe mencionar PG_SUPER_PASSWORD sin valor. Tareas 2–3/5–6 pueden agruparse en ese PR. Andrés revisa; no se ha fusionado nada a main ni se presume aprobación de los cambios posteriores a 72cc3a4.
+- **Tarea 4 pendiente de Andrés**: publicar database/demo/llamadas_robot.sql en main (borrador b61042e en origin/docs/cierre-back-demo). Tras fetch, actualizar cada llamada de guia_procesos.md con la sentencia exacta, retirar UPDATE Q08 de contadores y probar 100_llamadas_robot.sql en aislado. No usar el Q08 anterior en la construcción final sin esta revisión; el simulador ya consulta el cierre del back.
+- **Para Andrés**: criterio estricto de vigencia individual del guion conserva FALLA en 71555/131, marzo–abril. Acordar cómo presentar ese chequeo frente al corte global y promedios del back; valores en tabla anterior y tests/e2e/para_andres_71555.csv. No alterar SQL ni esperados para ocultarlo. B/AX no se investigan de nuevo y 134744/11 es diferencia explicada.
+- **Lucas/César**: Check Code con los fuentes corregidos, release real, ODBC x64, catálogos aprobados, Runtime/colas y ensayo visible BP → SQL → dashboard en VM. Los ensayos por psql no sustituyen esta validación. Acordar autenticación del front para entregar el token sin imprimirlo; aprobar y aplicar son pasos distintos.
 
 ## Errores conocidos
 
-- Esta rama basada en B-06 sí contiene scripts\migrar.ps1 y scripts\test.ps1: se ejecutaron en snapshots/clusters aislados. El despliegue completo sigue pendiente.
-- Hay PostgreSQL nativo instalado y servicios activos, sin tocar; no hay PostgREST/dashboard disponibles en 3000/8080 ni driver PostgreSQL ODBC 64 bits encontrado. Blue Prism listo es reporte de Lucas; falta observar release, Runtime, colas y carga real. No declarar E2E aprobado.
-- Compilador local .NET Framework, sin SDK Roslyn C# 7.3 ni reference assemblies 4.7 verificados; se evitó toda sintaxis posterior a C# 5 y API posterior a Framework 4.7.
-- Carga Masiva confirma por lote: ante error puede haber lotes anteriores confirmados; conciliar antes de reintentar.
-- Validar Dotacion entrega fechas ISO; convertir a DateTime en datosCarga antes de ODBC según el LEEME. En producción usar catálogos aprobados, no los derivados de la entrada usados en el ensayo. Textos de motivos no están fijados por contrato; comprobar semántica en integración.
-- El front más reciente está en origin/main (Parámetros/simulación aún pendiente); web\ de este worktree conserva una revisión anterior. No se fusionó ni modificó durante esta tarea. Lint anterior no implica despliegue integrado; GitHub Actions sin ejecutar.
-- Verificador: proyección de continuidad no es dotación observada; el promedio parcial/colación/pausa/grupos no están completamente definidos con estas fuentes. Los diagnósticos que usan esperado como predictor están separados y no certifican el cálculo independiente. No se recibió CSV real de la base de Andrés.
-- insumos.csv conserva dos pares repetidos porque 471 registros fuente no equivalen a 471 claves únicas. No cargarlo con una PK persona/IT ni descartar históricos sin resolver la vigencia; no se cambió ningún contrato SQL.
+- E2E final: **8 OK / 1 FALLA** del criterio individual, exit 1 deliberadamente conservado. Pasan 5/5 cambios, 5/5 errores, ambos conteos, repetido, mínimo NULL, corte global y reinicio exacto a 5338 filas. No se presenta como suite totalmente verde. 14 SQL y 23 pruebas Python verdes; compilación estricta de cinco BO y consola correcta.
+- PS5.1 iniciado por Start-Process desde PS7 puede heredar un PSModulePath incompatible. El wrapper de ensayos importa Utility desde su PSHOME; no modifica scripts del back. Todos los clusters/procesos propios de prueba quedaron detenidos; no se intervienen los servicios activos del equipo.
+- El driver ODBC x64 falta en este PC; revisión de registro queda roja. Check Code/ODBC/Excel VBO/cola y accesibilidad real siguen pendientes de VM/Lucas/César.
+- Compilación local con csc Framework 4/C# 5 (subconjunto de C# 7.3); sin reference assemblies 4.7 ni Roslyn 7.3 verificados. No se afirma certificación de Blue Prism por compilar fuentes.
+- Carga Masiva confirma por lote: un error puede dejar lotes previos confirmados. Conciliar antes de reintentar; nunca borrar stg ni forzar hash para ocultarlo.
+- insumos.csv conserva 471 filas/469 pares del Excel: no deduplicar automáticamente. Plan y cuadratura actuales tienen limitaciones de fuentes individuales y proyección documentadas; no se promete 100 % independiente. B se mantiene, sin adoptar AX ni excepciones por identificador.
+- Los archivos sin seguimiento cd y git ya existían y se conservan. Git imprime un aviso de metadatos del worktree temporal antiguo (Permission denied al eliminar .git/worktrees/bothaton-merge); no impidió merge, commits ni push y no se fuerza su borrado.
