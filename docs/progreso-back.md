@@ -1,6 +1,6 @@
 # Progreso BACK (Andrés · Claude Code)
 Última actualización: 2026-11-07 · por: Claude Code
-Rama actual: feat/B-03-parametros (sale de feat/B-01-B-02-base; PR por web porque gh no está instalado)
+Rama actual: feat/B-04-dotacion (sale de feat/B-03-parametros; PR por web porque gh no está instalado)
 
 ## Hecho
 - B-01 · docker-compose.yml, V000__roles.sql, .env.example, scripts\_comun.ps1 (elige docker/nativo),
@@ -16,7 +16,7 @@ Rama actual: feat/B-03-parametros (sale de feat/B-01-B-02-base; PR por web porqu
 - —
 
 ## Siguiente
-- B-04 (dotación + proyección ago-dic), B-05, B-06; prioridad B-09 (vistas api.* para César).
+- B-05 (MODO PLAN: mostrar plan antes de programar), B-06; prioridad B-09 (vistas api.* para César).
 
 ## Cómo correr en este PC (laboratorio Duoc, sin admin, NO reiniciar)
 - Repo en `C:\dev\botathon`. Servicio `postgresql-x64-16` (puerto 5432) ya está en Running; superusuario `postgres`.
@@ -28,6 +28,14 @@ Rama actual: feat/B-03-parametros (sale de feat/B-01-B-02-base; PR por web porqu
   Ojo: lanzar pg_ctl start desde PowerShell, no desde Git Bash (bash queda esperando).
 
 ## Errores conocidos / decisiones
+- **Promedio ponderado (B-04):** el Excel promedia con igual peso cada mes con contrato (reales + proyectados hasta
+  fecha_termino o diciembre) y redondea hacia abajo (floor(x + 1e-9)). Ponderar por semanas da 454/466, peor.
+  Las 10 diferencias son personas cuyas horas en el Excel de planificación no coinciden con el BUK (excepciones, multi-IT).
+- **Proyección (B-04):** solo se proyecta a quien está en el último mes de la carga (julio); quien desaparece antes
+  (p. ej. último mes mayo sin fecha_termino) se considera egresado y no se proyecta. Cada carga BUK es una foto completa:
+  core.dotacion_mes se reemplaza por lo real de esa carga + su proyección.
+- Cargar la base real para pruebas: `.\scripts\cargar_buk_prueba.ps1` (requiere `pip install --user openpyxl`;
+  `-Forzar` para recargar el mismo archivo, `-Archivo datauk_original.xlsx` para otra base).
 - **Homologación de cargos (B-03):** el BUK 2026 tiene solo 15 cargos y todos calzan por nombre con param_cargo.
   Dudosos: EDUCADOR (BUK Cod_Esp ULAB; existe EDUCADOR NAS 0.30 y EDUCADOR ULAB NAS 0.50; se eligió EDUCADOR porque la
   hoja de planificación muestra %NAS ~0.30) y MEDICO GENERAL (igual a MEDICO GENERAL FI). `cod_esp` homologado = el

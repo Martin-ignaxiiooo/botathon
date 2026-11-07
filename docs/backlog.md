@@ -26,10 +26,10 @@ Formato: `- [ ] ID · título` y debajo sus criterios. Al terminar una historia,
 - [ ] A-02/A-03 código · C# para Blue Prism (FRONT/César, 1 pt, entregar a Lucas antes de la hora 3) → `bluePrism\codigo\`
   - [ ] `PlanBot_PostgreSQL.cs`: Ejecutar Consulta, Ejecutar Comando, Ejecutar Función, Carga Masiva (lotes de 500, transacción, parámetros, solo tablas stg.*) con System.Data.Odbc, .NET 4.7, instrucciones de Code Options
   - [ ] `PlanBot_Archivos_Hash.cs`: SHA-256 hexadecimal en minúscula, lectura compartida
-- [ ] B-04 · Normalización de la base de contratos (BACK, 3 pts)
-  - [ ] `cargar_dotacion(carga_id)` → core.persona y core.dotacion_mes (upsert), mes = month(periodo), dias_semana = length(dias_jornada) o ndias
-  - [ ] Cargo sin homologar → core.alerta
-  - [ ] Vista calc.v_promedio_horas (promedio ponderado anual y flag aumento/disminucion/sin_cambio)
+- [x] B-04 · Normalización de la base de contratos (BACK, 3 pts)
+  - [x] `cargar_dotacion(carga_id)` → core.persona y core.dotacion_mes (upsert), mes = month(periodo), dias_semana = length(dias_jornada) o ndias
+  - [x] Cargo sin homologar → core.alerta
+  - [x] Vista calc.v_promedio_horas (promedio ponderado anual y flag aumento/disminucion/sin_cambio)
 - [ ] B-05 · Cálculo semanal por período (BACK, 5 pts, MODO PLAN)
   - [ ] Vista calc.v_semanal por persona, it y periodo (ene_abr, may_dic) según `docs\reglas.md`
   - [ ] >= 98 % de coincidencia con esperado.csv en ate_dir_semana (may–dic)

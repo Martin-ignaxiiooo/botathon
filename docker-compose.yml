@@ -17,6 +17,7 @@ services:
       - ./database:/planbot/database:ro
       - ./tests:/planbot/tests:ro
       - ./data/csv:/planbot/data/csv:ro
+      - ./logs:/planbot/logs:ro          # CSV temporales de scripts\cargar_buk_prueba.ps1
     working_dir: /planbot
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
