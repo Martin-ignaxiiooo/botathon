@@ -43,6 +43,8 @@ Rama actual: main (todo fusionado)
   - **Probado con la base real:** listar (3 escenarios de ejemplo), sin token, token con formato inválido, firma incorrecta (401), token vencido (interfaz), aprobar de verdad el escenario 1 con motivo (pendiente → aprobado, el foco vuelve al escenario) y salir. El escenario 1 se restableció a «pendiente» por SQL en la base local para las capturas. **No probado:** respuesta 403 (rol no permitido) ni 401 por vencimiento medido por el servidor (están mapeados en el código). axe 0 violaciones en sin token, diálogo de token, modo planificador y diálogo de decisión.
   - El token nunca se muestra en pantalla (campo oculto) y las capturas se tomaron con un token de 2 horas generado en local.
 
+- Pasada final (8-nov, tras PR #10): base local actualizada con `instalar_sin_docker.ps1 -SinPruebas`, token con `scripts	oken_planificador.ps1` del repo (copia de `C:	ools` borrada), prueba de escenarios repetida sin diferencias (sin token, formato inválido, firma incorrecta, vencido, aprobar real, salir) y captura 09 rehecha con datos reales. axe 0 violaciones en 18 combinaciones en modo api y en modo mock, 0 mensajes de consola, ESLint del CI sin errores, vistas `v_kpi`/nacional/instituto/profesional cuadran (621.256 atenciones, 556.772 de meta). Las capturas 01–08 y 11 conservan los valores del estado 01+02 (622.271 / 557.689), como indica su LEEME.
+
 ## En curso
 - —
 
