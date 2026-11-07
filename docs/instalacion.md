@@ -1,153 +1,145 @@
-# Instalación de PlanBot en la VM de demo
+# Instalación en la VM Windows de demo
 
-Objetivo: Windows 11 de 64 bits y Blue Prism 7.5.1. Los scripts de tools\vm funcionan con Windows PowerShell 5.1 y PowerShell 7. Ejecutar desde la raíz salvo indicación. Mantener claves fuera de Git y de los logs. Usar un repositorio integrado con el back de Andrés y el front actualizado; este worktree puede no contener ambos. No sustituir componentes ausentes por esquemas SQL inventados.
+Ejecutar desde la raíz del clon en Windows PowerShell 5.1 o PowerShell 7. Usar una base de demo, coordinar migraciones con Andrés y pausar las cargas de Lucas antes de reiniciar datos. El arranque no deja consolas de servidores bloqueadas.
 
-## Arranque de demo en un comando (Tarea 11)
+## 1. Requisitos y clon
 
-Requiere PostgreSQL 16 ya instalado/en ejecución, psql, Python 3, driver psqlODBC x64 y el repositorio integrado con scripts\instalar_sin_docker.ps1 (versión de un comando de Andrés), scripts\servir_web.ps1, SQL y web. El lanzador no instala Blue Prism/PostgreSQL/ODBC ni modifica sus servicios. Coordinar instalación y carga inicial en una base de demo; nunca ejecutar el bootstrap sobre trabajo activo sin acuerdo.
-
-Proporcionar la clave administrativa en memoria si no está en el .env local, sin escribirla en argumentos o historial:
+Instalar Git, PostgreSQL **16** con psql/pg_dump y servicio activo, Python 3 con openpyxl y psqlODBC Unicode **x64**. Blue Prism **7.5.1** necesita licencia, su propia base interna y Runtime Resource operativo; la base planbot es distinta. Se necesita Internet para clonar/descargar PostgREST y escritura en C:\tools y C:\PlanBot.
 
 ```powershell
-$credencialPg = Get-Credential -UserName postgres -Message 'Administrador PostgreSQL de esta VM'
-$env:PG_SUPER_PASSWORD = $credencialPg.GetNetworkCredential().Password
-.\tools\vm\levantar_demo.ps1
-# Si los componentes están en otro clon integrado:
-# .\tools\vm\levantar_demo.ps1 -RaizRepo C:\dev\botathon
+git clone https://github.com/Martin-ignaxiiooo/botathon.git C:\dev\botathon
+Set-Location C:\dev\botathon
+python -m pip install openpyxl
+& 'C:\Program Files\PostgreSQL\16\bin\psql.exe' --version
+& 'C:\Program Files\PostgreSQL\16\bin\pg_isready.exe' -h localhost -p 5432
 ```
 
-El lanzador ejecuta siempre scripts\instalar_sin_docker.ps1 -SinPruebas: crea lo ausente y aplica migraciones, funciones, vistas y seed también después de un git pull. El instalador es idempotente y genera/corrige PGRST_JWT_SECRET si falta. -CargarBukPrueba es explícito y solicita además la carga BUK y el cálculo; no se activa por defecto sobre una base existente. Coordinar despliegue/carga en la VM con el equipo. .env se importa en memoria, sus valores prevalecen y el entorno del llamador se restaura al terminar.
+Comprobar que el clon integrado incluye tools\vm, scripts\instalar_sin_docker.ps1, scripts\servir_web.ps1, scripts\reiniciar_demo.ps1, database y web. Si el PR sigue pendiente, usar la revisión integrada aprobada; no copiar SQL de otras versiones a mano.
 
-Después crea C:\PlanBot\entrada\{planificacion,buk,asignaciones}, procesados, errores, logs, respaldo, preparar y runtime. Busca C:\tools\postgrest.exe; si falta, descarga el ZIP Windows x64 fijado en [postgrest-version.json](../tools/vm/postgrest-version.json), verificado contra el binario del PC de César, con comprobación de digest cuando GitHub lo publica. Puede usarse un binario ya instalado o -DirectorioHerramientas con permisos de escritura. No descarga binarios al repositorio.
+Abrir **Orígenes de datos ODBC (64 bits)** → Controladores y comprobar PostgreSQL Unicode(x64). Runtime y driver deben ser x64. Fuente: [psqlODBC oficial](https://odbc.postgresql.org/). El lanzador no instala PostgreSQL, ODBC ni Blue Prism.
 
-Crea C:\PlanBot\runtime\postgrest.conf desde api\postgrest.conf, sustituyendo esquema/rol/puerto/CORS y conservando los ajustes JWT y sustituyendo las credenciales por referencias al entorno. Si falta la plantilla de api, informa y usa tools\vm\postgrest.conf.example, sin escribir en api\. La clave de web_lectura se pasa al hijo por PGRST_DB_URI, escapada como URI; el secreto del mismo .env usado por token_planificador.ps1 se pasa por PGRST_JWT_SECRET; no queda en el conf ni en los argumentos. Solo publica api, escucha 127.0.0.1:3000 y permite origen http://localhost:8080. Ver [configuración oficial de PostgREST](https://docs.postgrest.org/en/stable/references/configuration.html).
+## 2. Configuración local
 
-PostgREST y scripts\servir_web.ps1 se lanzan ocultos, en segundo plano. El hijo PostgREST recibe la carpeta de psql en PATH para encontrar libpq.dll; el PATH del llamador se restaura. Logs y registro de procesos propios quedan en runtime\. Tras migrar reinicia solo el PostgREST que registró como propio para cargar esquema/JWT nuevos. Si 3000/8080 están ocupados por procesos ajenos, no los reinicia ni adopta: el verificador comprueba lo que responde y coteja los KPI HTTP con SQL. Abrir **http://localhost:8080/?modo=api#nacional**, confirmar «En vivo: base de datos» y usar «Actualizar datos» después de una carga. Un HTTP 200 no certifica el modo visual ni el recorrido BP. Para ensayos aislados se admiten -PuertoApi/-PuertoWeb; los valores predeterminados son 3000/8080. Cambiar puertos no cambia config.js del front: ese ensayo solo certifica HTTP/SQL, no su conexión visual.
+El administrador configura **PG_SUPER_PASSWORD** en el .env local o en el entorno del proceso: es la clave administrativa de PG_SUPER_USER (por defecto postgres). Sin ella el instalador se detiene. Aprovisionarla desde el gestor de secretos de la VM o editar exclusivamente .env en el equipo autorizado. No escribir valores en comandos, argumentos, historial o capturas ni mostrar .env.
 
-Para diagnóstico independiente, verificar_vm.ps1 no carga archivos ni cambia escenarios: sus consultas SQL son de solo lectura. Para la sonda JWT llama scripts\token_planificador.ps1, que lee el secreto del .env del -RaizRepo indicado; no muestra ni guarda el token. Envía una decisión inválida para comprobar acceso a decidir_escenario sin cambiar datos; con token debe llegar a la validación de la función y sin token obtener 401/403. Usa PG_HOST/PG_PORT/PG_BIN, POSTGRES_DB/POSTGRES_USER y claves del entorno:
+Si .env no existe, el instalador lo crea y genera claves de aplicación/JWT. Si existe, completar localmente POSTGRES_PASSWORD, BOT_CARGA_PASSWORD y WEB_LECTURA_PASSWORD, sin dejar marcadores cambiar. PGRST_JWT_SECRET se genera/renueva si falta, es de ejemplo o tiene menos de 32 caracteres. Nunca publicar su contenido.
+
+Conexión: POSTGRES_DB, POSTGRES_USER, PG_HOST, PG_PORT y PG_BIN. Predeterminados: planbot, owner_planbot, localhost, 5432 y bin de PostgreSQL 16. No envolver los valores en comillas: estos lectores no son un intérprete de shell.
+
+.env está excluido de Git: restringir lectura a las cuentas autorizadas. El lanzador importa configuración en memoria y restaura el entorno del llamador. Conserva PG_SUPER_PASSWORD válida del entorno si el archivo contiene un marcador. El instalador puede guardar esa configuración en .env local; protegerlo y no adjuntarlo como evidencia.
+
+## 3. Arranque en un comando
 
 ```powershell
-$env:BOT_CARGA_PASSWORD = (Get-Credential -UserName bot_carga).GetNetworkCredential().Password
-$env:WEB_LECTURA_PASSWORD = (Get-Credential -UserName web_lectura).GetNetworkCredential().Password
-$env:POSTGRES_PASSWORD = (Get-Credential -UserName owner_planbot).GetNetworkCredential().Password
+.\tools\vm\levantar_demo.ps1
+# Solo para preparar explícitamente datos BUK y escenarios iniciales:
+# .\tools\vm\levantar_demo.ps1 -CargarBukPrueba
+```
+
+Siempre corre scripts\instalar_sin_docker.ps1 -SinPruebas, también con base existente y después de git pull: crea lo ausente y aplica migraciones, funciones, vistas y seed. Es repetible, pero modifica la base: reservar una ventana. Sin BUK, plan_mes puede estar vacío y el verificador lo marca rojo. CargarBukPrueba es explícito, no predeterminado.
+
+Crea C:\PlanBot\entrada\planificacion, entrada\buk, entrada\asignaciones, procesados, errores, logs, respaldo, preparar y runtime. Descarga/verifica C:\tools\postgrest.exe desde el release oficial fijado en [postgrest-version.json](../tools/vm/postgrest-version.json), única definición de versión de tools\vm. Agrega bin de PostgreSQL al PATH del hijo para libpq.dll.
+
+Genera runtime\postgrest.conf desde api\postgrest.conf; si falta, avisa y usa el respaldo de tools\vm. Publica api, rol anónimo web_lectura, 127.0.0.1:3000 y CORS para http://localhost:8080. URI/JWT se pasan por entorno sin secretos en conf/argv; conserva ajustes JWT de la plantilla. Inicia PostgREST y servir_web ocultos con Start-Process y guarda logs e identidad de procesos en runtime. Tras migrar reinicia solo su API registrada; no adopta ni detiene procesos ajenos.
+
+Termina con verificar_vm. Abrir **http://localhost:8080/?modo=api#nacional**, confirmar «En vivo: base de datos» y pulsar **Actualizar datos** tras la carga. API: **http://localhost:3000/v_kpi**. localhost es local a la VM, no una URL pública. Cambiar puertos de ensayo no reconfigura automáticamente el front.
+
+## 4. Diagnóstico y detención
+
+El diagnóstico independiente no importa .env. En una consola de mantenimiento autorizada, importar solo las variables necesarias sin mostrarlas ni evaluar código:
+
+```powershell
+$clavesVm = @('PG_HOST','PG_PORT','PG_BIN','POSTGRES_DB','POSTGRES_USER',
+              'POSTGRES_PASSWORD','BOT_CARGA_PASSWORD','WEB_LECTURA_PASSWORD')
+foreach ($lineaVm in [IO.File]::ReadAllLines((Join-Path (Get-Location) '.env'))) {
+    if ($lineaVm -match '^\s*([A-Z][A-Z0-9_]*)\s*=(.*)$' -and $Matches[1] -in $clavesVm) {
+        [Environment]::SetEnvironmentVariable($Matches[1],$Matches[2].Trim(),'Process')
+    }
+}
 .\tools\vm\verificar_vm.ps1
+# Al terminar en esta consola de mantenimiento:
+foreach ($claveVm in $clavesVm) { [Environment]::SetEnvironmentVariable($claveVm,$null,'Process') }
+```
+
+Comprueba carpetas, driver Registry64, puerto, logins, ocho RPC contractuales, ocho vistas leídas como web_lectura, plan poblado, KPI HTTP contra SQL, CORS y web. Las consultas SQL son de solo lectura; el propietario cuenta el plan. Además revisa listar_escenarios y autorización de decidir_escenario: una decisión inválida con JWT alcanza la validación sin modificar datos; sin token obtiene 401/403. No imprime ni guarda el token/secreto. Exit 0 exige todo verde; exit 1 conserva pendientes.
+
+```powershell
 .\tools\vm\detener_demo.ps1
 ```
 
-Las claves nunca se imprimen. El propietario se usa únicamente para contar calc.plan_mes; bot_carga y web_lectura conservan sus permisos. Muestra verde/rojo por carpeta, registro ODBC de 64 bits, puerto PostgreSQL (5432 por defecto), login, ocho funciones contractuales, ocho vistas leídas como web_lectura, plan poblado, JSON/CORS de PostgREST y web PlanBot. Exit 0 exige todo verde; exit 1 deja pendientes explícitos, incluidas funciones opcionales aún no entregadas. Consulta listar_escenarios y prueba decidir_escenario con decisión inválida e inocua; nunca aprueba ni aplica un escenario. No confundir un rojo por falta de simular/cuadratura con caída del servicio.
+Detiene solo procesos registrados cuya identidad coincide. Conserva PostgreSQL, Blue Prism, procesos ajenos y datos. Si un puerto está ocupado, coordinar con el responsable; no cerrar procesos por nombre.
 
-detener_demo.ps1 solo detiene procesos registrados por levantar_demo, comparando PID, hora de inicio y ejecutable para evitar PID reutilizado. **No detiene PostgreSQL, Blue Prism ni servicios ajenos**, ni borra datos o claves. Tras un arranque fallido también puede usarse para retirar procesos propios. Limpiar las variables de claves del entorno al terminar el ensayo; para reabrir con claves nuevas, detener/levantar los procesos propios.
+## 5. Blue Prism y autorización
 
-## 1. Preparar la VM
-
-Instalar Blue Prism 7.5.1 con su licencia, conexión a su propia base Blue Prism y Runtime Resource operativo. La base **planbot** es distinta de la base interna de Blue Prism. Comprobar `$PSVersionTable.PSVersion`: el arranque tools\vm y los scripts recientes de Andrés admiten 5.1; PowerShell 7 es opcional. Para casos de prueba instalar Python 3 y `python -m pip install openpyxl`.
-
-Elegir Docker o instalación nativa. En VM, Docker requiere virtualización anidada/WSL disponible en el host; si no está habilitada, usar instalación nativa. Requisitos oficiales: [Docker Desktop en Windows](https://docs.docker.com/desktop/setup/install/windows-install/).
-
-## 2. Secretos locales
-
-Si no existe `.env`, ejecutar `Copy-Item .env.example .env`. Editarlo localmente con valores propios para `POSTGRES_DB=planbot`, `POSTGRES_USER=owner_planbot`, `POSTGRES_PASSWORD`, `BOT_CARGA_PASSWORD`, `WEB_LECTURA_PASSWORD` y `PGRST_JWT_SECRET` (al menos 32 caracteres). No conservar los marcadores `cambiar`. `.env` no se versiona y PowerShell no lo importa automáticamente: los scripts/compose deben leerlo según la implementación de Andrés. No usar `Invoke-Expression` para cargar un archivo de configuración.
-
-## 3A. Con Docker
-
-Abrir Docker Desktop, seleccionar contenedores Linux y comprobar `docker compose version`. Revisar que 5432 y 8080 estén libres. Desde el repositorio integrado:
+Importar el release de Lucas mediante Release Manager, resolver VBO y ejecutar **Check Code**. Los .cs son referencia, no un release importable. Seguir [guia_procesos.md](../bluePrism/codigo/guia_procesos.md) y [LEEME.md](../bluePrism/codigo/LEEME.md). Para compilación externa:
 
 ```powershell
-docker compose up -d
-docker compose ps
-docker compose exec postgres pg_isready -U owner_planbot -d planbot
-.\scripts\migrar.ps1
-.\scripts\test.ps1 -Modulo todo
+.\tools\vm\compilar_bp.ps1
 ```
 
-Si el script usa psql del host, instalar el cliente PostgreSQL y añadir su carpeta bin al PATH; revisar `Get-Help .\scripts\migrar.ps1 -Full` antes de definir conexión. Las migraciones/seed son responsabilidad del back y deben terminar sin errores. No borrar volúmenes para solucionar fallas sin respaldo. El rol de inicialización solo toma sus claves del entorno al crear un volumen nuevo: cambiar `.env` no cambia automáticamente las claves de una base existente.
+Usa csc de Framework 4, referencias System.dll, System.Data.dll y System.Xml.dll, sin referencias implícitas. **System.Data.Odbc está incluido en System.Data.dll**. Microsoft.VisualBasic solo se usa en la consola CSV. Compilar no certifica Runtime/ODBC.
 
-PostgREST y nginx deben levantarse por compose con la configuración integrada de `api\postgrest.conf` y `web\`. Verificar el puerto publicado de PostgREST con `docker compose ps`; si no se publica al host, comprobarlo mediante la ruta proxy configurada en nginx. El robot Windows conecta a `localhost:5432`; entre contenedores el host es el nombre del servicio `postgres`.
-
-## 3B. Sin Docker
-
-Instalar PostgreSQL **16** y sus herramientas de línea de comandos. Durante instalación registrar la clave administrativa localmente, habilitar el servicio y puerto 5432. Añadir `C:\Program Files\PostgreSQL\16\bin` al PATH. Comprobar `psql --version` y `pg_isready -h localhost -p 5432`.
-
-Con el administrador de PostgreSQL, crear el usuario/base de arranque si el instalador del proyecto aún no lo hace (psql pide la clave):
-
-```powershell
-psql -h localhost -U postgres -d postgres
-```
-
-```sql
--- Una sola vez, si aún no existen. Asignar clave sin escribirla en el historial.
-CREATE ROLE owner_planbot LOGIN;
-\password owner_planbot
-CREATE DATABASE planbot OWNER owner_planbot;
-```
-
-Después ejecutar ` .\scripts\instalar_sin_docker.ps1` cuando se haya integrado; revisar su ayuda y permisos necesarios. Si Andrés indica preparación manual, usar ` .\scripts\migrar.ps1` con la conexión indicada por el script y después ` .\scripts\test.ps1 -Modulo todo`. La creación de roles puede requerir un administrador: no dar privilegios permanentes extra a `bot_carga` ni a `web_lectura` para resolverlo. Confirmar que el instalador no repite el bootstrap anterior.
-
-Instalar el binario Windows de PostgREST de la versión acordada con el equipo. Usar `api\postgrest.conf`, exponer solo `api`, rol anónimo `web_lectura` y el rol de conexión definido por Andrés. Proporcionar el URI de conexión desde configuración protegida o `PGRST_DB_URI`; no poner la clave en argumentos de consola ni en un archivo versionado. El rol de conexión debe poder asumir el rol anónimo según el diseño de permisos del back. Ejecutar desde PowerShell:
-
-```powershell
-postgrest.exe .\api\postgrest.conf
-```
-
-PostgREST usa por defecto el puerto 3000; confirmar el valor real del archivo. Las variables `PGRST_*` prevalecen sobre el archivo de configuración: [referencia oficial](https://docs.postgrest.org/en/stable/references/configuration.html). Servir `web\` por HTTP; para un ensayo local sin nginx:
-
-```powershell
-python -m http.server 8080 --bind 127.0.0.1 --directory web
-```
-
-Mantener las consolas de PostgREST/servidor estático abiertas durante el ensayo, o configurar servicios con el administrador. Configurar la URL API real y CORS/origen o proxy con el responsable del dashboard. No abrir `index.html` por `file://`: los módulos y fetch necesitan HTTP. No usar el servidor de Python como despliegue público.
-
-## 4. Comprobar la base y la API
-
-```powershell
-psql -h localhost -U owner_planbot -d planbot -c 'SELECT count(*) FROM param.cargo_distribucion;'
-psql -h localhost -U owner_planbot -d planbot -c 'SELECT * FROM api.v_kpi;'
-# Ajustar 3000 si el puerto/ruta publicado es otro.
-Invoke-RestMethod 'http://localhost:3000/v_kpi'
-```
-
-Los permisos y firmas deben coincidir con `docs\contratos.md`. Una respuesta vacía antes de cargar BUK puede ser válida; un error de esquema/permisos no lo es. Los cálculos se hacen en SQL, no en Blue Prism.
-
-## 5. Instalar psqlODBC y los objetos
-
-Descargar el instalador de **psqlODBC de 64 bits** desde [el proyecto oficial](https://odbc.postgresql.org/). En Windows abrir «Orígenes de datos ODBC (64 bits)» → Controladores; verificar `PostgreSQL Unicode(x64)`. Coincidir arquitectura del controlador y Runtime Resource.
-
-En Blue Prism importar mediante Release Manager el release entregado por Lucas, resolver dependencias y ejecutar Check Code en todos los objetos. Este repositorio entrega código fuente de referencia; no afirmar que los `.cs` son un release BP. Si no hay release, crear los objetos siguiendo `bluePrism\codigo\LEEME.md`, incluyendo Code Options, Data Items y primera prueba `SELECT 1`. Asignar permisos al usuario/runtime que ejecutará el robot.
-
-## 6. Carpetas y configuración del robot
-
-Crear con permisos de lectura/escritura para la cuenta del Runtime Resource:
-
-```powershell
-$carpetasPlanBot = @(
-  'C:\PlanBot\entrada\planificacion', 'C:\PlanBot\entrada\buk',
-  'C:\PlanBot\entrada\asignaciones', 'C:\PlanBot\procesados',
-  'C:\PlanBot\errores', 'C:\PlanBot\logs', 'C:\PlanBot\respaldo'
-)
-$carpetasPlanBot | ForEach-Object { New-Item -ItemType Directory -Path $_ -Force | Out-Null }
-```
-
-Usar estas rutas como acuerdo con Lucas; revisar los nombres exactos de Environment Variables del release antes de configurarlas. No se ha definido un contrato de nombres para las rutas. Si el release usa otras rutas, alinear la configuración, no modificar el código SQL.
-
-En Credential Manager crear **PlanBot_Postgres** para `bot_carga` con la clave real configurada por Andrés; autorizar acceso al proceso/runtime. Crear Environment Variable BP **ConnStrSinClave**:
+Crear **PlanBot_Postgres** en Credential Manager para bot_carga, con su clave aprovisionada y permisos al proceso/runtime. Crear la Environment Variable BP **ConnStrSinClave**:
 
 ```text
 Driver={PostgreSQL Unicode(x64)};Server=localhost;Port=5432;Database=planbot;
 ```
 
-La acción Armar Conexion usa **Credentials > Get Login** y OdbcConnectionStringBuilder para añadir Uid/Pwd. No guardar claves en Environment Variables, capturas, colas ni logs. Desactivar logging de los Data Items sensibles. Las variables BP son distintas de las variables Windows y de `.env`.
+Armar Conexion usa **Credentials > Get Login** y OdbcConnectionStringBuilder. La clave debe coincidir con la del rol bot_carga, nunca la del propietario. No ponerla en variables BP, capturas ni logs. Probar SELECT 1 AS prueba: una fila con 1.
 
-## 7. Carga inicial y Control Room
+Crear cola **PlanBot_BUK**, un ítem por archivo, sin retry automático de lotes parciales. Catálogos aprobados: it y cargo_origen. Configurar rutas/permisos según el release. En Control Room → Scheduler programar solo **PlanBot Ciclo BUK** sobre el Runtime conectado, sin consumidores simultáneos. P00 carga reglas antes del ciclo, no por archivo; si ya se sembraron, confirmar versión con Andrés antes de repetirlo.
 
-1. Importar/configurar colas y calendarios requeridos por el release; limpiar solo elementos de ensayo según el procedimiento acordado, conservando trazabilidad.
-2. Con Runtime Resource conectado, probar manualmente Armar Conexion → Ejecutar Consulta (`SELECT 1 AS prueba`) antes de programar.
-3. Entregar reglas en `entrada\planificacion` y ejecutar **P00**. Verificar carga/versión y conteo de reglas.
-4. Entregar BUK en `entrada\buk` y ejecutar el orquestador **P01–P05** del release. Confirmar errores por fila, conteos y actualización del plan.
-5. En Control Room → Scheduler crear el schedule de demo, agregar tarea que ejecute el proceso orquestador en el recurso disponible y fijar hora/recurrencia acordadas con Lucas. Evitar ejecuciones solapadas y dos orquestadores procesando el mismo directorio. Verificar permisos y zona horaria America/Santiago de la VM; probar una ejecución y revisar Session Logs.
-6. Procesar archivos solo cuando la copia haya terminado; hash con lectura compartida no garantiza estabilidad. Preferir copiar fuera de entrada y renombrar al completar.
+El helper del back genera el JWT desde el mismo .env/secreto que PostgREST. Capturarlo solo en memoria:
 
-## 8. Abrir dashboard y ensayar
+```powershell
+$jwtPlanBot = & .\scripts\token_planificador.ps1
+# Entregarlo únicamente al mecanismo de autenticación acordado con César.
+# No imprimirlo ni guardarlo en Git, URLs, capturas o logs.
+Remove-Variable jwtPlanBot
+```
 
-Con César configurar `modo: 'api'` y la URL de PostgREST en `web\js\config.js`; no dejar modo mock durante la demo integrada. Abrir `http://localhost:8080`, mostrar Nacional y cotejar SQL. El front se mantiene en la otra carpeta: este trabajo no lo modifica.
+Capturarlo no inicia sesión en el navegador: verificar la entrega con César. Sin token se rechazan decisiones, pero la lectura anónima sigue disponible. Aprobar y aplicar son operaciones distintas; mostrar solo RPC realmente integradas.
 
-Seguir `tests\e2e\guion.md` para original, cambios, errores, duplicado y simulación/aprobación. Los casos D-04 usan enero–julio: cargo desde marzo, alta desde abril, jornada 40 → 30 desde mayo, baja desde junio y traslado desde julio. Guardar dump, exportar release y grabar video antes de la demo. Fallas comunes: driver de arquitectura distinta, puerto ocupado, contraseña del volumen antiguo, URI API incorrecto, privilegios faltantes o proceso agendado en un recurso sin acceso a carpetas/credencial.
+## 6. Preparar y repetir la demo
+
+Con pg_dump y release respaldados, schedules pausados y confirmando que .env apunta a **la base de demo**:
+
+```powershell
+.\scripts\reiniciar_demo.ps1 -Modo nativo
+.\scripts\test.ps1 -Modulo db -Modo nativo
+```
+
+El reinicio limpia cargas BUK/dotación/plan/escenarios y versiones de escenarios; conserva parámetros base, esperado y auditoría. Carga 01, recalcula y prepara escenarios. No es una restauración universal ni una operación de producción; no usar durante la exposición ni sobre trabajo activo.
+
+Tener 02/03 en el escritorio y sin entradas/ítems BP de ensayo pendientes. Con 01 cargado, entregar **02_cambios.xlsx** en C:\PlanBot\entrada\buk: copiar a preparar y mover cuando termine. Mostrar Control Room, cinco cambios y Nacional/Actualizar. Consultas: [consultas_demo.sql](../database/demo/consultas_demo.sql), ejecutadas con psql -w y credenciales aprovisionadas.
+
+03 deriva de 01: para comprobar sus cinco errores aisladamente, reiniciar primero a 01. Después de 02 puede revertir cambios. Los mismos bytes deben dar archivo repetido sin nueva carga/recálculo. Seguir [demo](demo.md) y [guion e2e](../tests/e2e/guion.md); observación visual/cola corresponden a Lucas/César. Grabar video antes de presentar.
+
+## 7. Plan B por psql
+
+**Blue Prism es el camino principal**; el script es contingencia. Pausar BP, coordinar ventana y usar la base de demo migrada/con reglas:
+
+```powershell
+.\tools\vm\simular_robot.ps1 -Archivo .\data\buk\02_cambios.xlsx -Servidor localhost -Puerto 5432 -Base planbot -EnvArchivo .\.env
+```
+
+No mueve archivos ni crea cola BP. Usa los mismos C# de limpieza/validación; carga stg por lotes y llama cargar_dotacion/detectar_cambios/mínimo; recalcula solo si no es NULL y llama cuadratura. Claves del entorno o .env, sin argumentos de contraseña. Catálogos aprobados por consulta READ ONLY del propietario o -Catalogos JSON completo; no dar la clave del propietario al robot. Ante carga parcial, conciliar antes de reintentar. Evidencia y carga_id quedan en TEMP.
+
+```powershell
+.\tests\e2e\e2e.ps1
+```
+
+Crea **otro cluster/puerto y .env temporal**, nunca recibe la conexión activa. Prueba 01 → snapshot → 02, duplicado y mínimo NULL; usa reiniciar_demo en esa base privada antes de 03. Compara CSV/plan, guarda OK/FALLA por caso y detiene su instancia. Conserva una diferencia explicada de vigencia individual 71555/131 meses 3–4: no declarar toda la suite verde. Ver [progreso](progreso-codex.md), [valores](../tests/e2e/para_andres_71555.csv) y [LEEME](../tests/e2e/LEEME_simulador.md).
+
+## Alternativa con Docker
+
+Requiere Docker Desktop/virtualización y .env con claves/JWT válidos. No ejecutar el lanzador nativo simultáneamente sobre los mismos puertos:
+
+```powershell
+docker compose up -d
+.\scripts\migrar.ps1 -Modo docker
+.\scripts\test.ps1 -Modulo todo -Modo docker
+.\scripts\reiniciar_demo.ps1 -Modo docker
+```
+
+Compose publica PostgreSQL 5432, PostgREST 3000 y web 8080. Desde Windows usar localhost; entre contenedores, servicio postgres. Detener con docker compose stop; no borrar volúmenes para resolver fallas. Cambiar .env no cambia por sí solo claves de un volumen PostgreSQL existente. El verificador de VM está orientado a la instalación nativa.
