@@ -293,6 +293,13 @@ table.tabla tr.fila-total td, table.tabla tr.fila-total th { font-weight: 700; b
 .hito-detalle { margin: .15rem 0; padding-left: 1.1rem; }
 .hito-pie { margin: 0; font-size: .85rem; color: var(--gris-600); }
 
+/* ---------- Pantalla Cambios y errores (C-07) ---------- */
+.resumen-carga { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .9rem; margin: .25rem 0 0; font-size: 1.1rem; }
+.resumen-carga .estado-texto { margin-top: 0; }
+.celda-lista { margin: 0; padding-left: 1rem; }
+table.tabla tr.fila-activa-tabla td { background: var(--azul-100); }
+table.tabla a[aria-current="true"] { font-weight: 700; }
+
 /* ---------- Lectura fácil (C-10) ---------- */
 .lectura-facil-caja {
   background: var(--blanco); border-left: 6px solid var(--azul-700);

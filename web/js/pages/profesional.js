@@ -4,48 +4,9 @@ import { el, tarjetaKpi, tablaDatos, tarjetaGrafico, opcionBase, idUnico } from 
 import { getData } from '../api.js';
 import { irA } from '../router.js';
 import { num, pct, fecha, nombreMes, nombreArea } from '../formato.js';
+import { cargoLegible, tipoCambio, describirCambio } from '../textoCambios.js';
 
 const MESES = Array.from({ length: 12 }, (_, i) => i + 1);
-const capitalizar = (t) => t.charAt(0).toUpperCase() + t.slice(1);
-const cargoLegible = (c) => capitalizar(String(c).toLowerCase());
-
-const TIPOS_CAMBIO = {
-  alta: { texto: 'Alta', icono: '＋' },
-  baja: { texto: 'Baja', icono: '−' },
-  cambio_jornada: { texto: 'Cambio de jornada', icono: '⇄' },
-  cambio_cargo: { texto: 'Cambio de cargo', icono: '⇄' },
-  cambio_it: { texto: 'Cambio de instituto', icono: '⇄' },
-};
-const tipoCambio = (t) => TIPOS_CAMBIO[t] ?? { texto: capitalizar(String(t).replaceAll('_', ' ')), icono: '⇄' };
-
-const CAMPOS = {
-  horas_semanales: 'Horas semanales', cargo: 'Cargo', area: 'Área', it: 'Instituto (IT)', instituto: 'Instituto',
-  fecha_termino: 'Fecha de término', fecha_ingreso: 'Fecha de ingreso',
-};
-
-function valorCambio(campo, v) {
-  if (v === null || v === undefined || v === '') return 'sin dato';
-  if (campo === 'area') return nombreArea(v);
-  if (campo === 'cargo') return cargoLegible(v);
-  if (campo.startsWith('fecha')) return fecha(v);
-  if (typeof v === 'number') return num(v, Number.isInteger(v) ? 0 : 1);
-  return String(v);
-}
-
-/** {antes, despues} (jsonb) -> ["Cargo: Kinesiologo → Terapeuta ocupacional", ...]. */
-function describirCambio(antes, despues) {
-  const a = antes ?? {};
-  const d = despues ?? {};
-  let claves = [...new Set([...Object.keys(a), ...Object.keys(d)])];
-  if (claves.includes('instituto')) claves = claves.filter((k) => k !== 'it'); // el nombre basta; no repetir el código
-  return claves.map((k) => {
-    const etiqueta = CAMPOS[k] ?? capitalizar(k.replaceAll('_', ' '));
-    return antes === null || antes === undefined
-      ? `${etiqueta}: ${valorCambio(k, d[k])}`
-      : `${etiqueta}: ${valorCambio(k, a[k])} → ${valorCambio(k, d[k])}`;
-  });
-}
-
 const rangoMeses = (meses) => (meses.length === 1 || meses[0] === meses.at(-1)
   ? nombreMes(meses[0]) : `${nombreMes(meses[0])} a ${nombreMes(meses.at(-1))}`);
 
