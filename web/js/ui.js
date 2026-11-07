@@ -102,6 +102,11 @@ export function liberarGraficos() {
   liberadores.clear();
 }
 
+/** Registra una función de limpieza (p. ej. destruir una tabla Tabulator) para el próximo cambio de pantalla. */
+export function registrarLiberador(fn) {
+  liberadores.add(fn);
+}
+
 /** Opciones base comunes (paleta, tipografía, márgenes). */
 export function opcionBase(extra = {}) {
   return {
