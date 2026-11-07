@@ -54,7 +54,7 @@ El [guion de cinco minutos](docs/demo.md), las [consultas de Andrés](database/d
 .\tools\vm\compilar_bp.ps1
 ```
 
-El e2e crea su propio PostgreSQL/puerto, prueba 01 → 02 y reinicia a 01 con el script del back antes de 03; detiene su instancia. Imprime OK/FALLA y guarda evidencia en TEMP. El chequeo de vigencia individual conserva una diferencia explicada para 71555/131 en marzo–abril; no se presenta como aprobado ni se modifica SQL para ocultarla. Detalle en [progreso](docs/progreso-codex.md) y [LEEME del simulador](tests/e2e/LEEME_simulador.md). La compilación estricta usa las tres referencias BP; Odbc está incluido en System.Data.dll.
+El e2e crea su propio PostgreSQL/puerto, prueba 01 → 02 y reinicia a 01 con el script del back antes de 03; detiene su instancia. Imprime OK/FALLA y guarda evidencia en TEMP. El esperado incluye los impactos anuales confirmados de 71555/131 en marzo–abril y exige conservar enero–febrero por el corte global; el ensayo pasa 10/10 casos sin cambiar SQL. Detalle en [progreso](docs/progreso-codex.md) y [LEEME del simulador](tests/e2e/LEEME_simulador.md). La compilación estricta usa las tres referencias BP; Odbc está incluido en System.Data.dll.
 
 ## Carpetas y equipo
 

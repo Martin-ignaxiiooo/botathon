@@ -129,7 +129,7 @@ No mueve archivos ni crea cola BP. Usa los mismos C# de limpieza/validación; ca
 .\tests\e2e\e2e.ps1
 ```
 
-Crea **otro cluster/puerto y .env temporal**, nunca recibe la conexión activa. Prueba 01 → snapshot → 02, duplicado y mínimo NULL; usa reiniciar_demo en esa base privada antes de 03. Compara CSV/plan, guarda OK/FALLA por caso y detiene su instancia. Conserva una diferencia explicada de vigencia individual 71555/131 meses 3–4: no declarar toda la suite verde. Ver [progreso](progreso-codex.md), [valores](../tests/e2e/para_andres_71555.csv) y [LEEME](../tests/e2e/LEEME_simulador.md).
+Crea **otro cluster/puerto y .env temporal**, nunca recibe la conexión activa. Prueba 01 → snapshot → 02, duplicado y mínimo NULL; usa reiniciar_demo en esa base privada antes de 03. Compara CSV/plan, guarda OK/FALLA por caso y detiene su instancia. El esperado fue corregido tras confirmar el tramo/NAS anual: 71555/131 cambia en marzo–abril dentro del recálculo y enero–febrero se conservan; los 10 casos pasan. Ver [progreso](progreso-codex.md), [esperado anual](../tests/e2e/esperado_impacto_anual.csv) y [LEEME](../tests/e2e/LEEME_simulador.md).
 
 ## Alternativa con Docker
 
