@@ -55,11 +55,11 @@ export function vacio(contenedor, mensaje = 'No hay datos para los filtros elegi
 
 // ---------- Tarjeta KPI ----------
 /** estado: {texto, tipo: 'ok'|'alerta'|'error'|'info'} — el estado siempre lleva texto además del color. */
-export function tarjetaKpi({ titulo, valor, detalle, estado }) {
+export function tarjetaKpi({ titulo, valor, detalle, estado, compacta = false }) {
   const iconos = { ok: '✓', alerta: '!', error: '✕', info: 'ℹ' };
   return el('article', { class: 'tarjeta tarjeta-kpi' },
     el('p', { class: 'tarjeta-titulo' }, titulo),
-    el('p', { class: 'tarjeta-valor' }, valor),
+    el('p', { class: compacta ? 'tarjeta-valor tarjeta-valor-compacto' : 'tarjeta-valor' }, valor),
     detalle ? el('p', { class: 'tarjeta-detalle' }, detalle) : null,
     estado ? el('p', { class: `estado-texto estado-${estado.tipo}` },
       el('span', { 'aria-hidden': 'true' }, iconos[estado.tipo] || ''), estado.texto) : null);
@@ -72,7 +72,7 @@ export function tablaDatos({ caption, columnas, filas, id }) {
     el('th', { scope: 'col', class: c.numerica ? 'num' : null }, c.titulo)));
   const cuerpo = filas.map((f) => el('tr', {}, columnas.map((c) => {
     const bruto = typeof c.valor === 'function' ? c.valor(f) : f[c.campo];
-    const celda = c.formato ? c.formato(bruto, f) : texto(bruto);
+    const celda = c.formato ? c.formato(bruto) : texto(bruto); // formato recibe solo el valor (así sirve num, pct...)
     return el('td', { class: c.numerica ? 'num' : null }, celda);
   })));
   return el('table', { class: 'tabla', id }, el('caption', {}, caption),
@@ -117,12 +117,13 @@ export function opcionBase(extra = {}) {
  * `opcion` es una opción de ECharts; `tabla` = {caption, columnas, filas}.
  * Devuelve {elemento, grafico()} — el gráfico se crea cuando el contenedor tiene tamaño.
  */
-export function tarjetaGrafico({ titulo, ariaLabel, opcion, tabla, alto = 320, alClic, nivel = 2 }) {
+export function tarjetaGrafico({ titulo, ariaLabel, opcion, tabla, alto = 320, alClic, nivel = 2, nota, clase = '' }) {
   const lienzo = el('div', { class: 'grafico', role: 'img', 'aria-label': ariaLabel, style: `height:${alto}px` });
   const datos = el('div', { class: 'datos-grafico' }, tablaDatos({ ...tabla }));
   const boton = botonVerDatos(datos);
-  const elemento = el('section', { class: 'tarjeta' },
-    el('div', { class: 'cab-grafico' }, el(`h${nivel}`, {}, titulo), boton), lienzo, datos);
+  const elemento = el('section', { class: `tarjeta ${clase}`.trim() },
+    el('div', { class: 'cab-grafico' }, el(`h${nivel}`, {}, titulo), boton),
+    nota ? el('p', { class: 'nota-grafico' }, nota) : null, lienzo, datos);
 
   let grafico = null;
   const observador = new ResizeObserver(() => {
