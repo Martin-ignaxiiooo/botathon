@@ -2,15 +2,15 @@
 <script type="module">
 // Herramienta de desarrollo (no es parte de la demo): corre axe-core sobre cada pantalla y estado (WCAG 2.1 A/AA).
 // Uso: descargar axe-core 4.10.2 a web\dev\axe.min.js (https://cdn.jsdelivr.net/npm/axe-core@4.10.2/axe.min.js),
-// servir web\ y abrir http://localhost:8080/dev/auditoria-a11y.html ; el resultado queda en <pre id="salida"> (JSON).
-const RUTAS = ['#nacional', '#nacional?it=131&area=KI&desde=2&hasta=8', '#instituto?it=131', '#profesional', '#profesional?persona=118826',
-  '#cambios?carga=2', '#cambios?carga=1', '#parametros', '#cuadratura'];
+// Con ?modo=api se audita contra PostgREST. Servir web\ y abrir http://localhost:8080/dev/auditoria-a11y.html ; el resultado queda en <pre id="salida"> (JSON).
+const RUTAS = ['#nacional', '#nacional?it=131,81&cargo=KINESIOLOGO&desde=2&hasta=8', '#instituto?it=131', '#profesional', '#profesional?persona=71146',
+  '#cambios?carga=4', '#cambios?carga=5', '#parametros', '#cuadratura'];
 const ESTADOS = { normal: [], accesible: ['lectura-facil', 'letra-grande'] };
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 const resultado = {};
 const marco = document.createElement('iframe'); marco.style.cssText = 'width:1300px;height:1000px;border:0';
 document.body.append(marco);
-await new Promise((r) => { marco.onload = r; marco.src = '../index.html#nacional'; });
+await new Promise((r) => { marco.onload = r; marco.src = '../index.html' + location.search + '#nacional'; });  // con ?modo=api audita la base real
 await esperar(1500);
 const d = marco.contentDocument, w = marco.contentWindow;
 await new Promise((r) => { const s = d.createElement('script'); s.src = '/dev/axe.min.js'; s.onload = r; d.head.append(s); });

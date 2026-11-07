@@ -4,7 +4,8 @@ import { el, tarjetaKpi, tablaDatos, tarjetaGrafico, opcionBase, idUnico } from 
 import { getData } from '../api.js';
 import { irA } from '../router.js';
 import { num, pct, fecha, nombreMes, nombreArea } from '../formato.js';
-import { cargoLegible, tipoCambio, describirCambio } from '../textoCambios.js';
+import { cargoLegible, tipoCambio, describirCambio, registrarInstitutos } from '../textoCambios.js';
+import { dimensionArea } from '../dimension.js';
 import { lecturaFacil, plural } from '../lectura.js';
 
 const MESES = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -19,6 +20,8 @@ export async function render(contenedor, filtros) {
     getData('v_profesional_mes', {}), getData('v_instituto_area_mes', {}),
   ]);
   const nombreInstituto = new Map(institutos.map((f) => [f.it, f.instituto]));
+  registrarInstitutos(nombreInstituto);
+  const dim = await dimensionArea();
   contenedor.append(buscador(todos, nombreInstituto, persona));
 
   if (persona === null) {
@@ -58,7 +61,7 @@ export async function render(contenedor, filtros) {
         .map((c) => `${tipoCambio(c.tipo).texto.toLowerCase()} en ${nombreMes(c.mes_vigencia)}`).join(', ')}.`
       : 'No tuvo cambios este año.',
   ]);
-  contenedor.append(ficha(filas, nombreInstituto));
+  contenedor.append(ficha(filas, nombreInstituto, dim));
   contenedor.append(tarjetasResumen(filas));
   const rejilla = el('div', { class: 'grilla grilla-graficos' });
   rejilla.append(graficoMeta(persona, filas, cambios).elemento);
@@ -118,7 +121,7 @@ function tramos(filas) {
   return out;
 }
 
-function ficha(filas, nombreInstituto) {
+function ficha(filas, nombreInstituto, dim) {
   const lista = (valores) => [...new Set(valores)].join(', ');
   const inst = (it) => nombreInstituto.get(it) ?? `IT ${it}`;
   const ultimo = filas.at(-1);
@@ -127,7 +130,8 @@ function ficha(filas, nombreInstituto) {
 
   const dl = el('dl', { class: 'ficha-datos' },
     el('div', {}, el('dt', {}, 'Cargo'), el('dd', {}, lista(filas.map((f) => cargoLegible(f.cargo))))),
-    el('div', {}, el('dt', {}, 'Área'), el('dd', {}, lista(filas.map((f) => nombreArea(f.area))))),
+    // Con datos reales el «área» es la sede (igual al instituto): no se repite en la ficha
+    dim.redundante ? null : el('div', {}, el('dt', {}, 'Área'), el('dd', {}, lista(filas.map((f) => nombreArea(f.area))))),
     el('div', {}, el('dt', {}, filas.some((f) => f.it !== ultimo.it) ? 'Institutos' : 'Instituto'),
       el('dd', {}, lista(filas.map((f) => inst(f.it))))),
     el('div', {}, el('dt', {}, 'Meses con planificación'), el('dd', {}, `${mesesConDatos.length} de 12 (${rangoMeses(mesesConDatos)})`)));
@@ -138,7 +142,7 @@ function ficha(filas, nombreInstituto) {
     ficha.append(el('h3', {}, 'Trayectoria durante el año'),
       el('ul', { class: 'trayectoria' }, segmentos.map((s) => el('li', {},
         el('strong', {}, `${rangoMeses(s.meses)}: `),
-        `${inst(s.it)} · ${cargoLegible(s.cargo)} · ${nombreArea(s.area)}`))));
+        [inst(s.it), cargoLegible(s.cargo), dim.redundante ? null : nombreArea(s.area)].filter(Boolean).join(' · ')))));
   }
   return ficha;
 }

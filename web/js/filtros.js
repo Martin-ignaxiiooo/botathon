@@ -5,6 +5,7 @@ import { getData } from './api.js';
 import { el } from './ui.js';
 import { PAGINAS, hashPara } from './router.js';
 import { MESES, nombreArea } from './formato.js';
+import { areaEsInstituto } from './dimension.js';
 
 const CLAVES = ['it', 'area', 'cargo', 'desde', 'hasta', 'tipo'];
 export const TIPOS = [
@@ -25,8 +26,9 @@ async function cargarOpciones() {
   for (const f of filas) institutos.set(f.it, f.instituto);
   return {
     institutos: [...institutos].map(([it, instituto]) => ({ it, instituto })).sort((a, b) => a.instituto.localeCompare(b.instituto, 'es')),
-    areas: [...new Set(filas.map((f) => f.area))].sort(),
-    cargos: [...new Set(filas.map((f) => f.cargo))].sort((a, b) => a.localeCompare(b, 'es')),
+    areas: [...new Set(filas.map((f) => f.area).filter(Boolean))].sort(),
+    cargos: [...new Set(filas.map((f) => f.cargo).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')),
+    areaRedundante: areaEsInstituto(filas), // en el BUK real el área es la sede (= instituto): el filtro no aporta
   };
 }
 
@@ -84,6 +86,7 @@ function construir(opc, emitir) {
     id: 'f-cargo', etiqueta: 'Cargo', vacio: 'Todos',
     opcionesLista: opc.cargos.map((c) => ({ valor: c, texto: capitalizar(c.toLowerCase()) })),
   });
+  area.campo.hidden = Boolean(opc.areaRedundante);
   const meses = MESES.map((m, i) => ({ valor: String(i + 1), texto: capitalizar(m) }));
   const desde = campoSelect({ id: 'f-desde', etiqueta: 'Mes desde', opcionesLista: meses });
   const hasta = campoSelect({ id: 'f-hasta', etiqueta: 'Mes hasta', opcionesLista: meses });

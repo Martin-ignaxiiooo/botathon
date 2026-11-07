@@ -27,11 +27,13 @@ Rama actual: main (todo fusionado)
 - Pulido para la demo (revisado contra `docs/demo.md`): insignia de origen de datos en el encabezado, Nacional con «Última carga», hora de lectura, botón «Actualizar datos» y variación de las tarjetas respecto de la carga anterior, Cambios abre la carga más reciente
 - Corrección de ESLint del CI (`window.MutationObserver`, `window.HashChangeEvent`): `npx eslint@9.39.1 --config .github/eslint.config.js 'web/js/**/*.js'` sin errores
 
+- Prueba con la base real y correcciones (rama `feat/front-api`): claves de parámetros, `area` = sede → agrupar por cargo, valores JSON, cargo nulo, textos de cambios (ver «Prueba con la base real»)
+
 ## En curso
 - —
 
 ## Siguiente
-- Ensayo con la base real (`?modo=api`) cuando Andrés tenga las vistas; revisar claves de `v_parametros_vigentes` (ver «Notas para la demo»)
+- Ensayo completo de `docs/demo.md` en la VM con Blue Prism; si el back cambia `area` a la especialidad, revisar Nacional e Instituto
 
 ## Cómo probar el front
 - Servir sin bloquear: `.\scripts\servir_web.ps1` (puerto 8080 por defecto, en segundo plano; `-Detener` lo apaga, `-Puerto` cambia el puerto). Es la única excepción a las carpetas de Claude Code en `AGENTS.md` (`scripts\` es del BACK); autorizada por César.
@@ -74,8 +76,23 @@ Rama actual: main (todo fusionado)
 - 1:00–2:00 tras procesar `02`: botón «Actualizar datos» (o F5). Aparece «Hay una carga nueva» y las tarjetas muestran ▲/▼ con lo que cambió respecto de la carga anterior (se compara por pestaña con la última carga vista; sin filtros). Si se recarga la pestaña con F5 se conserva; si se cierra la pestaña se pierde.
 - 2:00–3:00: Cambios abre solo la carga más reciente (cambios y errores con persona, campo, fila y motivo); para ir directo a otra: `?modo=api#cambios?carga=<carga_id>`. Profesional: `#profesional?persona=71555` (jornada 40 → 30 en mayo, marcada en el gráfico) y `#profesional?persona=71146` (traslado, con columna de instituto).
 - Teclado: Tab muestra el «Saltar al contenido», el menú y los filtros con foco visible; «Lectura fácil», «Letra grande» e «Imprimir» están en el encabezado.
-- Dependencias con la base real que no pude comprobar sin ella: nombres de clave de `v_parametros_vigentes` (Nacional busca `meta_gestion`, `mes_cambio_jornada`, `jornada_legal_horas_desde_mayo` y patrones parecidos; si no existen no se dibuja la marca de jornada y la meta se toma de meta/atenciones), valores de `tipo` en `v_cambios` (hay etiqueta para alta, baja, cambio_jornada, cambio_cargo y cambio_it; otros se muestran con su nombre) y forma de `antes`/`despues` (se muestra cualquier clave).
+- Dependencias con la base real: comprobadas el 7-nov con la base local de César (ver «Prueba con la base real»).
 - Sin lector de pantalla real ni PDF real verificados: ensayar «Imprimir → Guardar como PDF» y un recorrido con Tab antes de presentar.
+
+## Prueba con la base real (7-nov, base local de César)
+- **Back local:** rama `integracion/local` (solo local, NO se sube) = main + `origin/feat/B-07-B-08-cambios` + `origin/feat/B-09-vistas`. PostgreSQL 16 propio en `C:\dev\pgcesar` puerto **5434** (los servicios `postgresql-x64-16/18` de Windows no se tocaron: no tenía la clave de `postgres`), base `planbot_local`, creada con `scripts\instalar_sin_docker.ps1`; PostgREST 12.2.3 (la misma versión del compose) en `C:\tools\postgrest`, puerto 3000, esquema `api`, rol `web_lectura`, CORS `http://localhost:8080`. `.env` local (ignorado por git) con claves aleatorias. Se cargó `01_original` (+ semilla), `02_cambios` (con `detectar_cambios` y `recalcular`) y `03_errores` encima. Respaldo tras 01: `C:\dev\pgcesar\snapshot_01.dump` (`pg_restore`).
+- **Control:** `C:\tools\planbot_local.ps1 estado|iniciar|detener` (fuera del repo). Detener a mano: `Get-Process postgrest | Stop-Process` y `& 'C:\Program Files\PostgreSQL\16\bin\pg_ctl.exe' stop -D C:\dev\pgcesar\data -m fast`. PostgREST necesita `C:\Program Files\PostgreSQL\16\bin` en el PATH (libpq.dll). Hace falta `pip install --user openpyxl` para `cargar_buk_prueba.ps1`.
+- **Cuadra:** `v_kpi` = 622.271 atenciones, 557.689 meta (con 01 solo: 621.637 y 557.114), 821.427 h, 443 de dotación, FOJA 49,0 %; coincide con la suma de `v_nacional_mes`, `v_instituto_area_mes` y `v_profesional_mes`, y las tarjetas de Nacional muestran esos mismos valores. Las vistas responden en 15–160 ms.
+- **Lo que no coincidía con lo supuesto y se corrigió en `web\`:**
+  1. Claves de `param.general`: son `meta` (0.9), `jornada_ene_abr` (44) y `jornada_may_dic` (42) (la marca «Jornada 42 h» sale del inicio del último período, mayo). Quedan los nombres antiguos solo como respaldo. Los mocks ya usan las claves reales.
+  2. **`area` es la sede, igual que `instituto`** (columna Área del BUK); la especialidad está en `cargo` (15 cargos). Se agregó `js\dimension.js`: si area == instituto, las pantallas agrupan por **cargo** (Nacional «Horas por cargo», Instituto «cargo × mes» con top 5 + «Otros» en el gráfico apilado) y se oculta el filtro Área y el campo Área de la ficha. Si el back cambia `area` a la especialidad, vuelve a agrupar por área sin tocar nada. **Sugerencia para Andrés:** exponer la especialidad (sub-área o `unidad` de param.cargo) en `area`.
+  3. `v_parametros_vigentes.valor` es texto; en cargo_distribucion, asignacion_catalogo, calendario_mes y grupal es **JSON en texto** (se interpreta y se muestra `clave: valor · ...`). Tablas reales: param.general, param.cargo_distribucion, param.asignacion_catalogo, param.calendario_mes, param.grupal (325 reglas).
+  4. `cargo` puede venir `null` (filas con cargo sin homologar, p. ej. 71146 tras cargar 03): se muestra «Sin cargo». `area` también puede venir nula.
+  5. `v_cambios`: tipos reales vistos: alta, baja, cambio_jornada, cambio_cargo, cambio_it (+ cambio_vigencia en el código del back, con etiqueta «Cambio de vigencia»). `antes`/`despues` son objetos con pocas claves: alta `antes: null`; **baja `despues: null`** (se muestra «→ ya no figura»); cambio_it trae solo `{"it": 131}` (se traduce al nombre del instituto con los nombres de `v_instituto_area_mes`); cambio_jornada `{"horas_semanales": 40}`; cambio_cargo `{"cargo": ...}`.
+  6. Con 15 institutos el gráfico de metas crece en alto y queda al lado del de cargos.
+- **Estado de las demás vistas reales:** `v_errores_carga` trae archivo (carga 5: 5 errores con fila, persona, campo y motivo); `v_cambios` no trae archivo (la carga 4 sale «Archivo no informado»); `v_cuadratura` está vacía (falta `cuadratura()` del back): la pantalla muestra su aviso; no hay RPC de escenarios: «todavía no están disponibles».
+- **Observación para el back (no es del front):** `horas_dir + horas_ind + horas_nas` = 705.026 h contra 821.427 contratadas: la diferencia son las ausencias (no se cargan a NAS), así que las barras de horas no suman las contratadas.
+- **Verificación:** recorrido completo con `?modo=api` (Nacional, Instituto y sus profesionales, 4 fichas de profesional, Cambios cargas 4 y 5, Parámetros, Cuadratura) sin errores de consola; axe 0 violaciones en las 18 combinaciones también con la base real (`web\dev\auditoria-a11y.html?modo=api`); ESLint del CI sin errores.
 
 ## Notas de C-11
 - El CSV sale de la tabla HTML que ya está en pantalla (también las de «Ver datos», aunque estén ocultas): lo exportado es lo mismo que se ve, con números es-CL (`1.234,5`); sirve para abrir en Excel en español. No exporta los datos crudos de la vista.
