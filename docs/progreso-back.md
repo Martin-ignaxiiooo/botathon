@@ -11,6 +11,11 @@ Rama actual: feat/B-04-dotacion (sale de feat/B-03-parametros; PR por web porque
   del BUK), seed 030 (\copy de los 6 CSV a stg.* con carga 'planificacion', hash `seed:planificacion:csv-v1`),
   `api.cargar_parametros` (versión nueva, cierra la anterior, merge por clave, sumas inválidas a stg.error_fila,
   idempotente por carga). tests\sql\001_parametros.sql en verde.
+- B-04 · `api.cargar_dotacion` (foto completa por carga BUK: errores de fila a stg.error_fila, cargo sin homologar y
+  duplicados a core.alerta, upsert en core.persona y core.dotacion_mes, proyección ago-dic con origen 'proyectado'),
+  `calc.v_promedio_horas` (promedio igual al Excel en 456/466 = 97,9 %), `scripts\cargar_buk_prueba.ps1` +
+  `scripts\buk_a_csv.py` (solo pruebas). Base real: 3.123 filas buk + 2.215 proyectadas, 465 persona-IT, 0 alertas.
+  tests\sql\002_dotacion.sql (sintético, corre en CI) en verde.
 
 ## En curso
 - —
