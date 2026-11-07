@@ -1,6 +1,6 @@
 # Progreso BACK (Andrés · Claude Code)
 Última actualización: 2026-11-07 · por: Claude Code
-Rama actual: main (fix/area-sigue-it #11 y feat/C-01-jwt #10 fusionados)
+Rama actual: feat/demo-reinicio (desde main con #10 y #11)
 Reparto 7-nov: B-09 (vistas api.*, database\views\) lo hace el Codex de César en feat/B-09-vistas; el BACK revisa
 y fusiona su PR. El BACK no toca database\views\ mientras tanto.
 
@@ -179,6 +179,22 @@ Notas:
   `bot_carga` tiene search_path `api, stg, public`, así que llama las funciones sin prefijo. Para ver la clave en
   la VM: `Select-String BOT_CARGA_PASSWORD .env`.
 - **PostgREST:** se conecta como `web_lectura` (`WEB_LECTURA_PASSWORD`), en `api\postgrest.conf`.
+
+## Demo: reinicio y consultas en vivo
+```powershell
+cd C:\dev\botathon
+.\scripts\reiniciar_demo.ps1        # antes de cada ensayo y justo antes de presentar (~4 s, repetible)
+```
+- Deja solo `data\buk\01_original.xlsx` cargado (sin 02 ni 03), plan y cuadratura calculados y los 3 escenarios de
+  ejemplo (pendiente, aprobado, rechazado). Deshace las versiones de parámetros creadas por escenarios aplicados.
+  Conserva parámetros sembrados, Excel de planificación, asignaciones y audit.log. Lee las claves de .env.
+- Probado: 01 → 02 (5 cambios) + aplicar escenario → reiniciar = 1 carga, meta 0,9, versión 2, sin cambios.
+- Después de la carga de Blue Prism, las 5 consultas de `database\demo\consultas_demo.sql` (cargas, cambios con
+  mes de vigencia, errores, último recálculo con % de cuadratura, diferencias por causa):
+```powershell
+$env:PGPASSWORD = '<POSTGRES_PASSWORD de .env>'
+& 'C:\Program Files\PostgreSQL\16\bin\psql.exe' -X -h localhost -U owner_planbot -d planbot -f database\demo\consultas_demo.sql
+```
 
 ## Token de planificador en la VM (aprobar / rechazar escenarios)
 ```powershell
