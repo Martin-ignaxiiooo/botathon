@@ -1,5 +1,6 @@
 // Punto de entrada: menú responsive y arranque del router.
 import { iniciarRouter } from './router.js';
+import { iniciarFiltros } from './filtros.js';
 
 const menu = document.getElementById('menu-principal');
 const botonMenu = document.getElementById('boton-menu');
@@ -23,4 +24,6 @@ menu.addEventListener('click', (e) => {
   if (pantallaChica.matches && e.target.closest('a')) ajustarMenu();
 });
 
+// Los filtros se registran antes que el router para no perder el primer evento 'pagina-cambio'.
+iniciarFiltros({ seccion: document.getElementById('filtros'), menu });
 iniciarRouter({ contenedor, menu });
