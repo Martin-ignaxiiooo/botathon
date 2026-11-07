@@ -42,11 +42,13 @@ Antes de cambios auditables: `SELECT set_config('planbot.motivo', '<motivo>', fa
 |---|---|---|
 | `v_kpi` | total nacional | atenciones_plan, meta, foja, horas_contratadas, dotacion, ultima_carga |
 | `v_nacional_mes` | mes | mes, atenciones_dir, atenciones_ind, meta, horas_dir, horas_ind, horas_nas, foja |
-| `v_instituto_area_mes` | instituto × área × cargo × mes | it, instituto, area, cargo, mes, atenciones_dir, meta, foja, dotacion |
+| `v_instituto_area_mes` | instituto × área × cargo × mes | it, instituto, area, cargo, mes, atenciones_dir, meta, foja, dotacion, horas_contratadas, horas_dir, horas_ind, horas_nas |
 | `v_profesional_mes` | persona × instituto × mes | persona_id, it, cargo, area, mes, horas_contratadas, pct_dir_final, atenciones_dir, atenciones_dir_ind, meta, foja |
 | `v_cambios` | cambio detectado | carga_id, tipo, persona_id, it, mes_vigencia, antes, despues, detectado_en |
 | `v_errores_carga` | error de fila | carga_id, archivo, fila, persona_id, campo, motivo |
 | `v_parametros_vigentes` | regla vigente | tabla, clave, valor, version, vigente_desde |
 | `v_cuadratura` | persona × campo × mes | persona_id, campo, mes, excel, sistema, diferencia, causa |
+
+Cambio v1.1 (6-nov 23:35): se agregan horas_contratadas, horas_dir, horas_ind y horas_nas a v_instituto_area_mes para el gráfico de horas por área de la pantalla Nacional.
 
 Convenciones: minúsculas con guion bajo, meses 1–12, porcentajes decimales (0.65), horas decimales, `persona_id` como único identificador de persona.
