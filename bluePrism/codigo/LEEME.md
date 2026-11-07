@@ -26,6 +26,10 @@ En Inputs/Outputs del Code stage usar exactamente estos nombres; mapear cada ent
 | Ejecutar Función | connStr: Text; funcion: Text; argumentos: Collection con valor | resultado: Collection |
 | Carga Masiva | connStr: Text; tabla: Text; datos: Collection; tamanoLote: Number, inicial 500 | filasInsertadas: Number |
 | Calcular Hash | ruta: Text | hash: Text |
+| Crear Parametros (auxiliar) | modo Text (T1/T2/N1/N2/N4), texto1/texto2 Text, numero1..4 Number | parametros Collection posicional, valor Text o Number |
+| Leer Numero Resultado (auxiliar) | resultado Collection, columna Text | numero Number, esNulo Flag, filasResultado Number |
+| Preparar Carga (auxiliar) | validas/limpias/errores Collection | datosCarga Collection; leidas/filasValidas/filasConError/mensajesError Number |
+| Mover Archivo (Hash, auxiliar) | ruta/carpeta Text, cargaId Number | rutaDestino Text |
 
 Las Collections llegan como DataTable; Number es decimal. Dejar resultado como colección sin campos prefijados para recibir las columnas SQL. `valor` conserva el tipo de la celda: Number → decimal, Flag → bool, Date/DateTime → DateTime, Text → string; null/DBNull → NULL SQL. Una cadena vacía sigue siendo texto vacío. No escribir el texto `NULL`. Para NULL tipado ambiguo usar un cast explícito en SQL (`CAST(? AS date)`, por ejemplo). En colecciones BP de tipo fijo todos los valores de esa columna comparten tipo: separar consultas si se necesitan tipos distintos, o convertir mediante casts explícitos en SQL.
 
@@ -109,3 +113,25 @@ alertas incluye cargo, tramo, suma y motivo cuando abs(suma−1) > 0.001. Mostra
 `Probar_CodeStages.cs` permite comprobar los objetos sin BP. Exportar las hojas Dotacion_2026 de `01_original.xlsx` y `03_errores.xlsx` a CSV UTF-8 preservando **todas las filas** desde A1 y las celdas vacías; fechas como yyyy-MM-dd. Los CSV son temporales, no se suben al repositorio. Compilar los tres objetos y el programa con csc, referencias System.Data.dll, System.Xml.dll y Microsoft.VisualBasic.dll (solo lector CSV del ensayo). Ejecutar `prueba.exe original.csv errores.csv data\buk\esperado_errores.csv`.
 
 El ensayo verifica las cinco combinaciones persona/campo del CSV; los motivos son mensajes claros del validador, no textos literales fijados por contrato. También prueba varios errores en una fila, número decimal chileno, NULL, duplicado con fecha DateTime frente a texto ISO, tres tramos y alerta por vacíos. Check Code y la integración ODBC/colas deben probarse además en el Runtime Resource de Lucas; compilar localmente no certifica el release de Blue Prism.
+
+## 9. Acuerdos de integración con el back publicado
+
+Revisión de `origin/feat/B-05-semanal` en `9f172cc`: existen `api.cargar_parametros(bigint)` y `api.cargar_dotacion(bigint)`, con EXECUTE para bot_carga. Usar esquema explícito `api`. Las otras seis funciones del contrato y las ocho vistas públicas todavía no están publicadas en ese snapshot; no marcar P03–P05 como comprobados por el éxito de P00/P02.
+
+**Argumentos tipados:** un Number de BP llega como decimal. Para los IDs bigint, la ruta que fija el tipo inequívocamente es **Ejecutar Consulta**, con `sql = SELECT * FROM api.cargar_dotacion(CAST(? AS bigint))` (o cargar_parametros) y una fila en parametros con el cargaId como valor. La acción genérica Ejecutar Función no inserta casts; hay que confirmar la inferencia/binding del driver real en la VM antes de usarla con Number. No convertir a texto para concatenarlo en SQL. Esto no cambia la firma SQL ni los Data Items existentes.
+
+**Contadores de P05:** el back B-04 actual reemplaza los conteos de stg.carga al cargar la dotación y solo cuenta los errores que él mismo detecta en stg.buk_fila. Las filas rechazadas previamente por BP no están allí. En la instancia aislada se demostró con_error=0 aunque quedaba un error BP en stg.error_fila. Coordinar con Andrés/Lucas el cierre final de carga: conservar leídas originales, válidas reales y contar filas originales con error (DISTINCT fila), no mensajes de error. La carga puede tener varios errores por fila. No inventar una nueva tabla ni dar DELETE a bot_carga para recuperar lotes.
+
+**Motivo de auditoría:** cada acción PostgreSQL abre/cierra su conexión. Ejecutar `set_config` en una acción y una RPC en otra no garantiza compartir sesión, aunque el pool a veces reutilice conexiones. Configurar el motivo y ejecutar la operación auditable en la **misma conexión**, preferentemente misma transacción con configuración local, en un Code stage acordado con Lucas. No cambiar por cuenta propia las firmas de las acciones ya importadas. La auditoría SQL todavía está pendiente en el snapshot revisado.
+
+**Reglas:** Transformar Distribucion alerta con tolerancia 0.001; cargar_parametros usa 0.000001. Un total 1.0005 no alerta en C# y se rechaza en SQL. Los CSV actuales no exponen ese límite; acordar la tolerancia con Andrés antes de considerar válida una regla nueva. No se modificó ninguna de las dos políticas en esta revisión.
+
+Release/colas, permisos y datos reales de VM se verifican con [el guion E2E](../../tests/e2e/guion.md). Los .cs de este directorio siguen siendo referencia: no prueban qué versión está importada en el robot listo de Lucas.
+
+## 10. Construir los procesos P01–P05
+
+Seguir [guia_procesos.md](guia_procesos.md): páginas, Data Items, mapeos, SQL y recuperación del maestro. Crear/publicar las cuatro acciones auxiliares de la tabla anterior con los cuerpos de los métodos homónimos, sin pegar la clase completa. No cambian las entradas/salidas de las acciones originales.
+
+Actualización del estado de §9: B-07/B-08 ya publican detectar_cambios, mes_minimo_afectado y recalcular en api; B-09 publica las ocho vistas. El hash/versiones desplegados deben comprobarse en la VM. La corrección de con_error en origin/feat/B-04-con-error conserva errores de BP pero agrega **mensajes**: P05 reconcilia por filas distintas de BP cuando no hay rechazos adicionales BD. Si los hay, detener y conciliar, sin adivinar el número de fila original. No usar filasCore proyectadas como válidas del archivo.
+
+Crear Parametros evita rellenar a mano colecciones dinámicas de tipos mixtos: los casos de la guía usan todo Text o todo Number con casts SQL explícitos. Leer Numero Resultado distingue cero, DBNull y colección vacía; mínimo NULL no dispara recálculo. Preparar Carga convierte ISO a DateTime y cuenta una sola vez cada fila inválida. Mover Archivo usa ID/tiempo/nombre, no sobrescribe y requiere carpeta existente; solo se llama después de cerrar Excel y confirmar P05. El motivo de recálculo se establece con la RPC en una consulta SQL dependiente, en la misma conexión/transacción, según Q07 de la guía.
