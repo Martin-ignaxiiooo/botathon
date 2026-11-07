@@ -7,6 +7,10 @@ Rama actual: feat/B-03-parametros (sale de feat/B-01-B-02-base; PR por web porqu
   migrar.ps1, test.ps1, instalar_sin_docker.ps1, database\instalar\crear_base.sql. Probado en nativo.
 - B-02 · V001 esquemas, V002 stg.* (Contrato 1 exacto), V003 param.* y core.*, V004 calc.* y audit.log,
   tests\sql\000_humo.sql. instalar_sin_docker.ps1 corrido 2 veces sin error; test.ps1 -Modulo db y todo en verde.
+- B-03 · seed 010 (param.general: 12 constantes en versión 1 + 16 institutos), seed 020 (homologación de los 15 cargos
+  del BUK), seed 030 (\copy de los 6 CSV a stg.* con carga 'planificacion', hash `seed:planificacion:csv-v1`),
+  `api.cargar_parametros` (versión nueva, cierra la anterior, merge por clave, sumas inválidas a stg.error_fila,
+  idempotente por carga). tests\sql\001_parametros.sql en verde.
 
 ## En curso
 - —
