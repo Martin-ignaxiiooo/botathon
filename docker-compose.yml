@@ -37,7 +37,10 @@ services:
       PGRST_DB_SCHEMAS: api
       PGRST_DB_ANON_ROLE: web_lectura
       PGRST_SERVER_PORT: 3000
-      PGRST_JWT_SECRET: ${PGRST_JWT_SECRET}
+      # JWT HS256 {"role":"planificador"} (scripts\token_planificador.ps1) -> SET ROLE planificador
+      PGRST_JWT_SECRET: ${PGRST_JWT_SECRET:?falta PGRST_JWT_SECRET (32+ caracteres) en .env}
+      PGRST_JWT_SECRET_IS_BASE64: "false"
+      PGRST_JWT_ROLE_CLAIM_KEY: ".role"
       PGRST_SERVER_CORS_ALLOWED_ORIGINS: http://localhost:8080
     ports:
       - "3000:3000"
