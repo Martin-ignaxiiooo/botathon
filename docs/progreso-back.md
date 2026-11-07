@@ -1,6 +1,6 @@
 # Progreso BACK (Andrés · Claude Code)
 Última actualización: 2026-11-07 · por: Claude Code
-Rama actual: fix/area-sigue-it (desde main; el JWT va aparte en feat/C-01-jwt, PR #10)
+Rama actual: main (fix/area-sigue-it #11 y feat/C-01-jwt #10 fusionados)
 Reparto 7-nov: B-09 (vistas api.*, database\views\) lo hace el Codex de César en feat/B-09-vistas; el BACK revisa
 y fusiona su PR. El BACK no toca database\views\ mientras tanto.
 
@@ -136,6 +136,17 @@ y fusiona su PR. El BACK no toca database\views\ mientras tanto.
 - recalcular() rehace api.cuadratura() al final si stg.esperado tiene datos (audit.log guarda cuadratura_pct):
   api.v_cuadratura ya no mezcla plan nuevo con diferencias viejas, y Blue Prism no necesita llamarla aparte.
   recalcular(1) con la base real: 1,15 s. tests\sql\090_area_y_cuadratura.sql.
+- C-01 (parte BACK) · PostgREST con JWT. Decisión: decidir_escenario solo planificador, el front se autentica con JWT.
+  - api\postgrest.conf sin credenciales: db-uri = "$(PGRST_DB_URI)", jwt-secret = "$(PGRST_JWT_SECRET)" (PostgREST
+    interpola el entorno), anon web_lectura, role claim .role, puerto 3000, CORS http://localhost:8080.
+  - docker-compose.yml: PGRST_JWT_SECRET obligatorio (${...:?}), no base64, claim .role.
+  - instalar_sin_docker.ps1: genera PGRST_JWT_SECRET de 40 caracteres si falta, es el de ejemplo o tiene < 32.
+  - database\views\zz_permisos_jwt.sql: `GRANT planificador TO web_lectura WITH INHERIT FALSE, SET TRUE` (PostgREST
+    puede cambiar de rol con token; sin token sigue de solo lectura) + SELECT de api.* a planificador.
+    tests\sql\080_permisos_jwt.sql.
+  - scripts\token_planificador.ps1 [-Horas 24]: JWT HS256 {"role":"planificador","exp":ahora+24h} con el secreto de
+    .env; imprime solo el token (el aviso va a stderr), no lo guarda. Verificado: firma HMAC correcta y
+    SET ROLE planificador desde web_lectura ejecuta decidir_escenario.
 
 ## Siguiente
 - Apoyar la integración en la VM (extras congelados a las 7:00).
@@ -168,6 +179,21 @@ Notas:
   `bot_carga` tiene search_path `api, stg, public`, así que llama las funciones sin prefijo. Para ver la clave en
   la VM: `Select-String BOT_CARGA_PASSWORD .env`.
 - **PostgREST:** se conecta como `web_lectura` (`WEB_LECTURA_PASSWORD`), en `api\postgrest.conf`.
+
+## Token de planificador en la VM (aprobar / rechazar escenarios)
+```powershell
+cd C:\dev\botathon
+.\scripts\token_planificador.ps1            # imprime el token (vence en 24 h); -Horas 8 para otro plazo
+$t = .\scripts\token_planificador.ps1       # o guardarlo en una variable de la sesión
+Invoke-RestMethod -Method Post http://localhost:3000/rpc/decidir_escenario -ContentType 'application/json' `
+  -Headers @{ Authorization = "Bearer $t" } -Body '{"escenario_id": 1, "decision": "rechazar", "motivo": "prueba"}'
+```
+- El token se firma con PGRST_JWT_SECRET de .env: PostgREST debe arrancar con ESE mismo secreto en su entorno
+  (si el instalador generó uno nuevo, reiniciar PostgREST). Si cambia el secreto, los tokens anteriores dejan de valer.
+- No guardar el token en el repo ni pegarlo en el chat; se entrega al front por la vía que defina César.
+- Sin token, decidir_escenario responde 401/403 (permiso denegado): es lo esperado.
+- Ojo Codex: tools\vm\levantar_demo.ps1 quita las líneas jwt-* y las variables PGRST_* y no importa
+  PGRST_JWT_SECRET; debe pasar PGRST_JWT_SECRET de .env al proceso de PostgREST (o usar api\postgrest.conf tal cual).
 
 ## Cómo correr en este PC (laboratorio Duoc, sin admin, NO reiniciar)
 - Repo en `C:\dev\botathon`. Servicio `postgresql-x64-16` (puerto 5432) ya está en Running; superusuario `postgres`.

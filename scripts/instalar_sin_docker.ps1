@@ -3,6 +3,7 @@
 # Hace, en orden (todo idempotente, se puede repetir):
 #   0. Si no existe .env, lo crea desde .env.example con claves aleatorias para owner_planbot, bot_carga y
 #      web_lectura (las claves quedan SOLO en .env, que no se versiona; no se muestran en pantalla).
+#      PGRST_JWT_SECRET (PostgREST) se genera si falta, es el de ejemplo o tiene menos de 32 caracteres.
 #   1. Crea el rol owner_planbot y la base planbot (UTF8, America/Santiago) con el superusuario.
 #   2. Migraciones, funciones, vistas y semilla (roles bot_carga / web_lectura / planificador incluidos).
 #   3. Opcional -CargarBukPrueba: carga la base BUK de data\excel (requiere python + openpyxl), calcula el plan,
@@ -46,6 +47,13 @@ if (-not (Test-Path $rutaEnv)) {
     Fijar-Env $rutaEnv 'PGRST_JWT_SECRET' (Clave-Aleatoria 40)
 } else {
     Write-Host '0/4 Usando el .env existente'
+}
+# Secreto JWT de PostgREST: 32 caracteres o más; si falta, es el de ejemplo o es corto, se genera uno nuevo
+$secretoJwt = ''
+foreach ($l in [IO.File]::ReadAllLines($rutaEnv)) { if ($l -match '^\s*PGRST_JWT_SECRET\s*=(.*)$') { $secretoJwt = $Matches[1].Trim() } }
+if (-not $secretoJwt -or $secretoJwt -like 'cambiar*' -or $secretoJwt.Length -lt 32) {
+    Write-Host '    PGRST_JWT_SECRET nuevo en .env (40 caracteres). Si PostgREST ya corría, reinícialo.'
+    Fijar-Env $rutaEnv 'PGRST_JWT_SECRET' (Clave-Aleatoria 40)
 }
 if ($SuperClave)   { Fijar-Env $rutaEnv 'PG_SUPER_PASSWORD' $SuperClave }
 if ($SuperUsuario) { Fijar-Env $rutaEnv 'PG_SUPER_USER' $SuperUsuario }
@@ -99,3 +107,5 @@ if (-not $SinPruebas) {
 Write-Host ''
 Write-Host "Instalación lista: base $($cfg['POSTGRES_DB']) en $($cfg['PG_HOST']):$($cfg['PG_PORT'])." -ForegroundColor Green
 Write-Host '  Blue Prism se conecta como bot_carga (clave BOT_CARGA_PASSWORD en .env); PostgREST como web_lectura.'
+Write-Host '  PostgREST: api\postgrest.conf con PGRST_DB_URI y PGRST_JWT_SECRET de .env en el entorno.'
+Write-Host '  Token para aprobar/rechazar escenarios (24 h): .\scripts\token_planificador.ps1'
