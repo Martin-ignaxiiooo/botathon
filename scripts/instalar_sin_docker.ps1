@@ -5,7 +5,8 @@
 #      web_lectura (las claves quedan SOLO en .env, que no se versiona; no se muestran en pantalla).
 #   1. Crea el rol owner_planbot y la base planbot (UTF8, America/Santiago) con el superusuario.
 #   2. Migraciones, funciones, vistas y semilla (roles bot_carga / web_lectura / planificador incluidos).
-#   3. Opcional -CargarBukPrueba: carga la base BUK de data\excel (requiere python + openpyxl) y calcula el plan.
+#   3. Opcional -CargarBukPrueba: carga la base BUK de data\excel (requiere python + openpyxl), calcula el plan,
+#      la cuadratura y 3 escenarios de ejemplo (database\demo\escenarios_demo.sql).
 #   4. Verifica con las pruebas de base de datos (.\scripts\test.ps1 -Modulo db).
 # Requisitos: PostgreSQL 16 instalado con su servicio corriendo (PG_PORT, por defecto 5432).
 # No requiere Docker, reinicio ni permisos de administrador (solo la clave del superusuario de PostgreSQL).
@@ -78,11 +79,13 @@ if ($LASTEXITCODE -ne 0) { exit 1 }
 
 # 3 · datos BUK de prueba (opcional) + plan
 if ($CargarBukPrueba) {
-    Write-Host '3/4 Base BUK de prueba, plan mensual y cuadratura'
+    Write-Host '3/4 Base BUK de prueba, plan mensual, cuadratura y escenarios de ejemplo'
     & (Join-Path $PSScriptRoot 'cargar_buk_prueba.ps1') -Modo nativo
     if ($LASTEXITCODE -ne 0) { Write-Host 'ERROR cargando la base BUK de prueba' -ForegroundColor Red; exit 1 }
     $codigo = Invocar-Psql -Cfg $cfg -Modo 'nativo' -Comando "SELECT set_config('planbot.motivo', 'instalacion', false); SELECT * FROM api.recalcular(1); SELECT api.cuadratura() AS pct_coincidencia;"
     if ($codigo -ne 0) { Write-Host 'ERROR en recalcular(1)' -ForegroundColor Red; exit 1 }
+    $codigo = Invocar-Psql -Cfg $cfg -Modo 'nativo' -Archivo 'database\demo\escenarios_demo.sql'
+    if ($codigo -ne 0) { Write-Host 'ERROR cargando los escenarios de ejemplo' -ForegroundColor Red; exit 1 }
 } else {
     Write-Host '3/4 Sin datos BUK (los carga Blue Prism; para la demo agregar -CargarBukPrueba)'
 }

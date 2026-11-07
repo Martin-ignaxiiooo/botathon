@@ -1,0 +1,8 @@
+# Respaldo si Andres aun no publica api/postgrest.conf. Sin credenciales.
+# El lanzador fija db-uri en el entorno del proceso hijo, nunca en este archivo.
+db-schemas = "api"
+db-anon-role = "web_lectura"
+db-config = false
+server-host = "127.0.0.1"
+server-port = 3000
+server-cors-allowed-origins = "http://localhost:8080"

@@ -1,0 +1,222 @@
+{
+  "version": "1.1",
+  "git_ref": "0fb3a930da5a58516dd9a6bb2b0af455c6351d1a",
+  "stg": {
+    "carga": [
+      "carga_id",
+      "tipo",
+      "archivo",
+      "hash",
+      "recibido_en",
+      "estado",
+      "leidas",
+      "validas",
+      "con_error"
+    ],
+    "buk_fila": [
+      "carga_id",
+      "it",
+      "instituto",
+      "persona_id",
+      "area",
+      "sub_area",
+      "centro_costo",
+      "periodo",
+      "tipo_contrato",
+      "tipo_trabajador",
+      "fecha_ingreso",
+      "fecha_termino",
+      "horas_semanales",
+      "cargo",
+      "dias_jornada",
+      "ndias",
+      "cod_esp"
+    ],
+    "error_fila": [
+      "carga_id",
+      "fila",
+      "persona_id",
+      "campo",
+      "valor",
+      "motivo"
+    ],
+    "param_cargo": [
+      "carga_id",
+      "cod_esp",
+      "cargo",
+      "unidad",
+      "min_directa",
+      "min_indirecta",
+      "tramo",
+      "pct_dir",
+      "pct_ind",
+      "pct_nas"
+    ],
+    "param_asignacion": [
+      "carga_id",
+      "tipo",
+      "horas_semana",
+      "requiere_dmn",
+      "descripcion"
+    ],
+    "param_calendario": [
+      "carga_id",
+      "mes",
+      "zona",
+      "dias",
+      "inhabiles",
+      "dias_habiles",
+      "semanas"
+    ],
+    "param_grupal": [
+      "carga_id",
+      "cod_esp",
+      "grupo_it",
+      "pct_grupal",
+      "pacientes_grupo"
+    ],
+    "excepcion": [
+      "carga_id",
+      "persona_id",
+      "it",
+      "mes",
+      "horas"
+    ],
+    "asignacion": [
+      "carga_id",
+      "persona_id",
+      "it",
+      "tipo",
+      "horas",
+      "desde",
+      "hasta",
+      "solicitante",
+      "motivo",
+      "estado"
+    ],
+    "esperado": [
+      "carga_id",
+      "persona_id",
+      "it",
+      "campo",
+      "mes",
+      "valor"
+    ]
+  },
+  "rpc": {
+    "cargar_parametros": {
+      "firma_contrato": "cargar_parametros(carga_id bigint)",
+      "resultado_contrato": "int (versión creada)"
+    },
+    "cargar_dotacion": {
+      "firma_contrato": "cargar_dotacion(carga_id bigint)",
+      "resultado_contrato": "table(filas int, alertas int)"
+    },
+    "detectar_cambios": {
+      "firma_contrato": "detectar_cambios(carga_id bigint)",
+      "resultado_contrato": "table(tipo, persona_id, it, mes_vigencia, antes jsonb, despues jsonb)"
+    },
+    "mes_minimo_afectado": {
+      "firma_contrato": "mes_minimo_afectado(carga_id bigint)",
+      "resultado_contrato": "int"
+    },
+    "recalcular": {
+      "firma_contrato": "recalcular(desde_mes int)",
+      "resultado_contrato": "table(filas int, ms int)"
+    },
+    "simular": {
+      "firma_contrato": "simular(escenario_id bigint)",
+      "resultado_contrato": "diferencia por it y área"
+    },
+    "aplicar_escenario": {
+      "firma_contrato": "aplicar_escenario(escenario_id bigint)",
+      "resultado_contrato": "int (versión)"
+    },
+    "cuadratura": {
+      "firma_contrato": "cuadratura()",
+      "resultado_contrato": "numeric (% coincidencia)"
+    }
+  },
+  "vistas": {
+    "v_kpi": [
+      "atenciones_plan",
+      "meta",
+      "foja",
+      "horas_contratadas",
+      "dotacion",
+      "ultima_carga"
+    ],
+    "v_nacional_mes": [
+      "mes",
+      "atenciones_dir",
+      "atenciones_ind",
+      "meta",
+      "horas_dir",
+      "horas_ind",
+      "horas_nas",
+      "foja"
+    ],
+    "v_instituto_area_mes": [
+      "it",
+      "instituto",
+      "area",
+      "cargo",
+      "mes",
+      "atenciones_dir",
+      "meta",
+      "foja",
+      "dotacion",
+      "horas_contratadas",
+      "horas_dir",
+      "horas_ind",
+      "horas_nas"
+    ],
+    "v_profesional_mes": [
+      "persona_id",
+      "it",
+      "cargo",
+      "area",
+      "mes",
+      "horas_contratadas",
+      "pct_dir_final",
+      "atenciones_dir",
+      "atenciones_dir_ind",
+      "meta",
+      "foja"
+    ],
+    "v_cambios": [
+      "carga_id",
+      "tipo",
+      "persona_id",
+      "it",
+      "mes_vigencia",
+      "antes",
+      "despues",
+      "detectado_en"
+    ],
+    "v_errores_carga": [
+      "carga_id",
+      "archivo",
+      "fila",
+      "persona_id",
+      "campo",
+      "motivo"
+    ],
+    "v_parametros_vigentes": [
+      "tabla",
+      "clave",
+      "valor",
+      "version",
+      "vigente_desde"
+    ],
+    "v_cuadratura": [
+      "persona_id",
+      "campo",
+      "mes",
+      "excel",
+      "sistema",
+      "diferencia",
+      "causa"
+    ]
+  }
+}

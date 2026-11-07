@@ -1,6 +1,6 @@
 # Progreso BACK (Andrés · Claude Code)
 Última actualización: 2026-11-07 · por: Claude Code
-Rama actual: feat/B-12-escenarios (desde main con B-10 #6, B-11 #7 y D-05 #8 fusionados)
+Rama actual: feat/B-12-escenarios (desde main con B-10 #6, B-11 #7 y D-05 #8 fusionados; PR de B-12 abierto)
 Reparto 7-nov: B-09 (vistas api.*, database\views\) lo hace el Codex de César en feat/B-09-vistas; el BACK revisa
 y fusiona su PR. El BACK no toca database\views\ mientras tanto.
 
@@ -107,9 +107,31 @@ y fusiona su PR. El BACK no toca database\views\ mientras tanto.
   73182/51, 71509/101, 132962/41, 72253/81, 125926/131, 71425/91 (grupal 55 %), 71132/131. Cubre cambio de jornada,
   colación, asignaciones 0,25-6 h, 7 cargos. Usa api.cuadratura(): ninguna diferencia (salvo ate_semana_total grupal).
   Generador: se armó con una consulta a la carga BUK local 63 (filas copiadas tal cual al test).
+- B-12 · Escenarios (database\functions\090_escenarios.sql, V008__escenario_flujo.sql) hecha.
+  - Flujo: borrador → simular() → pendiente → decidir_escenario() → aprobado | rechazado → aplicar_escenario() → aplicado.
+    V008 cambia el CHECK de estado (antes borrador/simulado/aprobado/descartado) y agrega impacto, simulado_en,
+    decision_motivo, decidido_por, decidido_en, aplicado_en.
+  - calc.escenario.cambios = {"general": {"<clave>": valor}} (MVP: solo param.general; de esas claves solo `meta`
+    mueve el plan, las demás tienen valor por cargo o son informativas).
+  - `api.simular(p_escenario_id)`: aplica los cambios en un subbloque, corre calcular_plan(1), guarda el resultado en
+    calc.plan_mes_escenario y deshace todo (param.* y calc.plan_mes intactos; ~0,5 s). Devuelve
+    (it, area, atenciones_antes, atenciones_despues, meta_antes, meta_despues, diferencia_meta) y deja
+    calc.escenario.impacto por instituto. GRANT bot_carga, planificador.
+  - `api.aplicar_escenario(p_escenario_id)` → int: solo 'aprobado'. Versión nueva de param.* (copia de la vigente +
+    cambios, param.version.escenario_id), cierra la anterior, recalcular(1), estado 'aplicado'. GRANT bot_carga.
+  - `api.listar_escenarios()`: columnas de docs\progreso-front.md (escenario_id, descripcion, parametro,
+    valor_actual, valor_propuesto, estado, creado_por, creado_en, decision_motivo, impacto). GRANT web_lectura,
+    planificador, bot_carga.
+  - `api.decidir_escenario(escenario_id, decision, motivo)` → text (estado nuevo): 'aprobar' | 'rechazar' sobre
+    pendiente o borrador; motivo obligatorio, se fija como planbot.motivo y queda en audit.log. Aprobar solo cambia
+    el estado. GRANT solo planificador (PostgREST tiene que usar ese rol para esta llamada).
+  - database\demo\escenarios_demo.sql (lo corre instalar_sin_docker.ps1 -CargarBukPrueba): meta 92 % pendiente
+    (+12.202 de meta), 91 % aprobado (+6.021), 95 % rechazado (+30.980). Idempotente.
+  - tests\sql\070_escenarios.sql. Funciones nuevas fuera del Contrato 2 (listar/decidir): PR con etiqueta contrato.
 
 ## Siguiente
-- B-12 escenarios (tope 1,5 h; congelado a las 7:00).
+- Apoyar la integración en la VM (extras congelados a las 7:00).
+- Pendiente para el front/PostgREST: decidir_escenario requiere el rol planificador (JWT o segundo PostgREST).
 - Si sobra tiempo: usar data\csv\insumos.csv (Codex) para minutos, distribución y asignaciones por persona, como
   excepción documentada, y subir del 95,5 %.
 

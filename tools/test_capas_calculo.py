@@ -1,0 +1,148 @@
+"""Contrastes de capas y de fidelidad de insumos contra el cuerpo de la tabla Excel."""
+import unittest
+import datetime
+import math
+import hashlib
+from decimal import Decimal
+
+import pandas as pd
+import verificar_calculo as v
+
+
+class CapasTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.df = v.leer_asistencial(v.ROOT / 'data/excel/Nac - Planificacion Asistencial x mes.xlsx')
+        cls.params, cls.reglas, *_ = v.parametros(v.ROOT / 'data/csv', v.ROOT / 'tools/param_general_verificacion.csv')
+        cls.resumen, cls.detalle = v.capas_asistencial(cls.df, cls.params, cls.reglas)
+
+    def test_tabla_acotada_con_fila_fisica_sin_totales(self):
+        self.assertEqual(len(self.df), 471)
+        self.assertEqual((self.df.fila_excel.min(), self.df.fila_excel.max()), (5, 475))
+        self.assertEqual(len(self.df[['persona_id', 'it']].drop_duplicates()), 469)
+
+    def test_porcentaje_final_condicionado_y_plan_aislado(self):
+        x = self.resumen.set_index(['capa', 'campo'])
+        self.assertEqual(x.loc[('b_pct_nas_excel', 'pct_dir_final'), 'coinciden'], 456)
+        self.assertEqual(x.loc[('c_aislada_semanal_grupal_excel', 'plan_ate_dir'), 'coinciden'], 471*8)
+        self.assertEqual(x.loc[('c_aislada_semanal_grupal_excel', 'meta'), 'coinciden'], 3763)
+
+    def test_separar_poblacion_activa_de_semanal_historico(self):
+        x = self.resumen.set_index(['capa', 'campo'])
+        self.assertEqual(x.loc[('b_pct_nas_excel_activas', 'ate_dir_semana'), 'referencias'], 447)
+        self.assertEqual(x.loc[('b_pct_nas_excel_activas', 'ate_dir_semana'), 'coinciden'], 441)
+        self.assertEqual(x.loc[('b_pct_nas_excel_todas', 'ate_dir_semana'), 'referencias'], 471)
+
+    def test_claves_repetidas_no_se_colapsan(self):
+        e = self.detalle[(self.detalle.capa == 'b_pct_nas_excel_todas') &
+                         (self.detalle.campo == 'ate_dir_semana') & self.detalle.persona_id.eq(137356)]
+        self.assertEqual(set(e.fila_excel), {59, 60})
+
+    def test_insumos_csv_fiel_a_lectura_independiente(self):
+        x = pd.read_csv(v.ROOT / 'data/csv/insumos.csv')
+        fields = ['persona_id', 'it', 'cargo', 'area', 'horas_semana_dic', 'prom_pond_horas',
+                  'dias_semana', 'colacion_contrato', 'horas_nas_total', 'horas_asignacion',
+                  'asignacion_1', 'horas_asig_1', 'asignacion_2', 'horas_asig_2',
+                  'pct_dir_base', 'pct_ind_base', 'pct_nas_base', 'min_directa', 'min_indirecta'] + [f'semhab_{m}' for m in range(1, 13)]
+        self.assertEqual(list(x.columns), fields)
+        self.assertEqual(x.shape, (471, 31))
+        esperado = self.df[fields].reset_index(drop=True).copy()
+        for campo in ['cargo', 'area', 'asignacion_1', 'asignacion_2']:
+            esperado[campo] = esperado[campo].str.strip()
+        pd.testing.assert_frame_equal(x, esperado, check_dtype=False, atol=1e-12, rtol=0)
+
+    def test_directas_ax_es_diagnostico_sin_regresiones(self):
+        detalle = self.detalle[self.detalle.campo.eq('ate_dir_semana')]
+        base = detalle[detalle.capa.eq('b_pct_nas_excel_activas')].set_index('fila_excel')
+        ax = detalle[detalle.capa.eq('b_diagnostico_disponible_ate_excel_activas')].set_index('fila_excel')
+        self.assertEqual(len(base), 447)
+        self.assertEqual(int(ax.coincide.sum()), 446)
+        self.assertTrue(ax.loc[base[base.coincide].index, 'coincide'].all())
+        self.assertEqual(int((ax.coincide & ~base.coincide).sum()), 5)
+        # El diagnóstico no reemplaza el resultado normativo original.
+        self.assertEqual(int(base.coincide.sum()), 441)
+
+    def test_seis_residuos_trazables_sin_cruce_por_persona(self):
+        x = v.discrepancias_directas_activas(self.df, self.detalle, self.params)
+        self.assertEqual(list(x.fila_excel), [18, 115, 219, 383, 384, 464])
+        self.assertEqual(list(x.referencia), [15, 16, 29, 30, 31, 33])
+        self.assertEqual(list(x.calculado), [14, 17, 30, 29, 29, 32])
+        self.assertEqual(list(x.diagnostico_ax), [14, 16, 29, 30, 31, 33])
+        self.assertFalse(x.par_repetido.any())
+        self.assertTrue(x.iloc[0].causa_demostrada.startswith('El objetivo semanal'))
+        self.assertTrue(x.iloc[1:].causa_demostrada.str.startswith('Disponibilidades distintas').all())
+        self.assertAlmostEqual(x.iloc[0].sin_floor_ax, 14.558823529411764)
+
+    def test_repetidos_son_tramos_distintos_y_no_se_deduplican(self):
+        for persona, corte in [(137356, '2026-07-01'), (72190, '2026-04-01')]:
+            x = self.df[self.df.persona_id.eq(persona)].sort_values('vigencia_desde')
+            self.assertEqual(len(x), 2)
+            self.assertEqual(x.iloc[1].vigencia_desde, pd.Timestamp(corte))
+            self.assertEqual(x.iloc[0].vigencia_hasta + pd.Timedelta(days=1), pd.Timestamp(corte))
+        repetida = pd.concat([self.df, self.df.iloc[[0]]], ignore_index=True)
+        with self.assertRaisesRegex(ValueError, 'identidad de fila'):
+            v.capas_asistencial(repetida, self.params, self.reglas)
+
+
+class DuracionExcelTests(unittest.TestCase):
+    def test_conserva_horas_mayores_a_un_dia(self):
+        self.assertEqual(v.horas_duracion_excel(datetime.timedelta(hours=25, minutes=30)), 25.5)
+        self.assertEqual(v.horas_duracion_excel(datetime.time(16, 30)), 16.5)
+        self.assertEqual(v.horas_duracion_excel(0.6875), 16.5)
+
+    def test_no_inventa_cero_ni_acepta_formato_ambiguo(self):
+        self.assertTrue(math.isnan(v.horas_duracion_excel(None)))
+        with self.assertRaises(ValueError):
+            v.horas_duracion_excel('16:30')
+        with self.assertRaises(ValueError):
+            v.horas_duracion_excel(float('inf'))
+
+
+class FuenteOriginalTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.path = v.ROOT / 'data/excel/Nac - Planificacion Asistencial x mes.xlsx'
+        cls.hash_antes = hashlib.sha256(cls.path.read_bytes()).hexdigest()
+        params, *_ = v.parametros(v.ROOT / 'data/csv', v.ROOT / 'tools/param_general_verificacion.csv')
+        cls.evidencia = v.auditar_fuente_original(cls.path, [18, 115, 219, 383, 384, 464], params['minutos_hora'])
+
+    def test_formulas_originales_y_formato_de_duracion(self):
+        e = self.evidencia
+        self.assertEqual(e['formulas_en_cuerpo'], 0)
+        self.assertEqual(e['formulas_en_metadata_tabla'], 0)
+        self.assertEqual(e['formulas_por_fila'], {1: 3, 3: 12, 476: 90})
+        self.assertEqual(e['columnas_tabla']['AX']['nombre'], 'H/Sem Disp.Ate')
+        # El id histórico de tabla (106) no es el número de columna (50).
+        self.assertEqual(e['columnas_tabla']['AX']['id_tabla'], '106')
+        for fila in [18, 115, 219, 383, 384, 464]:
+            self.assertEqual(e['celdas'][f'AX{fila}']['formato'], '[h]:mm')
+            self.assertFalse(e['celdas'][f'AX{fila}']['tiene_formula'])
+            self.assertFalse(e['celdas'][f'BA{fila}']['tiene_formula'])
+
+    def test_134744_no_es_un_error_de_precision_ni_de_floor(self):
+        e = self.evidencia
+        self.assertEqual(e['celdas']['K18']['valor_xml'], '134744')
+        self.assertEqual(e['celdas']['B18']['valor_xml'], '11')
+        c = e['calculos_decimal_50']['18']
+        self.assertEqual(Decimal(c['nas_desde_horas']), Decimal('0.175'))
+        self.assertEqual(Decimal(c['ax_horas']), Decimal('16.5'))
+        self.assertEqual((c['floor_b'], c['floor_ax'], c['objetivo_xml']), (14, 14, '15'))
+        self.assertTrue(c['semanal_desde_horas'].startswith('14.55882352941176470588'))
+        self.assertGreater(Decimal(15)-Decimal(c['semanal_b_token_xml']), Decimal('0.44'))
+        self.assertEqual(v.abajo(float(c['semanal_b_token_xml'])), 14)
+        self.assertEqual(v.abajo(float(c['semanal_desde_au_xml'])), 14)
+
+    def test_evidencia_no_modifica_fuente_y_explica_los_cinco(self):
+        self.assertEqual(hashlib.sha256(self.path.read_bytes()).hexdigest(), self.hash_antes)
+        self.assertEqual(self.evidencia['archivo_sha256'], self.hash_antes)
+        identidad = self.evidencia['identidad_ax_desde_nas']
+        self.assertEqual((identidad['comparables'], identidad['coinciden']), (456, 456))
+        self.assertLess(Decimal(identidad['max_delta_horas']), Decimal('1e-9'))
+        for fila, esperado in [(115, 16), (219, 29), (383, 30), (384, 31), (464, 33)]:
+            c = self.evidencia['calculos_decimal_50'][str(fila)]
+            self.assertEqual(c['floor_ax'], esperado)
+            self.assertNotEqual(c['floor_b'], esperado)
+
+
+if __name__ == '__main__':
+    unittest.main()

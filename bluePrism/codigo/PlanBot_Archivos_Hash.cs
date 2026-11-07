@@ -18,4 +18,15 @@ public class PlanBot_Archivos_Hash
             hash = texto.ToString();
         }
     }
+
+    // ACCIÓN auxiliar: Mover Archivo. No sobrescribe; ejecutar con Excel cerrado.
+    public void MoverArchivo(string ruta, string carpeta, decimal cargaId, out string rutaDestino)
+    {
+        if (!Directory.Exists(carpeta)) throw new Exception("No existe la carpeta destino.");
+        if (cargaId < 1 || cargaId != Decimal.Truncate(cargaId)) throw new Exception("cargaId inválido.");
+        string prefijo = cargaId.ToString(System.Globalization.CultureInfo.InvariantCulture) + "_" +
+            DateTime.UtcNow.Ticks.ToString(System.Globalization.CultureInfo.InvariantCulture) + "_";
+        rutaDestino = Path.Combine(carpeta, prefijo + Path.GetFileName(ruta));
+        File.Move(ruta, rutaDestino);
+    }
 }
