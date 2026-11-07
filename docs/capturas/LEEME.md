@@ -1,6 +1,6 @@
 # Capturas para la presentación
 
-Capturas del dashboard a **alta resolución (escala 2: 2880 px de ancho)**, tomadas el 7-nov-2026 con Edge sin ventana contra la **base real local** (PostgreSQL 16 + PostgREST, vistas `api.*` de Andrés) salvo la 09, que usa datos de prueba. Solo se ven `persona_id`, nunca nombres ni RUT.
+Capturas del dashboard a **alta resolución (escala 2: 2880 px de ancho)**, tomadas el 7-nov-2026 con Edge sin ventana contra la **base real local** (PostgreSQL 16 + PostgREST, vistas `api.*` de Andrés). Solo se ven `persona_id`, nunca nombres ni RUT.
 
 | Archivo | Qué muestra | Estado de los datos |
 |---|---|---|
@@ -13,8 +13,7 @@ Capturas del dashboard a **alta resolución (escala 2: 2880 px de ancho)**, toma
 | `06-cambios-carga-02.png` | Cambios y errores de la carga de `02_cambios`: los 5 cambios (cargo, alta, jornada, baja, instituto) con antes y después | Base real, carga 16 |
 | `07-errores-carga-03.png` | Cambios y errores de la carga de `03_errores`: los 5 errores con fila, profesional, campo y motivo | Base real, carga 17 (cargada después de las demás capturas) |
 | `08-parametros-reglas-vigentes.png` | Reglas vigentes por tabla (325 reglas); abajo, «escenarios todavía no disponibles» | Base real |
-| `09-parametros-escenario-dialogo-datos-de-prueba.png` | Escenario con su impacto antes/después y el diálogo accesible de Rechazar con motivo | **Datos de prueba (mock)**: se tomó antes de que existieran los escenarios en la base real (el encabezado dice «Datos de prueba»); las 09b y 09c son las equivalentes con la base real |
-| `09b-parametros-escenario-pendiente-dialogo-decision.png` | Escenario 1 pendiente (meta 90 % → 92 %, +12.196 de meta) con el diálogo de decisión abierto, en **modo planificador** | **Base real** (B-12: `api.listar_escenarios()` y `api.decidir_escenario()`), token de planificador de prueba |
+| `09-parametros-escenario-dialogo-decision.png` | Escenario 1 pendiente (meta 90 % → 92 %, +12.196 de meta) con el diálogo de decisión abierto, en **modo planificador** | Base real (B-12: `api.listar_escenarios()` / `api.decidir_escenario()`), token de planificador de prueba generado con `scripts	oken_planificador.ps1` |
 | `09c-parametros-escenario-requiere-planificador.png` | El mismo escenario sin token: Aprobar y Rechazar inactivos con «Requiere ingresar como planificador» | Base real |
 | `10-cuadratura.png` | Cuadratura con el Excel: **95,55 %** de las atenciones de mayo a diciembre coinciden, coincidencia por campo y mes, causas y diferencias | Base real tras `SELECT api.cuadratura();` (recalculada al reinstalar con `-CargarBukPrueba`: 1.538 diferencias, 95,55 %). `v_cuadratura` guarda la comparación del momento en que se ejecuta; si se carga otro BUK, hay que volver a ejecutarla antes de mostrar la pantalla. Causas con las descripciones oficiales de Andrés |
 | `11-vista-impresion-nacional.png` | Vista de impresión de Nacional (ancho A4, sin menú ni botones, con título, fecha y filtros) | **Emulada** aplicando las reglas `@media print` en pantalla; no es un PDF real |
