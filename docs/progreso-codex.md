@@ -1,8 +1,12 @@
 # Progreso Codex · César
 
-Rama actual: `codex/trabajo`, integrada con origin/main/275847b (PR #12 y #13) mediante merge 1a3c24b. Última actualización: 2026-11-07. Nuevos cambios solo en las carpetas autorizadas; no se editan los archivos SQL, API, scripts de Andrés ni el front. Se conserva el historial anterior.
+Rama actual: `codex/trabajo`, integrada con origin/main/60fb288 (PR #14) mediante merge ca7543b. Última actualización: 2026-11-07. Nuevos cambios solo en las carpetas autorizadas; no se editan los archivos SQL, API, scripts de Andrés ni el front. Se conserva el historial anterior.
 
 ## Hecho
+
+- Corrección del esperado confirmada por César (71555 no era error SQL): tramo y NAS dependen del promedio anual; 40 h ene–abr y 30 h may–dic hacen pasar de tramo 1 a 2. Con corte desde marzo, 02 espera 162 atenciones en marzo y 159 en abril, conservando enero/febrero. tests/e2e/esperado_impacto_anual.csv explicita los 20 campos antes/después aceptados; el comparador exige coincidencia exacta y presencia de cada impacto, sin excluir identificadores ni meses del control. Se mantiene la verificación del corte global y de otros cambios inesperados. La tabla histórica «para Andrés» queda **resuelta por corrección del esperado**, no por cambio del back.
+- E2E ejecutado de nuevo con main/PR #14: **10/10 OK, exit 0**, 5/5 cambios, 20/20 campos de impacto anual, cero cambios inesperados y cero antes del mes mínimo 3, 5/5 errores, conteos 01/03, duplicado, mínimo NULL y reinicio exacto de 5338 filas. **15 SQL verdes**, incluida 100_llamadas_robot.sql. Cuatro regresiones del comparador verdes: aceptación exacta, valor no autorizado, impacto ausente y modificación anterior al corte. Evidencia %TEMP%\PlanBot_Anual_E2E_e9584e6db53241b2a018d5905a73a080\evidencia\ (cluster_detenido=true). No se tocó ninguna fórmula SQL ni contrato; no se reabrió B/AX.
+
 
 - Tarea 6: docs/demo.md incorpora **Supuestos del MVP**, solo documentación: vigencia mensual/corte global y promedio por período con ejemplo 32,5 h; contrato repetido sin suma, alerta/error del back, pares reales únicos en BUK vs repetidos de Excel y comparación por semanas/alternativa más cercana; 134744/11 diferencia explicada con B vigente. Se indica parametrización y validación con Teletón, separando explícitamente la política del back de los Code stages. No se cambia código por estos supuestos ni se reabre AX. Revisión contra la instrucción de César y diff sin errores; las pruebas del código no se repiten por una edición documental.
 

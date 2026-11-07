@@ -32,6 +32,12 @@ def comparar(carpeta, esperados):
     cortes = {int(r['persona_id']): int(r['mes_vigencia']) for r in eventos}
     antes = {(int(r['persona_id']), int(r['it']), int(r['mes'])): r['fila'] for r in leer_json(carpeta/'antes.json')}
     despues = {(int(r['persona_id']), int(r['it']), int(r['mes'])): r['fila'] for r in leer_json(carpeta/'despues.json')}
+    # Impactos anuales confirmados: no son excepciones de cálculo. Se exige
+    # coincidencia exacta antes/después, no una exclusión por persona o por mes.
+    with (Path(__file__).resolve().parents[2]/'tests/e2e/esperado_impacto_anual.csv').open(encoding='utf-8-sig', newline='') as f:
+        anual = {(int(r['persona_id']),int(r['it']),int(r['mes']),r['campo']):
+                 (Decimal(r['antes']),Decimal(r['despues'])) for r in csv.DictReader(f)}
+    anual_visto = set()
     nprevias = 0
     corte_global=int(leer_json(carpeta/'02/resumen.json')['mes_minimo'])
     anteriores_global=0
@@ -44,13 +50,25 @@ def comparar(carpeta, esperados):
             continue
         if mes < corte_global:
             anteriores_global += 1
-        nprevias += 1
+        fila_inesperada = False
         campos = (a or {}).keys() | (b or {}).keys()
         for campo in sorted(campos):
             va, vb = (a or {}).get(campo), (b or {}).get(campo)
             if va != vb:
-                diferencia(persona, mes, f'{campo} (it {it})', va, vb, '02_invariancia')
-    caso('02_meses_previos', nprevias==0, f'{nprevias} filas cambiaron antes de vigencia o en personas ajenas; calculado_en excluido')
+                clave_anual = (persona,it,mes,campo)
+                if clave_anual in anual and (va,vb) == anual[clave_anual]:
+                    anual_visto.add(clave_anual)
+                else:
+                    fila_inesperada = True
+                    diferencia(persona, mes, f'{campo} (it {it})', va, vb, '02_invariancia')
+        if fila_inesperada:
+            nprevias += 1
+    for persona,it,mes,campo in sorted(anual.keys()-anual_visto):
+        diferencia(persona,mes,f'{campo} (it {it})',anual[(persona,it,mes,campo)],
+                    (antes.get((persona,it,mes),{}).get(campo),despues.get((persona,it,mes),{}).get(campo)),
+                    '02_impacto_anual')
+    caso('02_impacto_anual',anual_visto==anual.keys(),f'{len(anual_visto)}/{len(anual)} cambios de campos coinciden con esperado anual confirmado')
+    caso('02_meses_previos', nprevias==0, f'{nprevias} filas con cambios no previstos por vigencia o impacto anual; calculado_en excluido')
     caso('02_corte_global',anteriores_global==0,f'{anteriores_global} cambios antes de mes_minimo_afectado={corte_global}')
 
     with (esperados/'esperado_errores.csv').open(encoding='utf-8-sig', newline='') as f:
