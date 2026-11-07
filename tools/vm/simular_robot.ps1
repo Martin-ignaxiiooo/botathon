@@ -21,10 +21,18 @@ New-Item -ItemType Directory -Force -Path $Salida | Out-Null
 $Salida=(Resolve-Path -LiteralPath $Salida).Path
 if (Get-ChildItem -LiteralPath $Salida -Force) { throw 'Salida debe ser una carpeta nueva/vacia para no mezclar lotes.' }
 $conexion=@{Psql=$psql;Servidor=$Servidor;Puerto=$Puerto;Base=$Base;Usuario=$Usuario;VariableClave=$VariableClave}
-$resumen=[ordered]@{archivo=[IO.Path]::GetFileName($Archivo);sha256=(Get-FileHash -LiteralPath $Archivo -Algorithm SHA256).Hash.ToLowerInvariant();carga_id=0;duplicado=$false;estado='iniciando';artefactos=$Salida}
+function Obtener-HashRobot([string]$Ruta) {
+    # Mismo SHA-256/lectura compartida que el BO; no depende de la carga
+    # automática de Get-FileHash en ámbitos anidados de Windows PowerShell.
+    $flujo=[IO.File]::Open($Ruta,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::ReadWrite)
+    $sha=[Security.Cryptography.SHA256]::Create()
+    try { return [BitConverter]::ToString($sha.ComputeHash($flujo)).Replace('-','').ToLowerInvariant() }
+    finally { $sha.Dispose(); $flujo.Dispose() }
+}
+$resumen=[ordered]@{archivo=[IO.Path]::GetFileName($Archivo);sha256=(Obtener-HashRobot $Archivo);carga_id=0;duplicado=$false;estado='iniciando';artefactos=$Salida}
 $resumen.fuentes_cs=@{}
 foreach($nombre in @('PlanBot_Limpieza.cs','PlanBot_Validador.cs','PlanBot_PostgreSQL.cs')) {
-    $resumen.fuentes_cs[$nombre]=(Get-FileHash -LiteralPath (Join-Path $raizRobot ('bluePrism\codigo\'+$nombre)) -Algorithm SHA256).Hash
+    $resumen.fuentes_cs[$nombre]=Obtener-HashRobot (Join-Path $raizRobot ('bluePrism\codigo\'+$nombre))
 }
 $sqlRuta=Join-Path $Salida 'paso.sql'
 $antesClaves=@{}
