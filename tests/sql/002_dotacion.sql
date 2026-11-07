@@ -53,7 +53,10 @@ BEGIN
     VALUES (v_carga, 21, 900006, DATE '2026-07-01', DATE '2020-01-01', DATE '2015-03-31', 40, 'KINESIOLOGO');
     -- error que ya dejó el robot (fila ilegible que no llegó a stg.buk_fila)
     INSERT INTO stg.error_fila (carga_id, fila, persona_id, campo, valor, motivo)
-    VALUES (v_carga, 99, 900007, 'horas_semanales', 'cuarenta', 'horas_semanales no es numérico');
+    VALUES (v_carga, 99, 900007, 'horas_semanales', 'cuarenta', 'horas_semanales no es numérico'),
+    -- el robot también marcó 900005 (horas 0) pero la fila llegó a stg.buk_fila: la base lo detecta igual y
+    -- debe contarse UNA vez (ni en con_error ni en leidas se duplica)
+           (v_carga, 98, 900005, 'horas_semanales', '0', 'horas_semanales debe ser mayor que cero');
 
     SELECT * INTO r FROM api.cargar_dotacion(v_carga);
     IF r.filas <> 19 THEN RAISE EXCEPTION 'DOTACION: filas = % (se esperan 19)', r.filas; END IF;
@@ -61,7 +64,8 @@ BEGIN
 
     SELECT count(*) INTO v_n FROM core.alerta WHERE carga_id = v_carga AND tipo = 'cargo_sin_homologar' AND persona_id = 900004;
     IF v_n <> 1 THEN RAISE EXCEPTION 'DOTACION: falta alerta de cargo sin homologar'; END IF;
-    SELECT count(*) INTO v_n FROM stg.error_fila WHERE carga_id = v_carga AND persona_id = 900005;
+    SELECT count(*) INTO v_n FROM stg.error_fila WHERE carga_id = v_carga AND persona_id = 900005
+      AND motivo LIKE 'cargar_dotacion:%';
     IF v_n <> 1 THEN RAISE EXCEPTION 'DOTACION: falta error de fila por horas 0'; END IF;
     SELECT count(*) INTO v_n FROM stg.error_fila WHERE carga_id = v_carga AND persona_id = 900006 AND campo = 'fecha_termino';
     IF v_n <> 1 THEN RAISE EXCEPTION 'DOTACION: falta error de fila por fecha término < ingreso'; END IF;
@@ -69,7 +73,8 @@ BEGIN
     IF v_n <> 1 THEN RAISE EXCEPTION 'DOTACION: falta error de fila por cargo sin homologar'; END IF;
     SELECT count(*) INTO v_n FROM stg.error_fila WHERE carga_id = v_carga AND persona_id = 900001 AND campo = 'persona_id';
     IF v_n <> 1 THEN RAISE EXCEPTION 'DOTACION: falta error de fila por duplicado'; END IF;
-    -- conteos: 23 filas en stg + 1 rechazada por el robot; 19 válidas; 5 con error (4 de la función + 1 del robot)
+    -- conteos: 23 filas en stg + 1 rechazada por el robot (900007); 19 válidas; 5 con error
+    -- (4 de la función + 1 del robot; el error del robot sobre 900005 repite uno de la función y no suma)
     SELECT leidas, validas, con_error INTO r FROM stg.carga WHERE carga_id = v_carga;
     IF r.leidas <> 24 OR r.validas <> 19 OR r.con_error <> 5 THEN
         RAISE EXCEPTION 'DOTACION: conteos de stg.carga leidas/validas/con_error = %/%/% (se esperan 24/19/5)', r.leidas, r.validas, r.con_error;

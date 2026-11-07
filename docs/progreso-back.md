@@ -72,9 +72,21 @@ y fusiona su PR. El BACK no toca database\views\ mientras tanto.
 - Ojo al compilar a mano: hacerlo como owner_planbot o con migrar.ps1. Si se compila como postgres, la función
   queda con otro dueño y migrar falla con "debe ser dueño".
 
+- **Conteos de stg.carga en cargar_dotacion (paso 4, 7-nov):**
+  - **Errores del robot:** los que Blue Prism dejó en stg.error_fila; su motivo NO empieza con 'cargar_dotacion:'.
+  - **Errores de la base:** los que agrega la función, con ese prefijo. Al re-ejecutar se borran y se recalculan;
+    los del robot no se tocan.
+  - **Repetidos:** errores del robot con el mismo (persona_id, campo) que un error de la base. Esa fila también
+    llegó a stg.buk_fila y la base ya la contó.
+  - Fórmulas:
+    - `con_error = robot + base − repetidos`
+    - `leidas = filas de stg.buk_fila + robot − repetidos`
+    - `validas = filas pasadas a core.dotacion_mes`
+  - Probado en tests\sql\002 (error del robot repetido sobre 900005: 24/19/5) y con 03_errores (3124/3119/5).
+- Prueba de cambios renombrada a tests\sql\035_cambios_recalcular.sql: Codex usa 030_vistas.sql para B-09.
+
 ## Siguiente
-- Corrección de con_error en cargar_dotacion, instalación en la VM con un comando. Luego revisar y fusionar el PR
-  de B-09 (Codex).
+- Instalación en la VM con un comando (instalar_sin_docker.ps1). Luego revisar y fusionar el PR de B-09 (Codex).
 - Si sobra tiempo: usar data\csv\insumos.csv (Codex) para minutos, distribución y asignaciones por persona, como
   excepción documentada, y subir del 95,5 %.
 
