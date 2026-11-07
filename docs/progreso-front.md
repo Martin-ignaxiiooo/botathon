@@ -19,6 +19,13 @@ Rama actual: main
 - Revisión sin ventana: Edge headless (`msedge --headless=new --virtual-time-budget=6000 --dump-dom http://localhost:8080/#nacional`) y `--enable-logging=stderr` para ver la consola.
 - Modo de datos: `?modo=api` en la URL fuerza PostgREST (`config.js`); por defecto es mock.
 
+## Filtros (C-04): cómo funcionan
+- Claves del hash: `it`, `area`, `cargo`, `desde`, `hasta` (1 y 12 no se guardan), `tipo` (directa|indirecta|nas). Se muestran en las pantallas con `filtros: true` en `PAGINAS` (router.js).
+- Flujo: control → evento `filtros-cambiaron` {pagina, filtros} → router actualiza el hash → la pantalla se redibuja. El router solo mueve el foco al `h1` si cambió de pantalla, no si cambiaron los filtros. Los enlaces del menú de pantallas con filtros arrastran los filtros actuales.
+- Exporta `resumenFiltros(f)` y `hayFiltros(f)` (útiles para C-11: imprimir/exportar con los filtros aplicados).
+- `v_kpi` y `v_nacional_mes` no admiten it/area/cargo: con esos filtros (o con meses) Nacional deriva tarjetas y línea mensual desde `v_instituto_area_mes`; la «Última carga» sigue viniendo de `v_kpi`. Sin filtros usa las vistas nacionales.
+- `tipo` solo afecta al gráfico de horas por área (series visibles y tabla); las atenciones son siempre directas.
+
 ## API de los módulos (para quien siga)
 - `getData(vista, filtros)`: filtros `{it:[], area:[], cargo:[], persona:[], carga:[], desde, hasta}`; cada vista solo aplica los filtros que tiene (tabla `FILTRABLES` en api.js). `leerMock(nombre)` para JSON que no son vistas (escenarios).
 - Router: `hashPara(pagina, filtros)`, `irA(pagina, filtros)`, `filtrosDesdeParams`; evento `pagina-cambio` en `document` tras cada render. Cada pantalla es `js\pages\<id>.js` con `render(contenedor, filtros)` (puede ser async); su `h1` lleva `tabindex="-1"` para recibir el foco.

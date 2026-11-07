@@ -3,8 +3,8 @@
 import { cargando, mostrarError, liberarGraficos, el } from './ui.js';
 
 export const PAGINAS = [
-  { id: 'nacional', titulo: 'Nacional' },
-  { id: 'instituto', titulo: 'Instituto' },
+  { id: 'nacional', titulo: 'Nacional', filtros: true },   // filtros: muestra la barra de filtros (C-04)
+  { id: 'instituto', titulo: 'Instituto', filtros: true },
   { id: 'profesional', titulo: 'Profesional' },
   { id: 'cambios', titulo: 'Cambios' },
   { id: 'parametros', titulo: 'Parámetros' },
@@ -48,7 +48,7 @@ export function irA(pagina, filtros = {}) {
 }
 
 let token = 0;
-let primeraCarga = true;
+let ultimaPagina = null;
 
 export function iniciarRouter({ contenedor, menu }) {
   const navegar = async () => {
@@ -69,6 +69,8 @@ export function iniciarRouter({ contenedor, menu }) {
       document.title = 'Pantalla no encontrada · PlanBot';
       vista.append(el('h1', { tabindex: '-1' }, 'Pantalla no encontrada'),
         el('p', {}, 'La dirección no corresponde a ninguna pantalla. ', el('a', { href: '#nacional' }, 'Ir a Nacional')));
+      ultimaPagina = null;
+      document.dispatchEvent(new CustomEvent('pagina-cambio', { detail: { pagina: null, filtros: {} } }));
       return;
     }
 
@@ -87,11 +89,16 @@ export function iniciarRouter({ contenedor, menu }) {
     }
     if (mio !== token) return;
 
-    if (!primeraCarga) vista.querySelector('h1')?.focus(); // anuncia la nueva pantalla a lectores de pantalla
-    primeraCarga = false;
+    // Anuncia la nueva pantalla a lectores de pantalla, pero no mueve el foco si solo cambiaron los filtros.
+    if (ultimaPagina !== null && ultimaPagina !== pagina) vista.querySelector('h1')?.focus();
+    ultimaPagina = pagina;
     document.dispatchEvent(new CustomEvent('pagina-cambio', { detail: { pagina, filtros } }));
   };
 
   window.addEventListener('hashchange', navegar);
+  // La barra de filtros avisa con este evento; el router pasa el estado al hash (la URL es la fuente de verdad).
+  document.addEventListener('filtros-cambiaron', (e) => {
+    irA(e.detail.pagina || leerHash().pagina, e.detail.filtros);
+  });
   return navegar();
 }
