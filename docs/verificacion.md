@@ -4,9 +4,120 @@ Ejecución: **7 de noviembre de 2026**, Windows/Python 3.12, pandas 3.1.1 y open
 
 **Actualización Tarea 10:** al incorporar los insumos individuales del Excel se confirma la hipótesis: **A: 99.788 %** por cargo+área y tramo por promedio (variante de homologación candidata); **B: 100 % de ambos porcentajes finales, 98.658 % de directas semanales en 447 filas activas; C: 100 % del plan mensual aislado y 99.867 % de meta**. Los resultados están condicionados a los insumos explícitos de cada capa, no son la exactitud de un cálculo alimentado solo por BUK ni de la base de Andrés. Detalle y exportación de insumos a continuación.
 
+## Rastreo original desde aaa6d56 · Contrato, AX y 134744/11
+
+Se confirmó HEAD `aaa6d56` y árbol limpio antes de editar; no se descartó ni fusionó trabajo de otra rama. Se mantienen B, sus denominadores, los 471 registros y los dos pares con tramos de vigencia distintos. Esta revisión añade evidencia reproducible y corrige la referencia documental del contrato; **no cambia reglas de negocio ni resultados numéricos**. El commit de esta revisión es local, sin push por instrucción de César.
+
+### Contrato v1.1 localizado
+
+La búsqueda en archivos e historial encontró **`0fb3a930da5a58516dd9a6bb2b0af455c6351d1a`**, mensaje `docs(contrato): v1.1 horas por area en v_instituto_area_mes`. Está contenido en `main`, `origin/main` y las ramas front que lo incorporaron; no está incorporado en el snapshot de contratos de `codex/trabajo`.
+
+```powershell
+git log --all --oneline -- docs/contratos.md
+git show 0fb3a93:docs/contratos.md
+git show 0fb3a93 -- docs/contratos.md
+git branch -a --contains 0fb3a93
+```
+
+La v1.1 agrega **horas_contratadas, horas_dir, horas_ind y horas_nas** a `api.v_instituto_area_mes`; conserva los otros contratos. Su blob es `1dd84cb141a111e22d8c533ea108c5c156c8cc21`, frente a `f731847280d1ffae3060c52d972deedad36315ce` en este worktree. Esta es la referencia real, no una versión reconstruida. No se editó docs/contratos.md ni se fusionó el trabajo paralelo para traerla. La auditoría offline no cambia ninguna columna API, tabla o firma SQL de v1.1.
+
+### AX: evidencia del archivo, límites y reconstrucción compatible
+
+El paquete original vincula Dotacion_Asistencial a **`xl/worksheets/sheet8.xml`** mediante workbook.xml y sus relaciones. Dot_Asistencial está en **`xl/tables/table5.xml`**, rango A4:GW476. El encabezado de AX es `H/Sem Disp.Ate`, su formato es **`[h]:mm`** y su valor XML es un serial de duración en **días**, que se multiplica por 24 para expresarlo en horas. El id de columna en la tabla es 106, pero AX ocupa la posición 50: no se utiliza ese id histórico como posición de Excel.
+
+La auditoría XML confirma:
+
+- **0 fórmulas de celda en el cuerpo, filas 5–475**, incluidas AX y BA de los seis casos.
+- **0 fórmulas en los metadatos de la tabla**; no hay calculatedColumnFormula que permita recuperar el cálculo borrado.
+- Hay **105 fórmulas en la hoja**, pero solo fuera del cuerpo: 3 en la fila 1, 12 en la fila 3 y 90 en los totales de la fila 476. Por tanto no se debe afirmar que todo el libro carece de fórmulas.
+- AX18 y BA18 contienen `<v>0.6875</v>` y `<v>15</v>`, respectivamente, sin nodo `<f>` ni fórmula compartida. La existencia de calcChain.xml no recupera una expresión que no está almacenada en esas celdas o en la tabla.
+- El historial Git del Excel solo contiene la incorporación inicial **4e164da** (`git log --all --oneline -- "data/excel/Nac - Planificacion Asistencial x mes.xlsx"`). No se encontró una revisión anterior con fórmulas para esas celdas.
+
+El rótulo y los valores son compatibles con **horas semanales disponibles para atención después de NAS y asignaciones**. Una reconstrucción aritmética comprobable es:
+
+```text
+S = AH + AS = Horas NAS Total + Total Horas Asignación
+H_antes_inferida = S / AT                       (AT distinto de cero)
+AX_horas_compatible = H_antes_inferida − S
+                     = S × (1−AT) / AT
+```
+
+Esta identidad reproduce **456/456 filas comparables**, tolerancia absoluta 1e-9 h, usando los tokens numéricos originales y Decimal de 50 dígitos. No hay división por cero en las filas comparadas. Las otras 15 no se convierten en cero. **Es una identidad compatible con los datos, no una fórmula original recuperada ni una regla de negocio aprobada.**
+
+| Fila | Persona/IT | AD, disponibilidad diciembre | H_antes inferida de S/AT | AX, horas después de NAS | BA objetivo | B vigente | Diagnóstico AX |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| 115 | 72365/41 | 40 | 39.50 | 14.00 | 16 | 17 | 16 |
+| 219 | 73206/81 | 42 | 41.50 | 25.45 | 29 | 30 | 29 |
+| 383 | 79740/131 | 30 | 31.25 | 23.60 | 30 | 29 | 30 |
+| 384 | 73258/131 | 30 | 32.50 | 24.25 | 31 | 29 | 31 |
+| 464 | 72210/141 | 35 | 36.75 | 25.70 | 33 | 32 | 33 |
+
+Se comprueba la diferencia de bases: la regla vigente combina AD de diciembre con un AT compatible con otra disponibilidad; AX mantiene la coherencia con esa disponibilidad inferida. Aplicar `floor(AX_horas × %Directo/(%Directo+%Indirecto) × minutos_hora/min_directa + 1e-9)` reproduce las cinco BA sin usar sus objetivos para elegir el insumo. La etiqueta de BA dice may–dic y las cinco filas registran cambio de jornada, pero **el período exacto y el modo de obtener H_antes no pueden certificarse con valores pegados**. No se sustituye AD por la disponibilidad inferida ni se aplica AX en B o C.
+
+Pregunta concreta pendiente al responsable: **¿qué disponibilidad y vigencia rigen la atención semanal may–dic: la de cada mes, un promedio específico de ese período o AX como insumo individual autorizado?** Se necesita esa definición o una copia del Excel que conserve las fórmulas originales. Ninguna de las alternativas se implementa por semejanza con los resultados.
+
+### 134744/11: cálculo completo desde las celdas originales
+
+Corresponde a **fila Excel 18**, confirmada por K18=134744 y B18=11. No comparte clave con los pares repetidos.
+
+| Celda | Significado | Token XML original |
+|---|---|---|
+| AD18 | Horas disponibles antes de NAS, diciembre | `20` |
+| AH18 | Horas NAS total | `3` |
+| AS18 | Horas de asignación total | `0.5` |
+| AJ18 / AK18 | Directo / indirecto base | `0.75` / `0.1` |
+| AT18 | %NAS + asignaciones almacenado | `0.17499999999999999` |
+| AU18 | %Directo final almacenado | `0.7279411764705882` |
+| AX18 | Duración disponible para atención | `0.6875` días = **16.5 horas** |
+| AY18 | Minutos estándar de atención directa | `60` |
+| BA18 | Atenciones directas semanales objetivo | **`15`**, sin fórmula |
+
+Paso a paso con decimales canónicos de los insumos, sin convertir primero a float:
+
+```text
+NAS + asignación = 3 + 0.5 = 3.5 h
+pct_NAS = 3.5 / 20 = 0.175
+suma_dir_ind = 0.75 + 0.10 = 0.85
+pct_dir_final = 0.75 × (1−0.175) / 0.85
+              = 0.72794117647058823529411764705882352941176470588235
+directas_sin_floor = 20 × pct_dir_final × 60 / 60
+                  = 14.558823529411764705882352941176470588235294117647
+floor(directas_sin_floor + 0.000000001) = 14
+
+Por AX: 0.6875 × 24 × 0.75 / 0.85 × 60 / 60
+       = 14.558823529411764705882352941176470588235294117647
+floor(... + 1e-9) = 14
+```
+
+La precisión de serialización no explica el objetivo 15:
+
+- Con el token original AT18, el valor sin floor es **14.55882352941176488235…**.
+- Con el AU18 original directamente, es **14.5588235294117640**.
+- Con float de Python, es **14.558823529411764**.
+- Todos dan **14** con floor(x+1e-9). Falta aproximadamente **0.44117647** para llegar a 15, muy por encima de un error de representación.
+
+No se encontró una fórmula original en BA18 que ordene redondear al entero más cercano. Cambiar floor por round, aumentar epsilon, alterar el estándar o insertar una excepción por persona **no está demostrado por las reglas** y no se aplica. Pregunta pendiente: **¿BA18=15 es una excepción aprobada o un objetivo que debe corregirse en la fuente a 14?** Hasta obtener confirmación se conserva el 15 del origen, el 14 del cálculo y la discrepancia abierta.
+
+### Evidencia reproducible, pruebas y antes/después
+
+`python tools\verificar_calculo.py --capas --salida tools\resultados\rastreo_despues` genera ahora **b_fuente_original.json**, con SHA-256 del libro, relaciones a la hoja/tabla, coordenadas, formatos, tokens XML, presencia/ausencia de fórmulas, identidad AX y cálculos Decimal de 50 dígitos para las filas discrepantes. Solo devuelve columnas numéricas pertinentes; no escribe el libro ni exporta nombres o RUT. Los archivos auxiliares siguen excluidos de Git.
+
+Se ejecutaron las **17 pruebas originales antes de editar y 20 después**. Las tres nuevas pruebas de trazabilidad verifican ausencia real de fórmulas en las celdas/tabla, formato de duración sin confundir id de columna, precisión y floor del caso 134744, identidad AX 456/456 y que el archivo fuente conserva su hash.
+
+| Medida | Antes (aaa6d56) | Después |
+|---|---:|---:|
+| B vigente, directas activas | 441/447 = 98.658 % | **Igual** |
+| Diagnóstico AX, activas | 446/447 = 99.776 % | **Igual** |
+| A contextual, cada base | 470/471 = 99.788 % | **Igual** |
+| B finales, cada uno | 456/456 = 100 % | **Igual** |
+| C aislada, plan | 3.768/3.768 = 100 % | **Igual** |
+| C aislada, meta | 3.763/3.768 = 99.867 % | **Igual** |
+
+La comparación de los CSV completos `calculo`, `comparaciones`, `resumen`, `capas_detalle` y `capas_resumen` con `pandas.testing.assert_frame_equal` confirma resultados idénticos. No hay un defecto de cálculo demostrado que autorice modificar B en esta revisión: se resuelve la localización de v1.1 y se reemplazan con evidencia explícita las incertidumbres de fórmulas/precisión. Permanecen pendientes la confirmación de disponibilidad/vigencia AX y la revisión del objetivo BA18.
+
 ## Revisión desde d69cdd8 · Directas activas B
 
-Se partió de `d69cdd8` en `codex/trabajo`, sin cambios locales pendientes. Se leyeron las instrucciones, reglas y contratos y se consultaron las referencias remotas sin fusionarlas sobre el worktree. El contrato local y el de origin/main no identifican una versión **v1.1**; se solicitó su ubicación. Esta revisión no cambia contratos, SQL, arquitectura, fuentes Excel ni CSV de datos.
+Se partió de `d69cdd8` en `codex/trabajo`, sin cambios locales pendientes. Se leyeron las instrucciones, reglas y contratos y se consultaron las referencias remotas sin fusionarlas sobre el worktree. En esa revisión no se había localizado **v1.1**; el rastreo posterior la identificó en `0fb3a93:docs/contratos.md`, como se documenta arriba. Esta revisión no cambia contratos, SQL, arquitectura, fuentes Excel ni CSV de datos.
 
 ### Reproducción y denominadores
 
@@ -78,7 +189,7 @@ Se conservaron los CSV de la reproducción en `tools/resultados/revision_antes` 
 
 **17 pruebas en verde**: las 12 originales y cinco pruebas nuevas que cubren duraciones >24 h, formatos ambiguos, seis residuos, ausencia de regresiones en AX y mantenimiento de vigencias/identidad de filas. No está disponible scripts/test.ps1; no se modificaron los datos ni carpetas del back/front.
 
-Pendientes concretos: confirmar si B debe usar la disponibilidad de AX y cuál es su vigencia; revisar 134744/11 con el responsable del Excel; facilitar la referencia del contrato v1.1. Siguen sin cambiar los residuos ya documentados de A (71613/131), NAS reconstruido (nueve jornadas), reconstrucción grupal y las cinco metas. No se aplican reglas nuevas ni ajustes para alcanzar 100 %.
+Pendientes concretos: confirmar si B debe usar la disponibilidad de AX y cuál es su vigencia; revisar 134744/11 con el responsable del Excel. La referencia v1.1 ya está localizada en `0fb3a93`. Siguen sin cambiar los residuos ya documentados de A (71613/131), NAS reconstruido (nueve jornadas), reconstrucción grupal y las cinco metas. No se aplican reglas nuevas ni ajustes para alcanzar 100 %.
 
 ## Tarea 10 · Diagnóstico por capas
 

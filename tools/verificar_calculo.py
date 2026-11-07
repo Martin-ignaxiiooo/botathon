@@ -10,9 +10,11 @@ import datetime
 import hashlib
 import json
 import math
+import posixpath
 import unicodedata
 import zipfile
 import xml.etree.ElementTree as ET
+from decimal import Decimal, localcontext, ROUND_FLOOR
 from pathlib import Path
 
 import pandas as pd
@@ -467,6 +469,109 @@ def discrepancias_directas_activas(df, detalle, params):
     return evidencia[evidencia['comparable'] & ~evidencia['coincide']].sort_values('fila_excel')
 
 
+def auditar_fuente_original(path, filas, minutos_hora):
+    """Evidencia del paquete original; no recalcula ni modifica el Excel.
+
+    Solo devuelve celdas numéricas de las filas investigadas. Los IDs de columna
+    de una tabla no son posiciones: se conserva la correspondencia por orden.
+    """
+    from openpyxl.styles.numbers import BUILTIN_FORMATS
+    from openpyxl.utils.cell import range_boundaries, get_column_letter
+    n = {'m': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
+    columnas = ['B', 'K', 'W', 'X', 'AD', 'AH', 'AJ', 'AK', 'AS', 'AT', 'AU', 'AX', 'AY', 'BA']
+    filas = sorted(int(f) for f in filas)
+    objetivos = {f'{c}{f}' for f in filas for c in columnas}
+    with zipfile.ZipFile(path) as z:
+        libro = ET.fromstring(z.read('xl/workbook.xml'))
+        hoja = next(s for s in libro.find('m:sheets', n) if s.get('name') == 'Dotacion_Asistencial')
+        rid = hoja.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id')
+        rels = ET.fromstring(z.read('xl/_rels/workbook.xml.rels'))
+        target = next(r.get('Target') for r in rels if r.get('Id') == rid)
+        parte = target.lstrip('/') if target.startswith('/') else posixpath.normpath(posixpath.join('xl', target))
+        tablas = [(p, ET.fromstring(z.read(p))) for p in z.namelist() if p.startswith('xl/tables/') and p.endswith('.xml')]
+        parte_tabla, tabla = next((p, t) for p, t in tablas if t.get('name') == 'Dot_Asistencial')
+        primera_col, cabecera, _, ultima = range_boundaries(tabla.get('ref'))
+        ultima -= int(tabla.get('totalsRowCount', '0'))
+        raiz = ET.fromstring(z.read(parte))
+        estilos = ET.fromstring(z.read('xl/styles.xml'))
+        formatos = dict(BUILTIN_FORMATS)
+        formatos.update({int(f.get('numFmtId')): f.get('formatCode') for f in estilos.findall('m:numFmts/m:numFmt', n)})
+        xfs = estilos.find('m:cellXfs', n)
+        celdas, formulas_por_fila, insumos_identidad = {}, {}, {}
+        for r in raiz.findall('m:sheetData/m:row', n):
+            for c in r.findall('m:c', n):
+                f = c.find('m:f', n)
+                if f is not None:
+                    fila = int(r.get('r'))
+                    formulas_por_fila[fila] = formulas_por_fila.get(fila, 0) + 1
+                direccion = c.get('r')
+                valor = c.find('m:v', n)
+                columna = direccion.rstrip('0123456789')
+                fila = int(r.get('r'))
+                if cabecera < fila <= ultima and columna in {'AH', 'AS', 'AT', 'AX'} and c.get('t', 'n') == 'n' and valor is not None:
+                    insumos_identidad.setdefault(fila, {})[columna] = Decimal(valor.text)
+                if direccion not in objetivos:
+                    continue
+                estilo = int(c.get('s', '0'))
+                celdas[direccion] = dict(valor_xml=valor.text if valor is not None else None,
+                    tipo_xml=c.get('t', 'n'), estilo=estilo,
+                    formato=formatos.get(int(xfs[estilo].get('numFmtId'))),
+                    tiene_formula=f is not None, formula=f.text if f is not None else None,
+                    atributos_formula=dict(f.attrib) if f is not None else {})
+        metadata = {}
+        for posicion, c in enumerate(tabla.findall('m:tableColumns/m:tableColumn', n), primera_col):
+            letra = get_column_letter(posicion)
+            if letra in columnas:
+                metadata[letra] = dict(id_tabla=c.get('id'), nombre=c.get('name'),
+                    formulas=[f.text for f in c.iter() if 'formula' in f.tag.lower()])
+    calculos = {}
+    with localcontext() as contexto:
+        contexto.prec = 50
+        identidad_comparables, identidad_coinciden = 0, 0
+        identidad_max_delta = Decimal(0)
+        for valores in insumos_identidad.values():
+            if not {'AH', 'AS', 'AT', 'AX'} <= set(valores) or valores['AT'] == 0:
+                continue
+            total_nas = valores['AH'] + valores['AS']
+            inferida = total_nas/valores['AT'] - total_nas
+            delta = abs(inferida - valores['AX']*24)
+            identidad_comparables += 1
+            identidad_coinciden += int(delta <= Decimal('1e-9'))
+            identidad_max_delta = max(identidad_max_delta, delta)
+        for fila in filas:
+            def d(col):
+                celda = celdas[f'{col}{fila}']
+                if celda['tipo_xml'] != 'n' or celda['valor_xml'] is None:
+                    raise ValueError(f'{col}{fila}: el rastro requiere un valor XML numérico, no un índice de texto compartido')
+                return Decimal(celda['valor_xml'])
+            # Se conserva la precisión del token XML, sin convertir antes a float.
+            disponible = d('AD') * (1-d('AT'))
+            razon = d('AJ') / (d('AJ')+d('AK'))
+            ax = d('AX') * 24  # El serial de duración está en días.
+            semanal_b = disponible * razon * Decimal(str(minutos_hora)) / d('AY')
+            semanal_ax = ax * razon * Decimal(str(minutos_hora)) / d('AY')
+            nas = (d('AH')+d('AS')) / d('AD')
+            pct_canonico = d('AJ')*(1-nas)/(d('AJ')+d('AK'))
+            semanal_canonico = d('AD')*pct_canonico*Decimal(str(minutos_hora))/d('AY')
+            calculos[str(fila)] = dict(ax_horas=str(ax), disponibilidad_b=str(disponible),
+                nas_desde_horas=str(nas), pct_final_desde_horas=str(pct_canonico),
+                semanal_desde_horas=str(semanal_canonico), semanal_b_token_xml=str(semanal_b),
+                semanal_ax_token_xml=str(semanal_ax),
+                semanal_desde_au_xml=str(d('AD')*d('AU')*Decimal(str(minutos_hora))/d('AY')),
+                floor_b=int((semanal_b+Decimal('1e-9')).to_integral_value(rounding=ROUND_FLOOR)),
+                floor_ax=int((semanal_ax+Decimal('1e-9')).to_integral_value(rounding=ROUND_FLOOR)),
+                objetivo_xml=str(d('BA')))
+    return dict(archivo_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+                hoja_xml=parte, tabla_xml=parte_tabla, rango_tabla=tabla.get('ref'),
+                formulas_por_fila=formulas_por_fila,
+                formulas_en_cuerpo=sum(k for f, k in formulas_por_fila.items() if cabecera < f <= ultima),
+                formulas_en_metadata_tabla=sum('formula' in e.tag.lower() for e in tabla.iter()),
+                identidad_ax_desde_nas=dict(comparables=identidad_comparables, coinciden=identidad_coinciden,
+                    max_delta_horas=str(identidad_max_delta),
+                    expresion='AX*24 = (AH+AS)/AT - (AH+AS); identidad compatible, no fórmula original recuperada'),
+                columnas_tabla=metadata, celdas=celdas, calculos_decimal_50=calculos)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--buk', type=Path, default=ROOT / 'data/excel/Nac - Base contratos x mes.xlsx')
@@ -536,7 +641,10 @@ def main(argv=None):
         errores_capas['abs_diferencia'] = errores_capas['diferencia'].abs()
         errores_capas.sort_values('abs_diferencia', ascending=False).groupby(['capa', 'campo']).head(20).to_csv(args.salida / 'capas_top20.csv', index=False)
         asistencial[asistencial.duplicated(['persona_id', 'it'], keep=False)].to_csv(args.salida / 'capas_claves_repetidas.csv', index=False)
-        discrepancias_directas_activas(asistencial, detalle_capas, p).to_csv(args.salida / 'b_directas_activas_discrepancias.csv', index=False)
+        discrepancias_b = discrepancias_directas_activas(asistencial, detalle_capas, p)
+        discrepancias_b.to_csv(args.salida / 'b_directas_activas_discrepancias.csv', index=False)
+        evidencia_xml = auditar_fuente_original(args.planificacion, discrepancias_b['fila_excel'], p['minutos_hora'])
+        (args.salida / 'b_fuente_original.json').write_text(json.dumps(evidencia_xml, ensure_ascii=False, indent=2), encoding='utf-8')
         print('\nCAPAS A/B/C (diagnóstico condicionado a insumos Excel; no es BUK independiente):\n' + resumen_capas.to_string(index=False))
     fuentes = [args.buk, args.param_generales, *sorted(args.csv.glob('param_*.csv')), args.csv / 'esperado.csv']
     if args.plan:

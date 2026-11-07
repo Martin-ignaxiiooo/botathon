@@ -2,6 +2,8 @@
 import unittest
 import datetime
 import math
+import hashlib
+from decimal import Decimal
 
 import pandas as pd
 import verificar_calculo as v
@@ -94,6 +96,52 @@ class DuracionExcelTests(unittest.TestCase):
             v.horas_duracion_excel('16:30')
         with self.assertRaises(ValueError):
             v.horas_duracion_excel(float('inf'))
+
+
+class FuenteOriginalTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.path = v.ROOT / 'data/excel/Nac - Planificacion Asistencial x mes.xlsx'
+        cls.hash_antes = hashlib.sha256(cls.path.read_bytes()).hexdigest()
+        params, *_ = v.parametros(v.ROOT / 'data/csv', v.ROOT / 'tools/param_general_verificacion.csv')
+        cls.evidencia = v.auditar_fuente_original(cls.path, [18, 115, 219, 383, 384, 464], params['minutos_hora'])
+
+    def test_formulas_originales_y_formato_de_duracion(self):
+        e = self.evidencia
+        self.assertEqual(e['formulas_en_cuerpo'], 0)
+        self.assertEqual(e['formulas_en_metadata_tabla'], 0)
+        self.assertEqual(e['formulas_por_fila'], {1: 3, 3: 12, 476: 90})
+        self.assertEqual(e['columnas_tabla']['AX']['nombre'], 'H/Sem Disp.Ate')
+        # El id histórico de tabla (106) no es el número de columna (50).
+        self.assertEqual(e['columnas_tabla']['AX']['id_tabla'], '106')
+        for fila in [18, 115, 219, 383, 384, 464]:
+            self.assertEqual(e['celdas'][f'AX{fila}']['formato'], '[h]:mm')
+            self.assertFalse(e['celdas'][f'AX{fila}']['tiene_formula'])
+            self.assertFalse(e['celdas'][f'BA{fila}']['tiene_formula'])
+
+    def test_134744_no_es_un_error_de_precision_ni_de_floor(self):
+        e = self.evidencia
+        self.assertEqual(e['celdas']['K18']['valor_xml'], '134744')
+        self.assertEqual(e['celdas']['B18']['valor_xml'], '11')
+        c = e['calculos_decimal_50']['18']
+        self.assertEqual(Decimal(c['nas_desde_horas']), Decimal('0.175'))
+        self.assertEqual(Decimal(c['ax_horas']), Decimal('16.5'))
+        self.assertEqual((c['floor_b'], c['floor_ax'], c['objetivo_xml']), (14, 14, '15'))
+        self.assertTrue(c['semanal_desde_horas'].startswith('14.55882352941176470588'))
+        self.assertGreater(Decimal(15)-Decimal(c['semanal_b_token_xml']), Decimal('0.44'))
+        self.assertEqual(v.abajo(float(c['semanal_b_token_xml'])), 14)
+        self.assertEqual(v.abajo(float(c['semanal_desde_au_xml'])), 14)
+
+    def test_evidencia_no_modifica_fuente_y_explica_los_cinco(self):
+        self.assertEqual(hashlib.sha256(self.path.read_bytes()).hexdigest(), self.hash_antes)
+        self.assertEqual(self.evidencia['archivo_sha256'], self.hash_antes)
+        identidad = self.evidencia['identidad_ax_desde_nas']
+        self.assertEqual((identidad['comparables'], identidad['coinciden']), (456, 456))
+        self.assertLess(Decimal(identidad['max_delta_horas']), Decimal('1e-9'))
+        for fila, esperado in [(115, 16), (219, 29), (383, 30), (384, 31), (464, 33)]:
+            c = self.evidencia['calculos_decimal_50'][str(fila)]
+            self.assertEqual(c['floor_ax'], esperado)
+            self.assertNotEqual(c['floor_b'], esperado)
 
 
 if __name__ == '__main__':
