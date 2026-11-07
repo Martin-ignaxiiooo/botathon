@@ -8,7 +8,7 @@ Rama actual: main (todo fusionado)
 - C-02 esqueleto: `web\index.html`, `css\base.css`, `js\{config,api,router,formato,ui,main}.js`, stubs en `js\pages\`, ECharts 5.6.0 y Tabulator 6.7.1 en `vendor\` (ver `vendor\LEEME.txt`)
 - Contrato v1.1: `v_instituto_area_mes` con horas_contratadas/dir/ind/nas; mocks regenerados (la suma por mes cuadra con `v_nacional_mes`)
 - C-03 Nacional: 6 tarjetas, líneas atenciones/meta con marca de cambio de jornada, barras de meta por instituto (clic → `#instituto?it=`), horas apiladas por área; cada gráfico con aria-label y «Ver datos»
-- C-04 filtros: `jsiltros.js` (instituto múltiple, área, cargo, mes desde/hasta, tipo; estado en el hash; «Limpiar filtros»; evento `filtros-cambiaron`), aplicado en Nacional
+- C-04 filtros: `js\filtros.js` (instituto múltiple, área, cargo, mes desde/hasta, tipo; estado en el hash; «Limpiar filtros»; evento `filtros-cambiaron`), aplicado en Nacional
 - C-05 Instituto: tabla Tabulator área × mes (métrica atenciones/meta/% FOJA, ordenable con clic o teclado, fila de totales), meta mensual apilada por área, profesionales del área elegida con enlace a `#profesional?persona=`
 
 ## En curso
