@@ -1,0 +1,11 @@
+cod_esp,grupo_it,pct_grupal,pacientes_grupo
+AS,San-Con,0.1,3.0
+AS,otros,0.1,1.5
+ED,San-Con,0.1,3.0
+ED,otros,0.1,1.5
+UEDA,San-Con,0.55,6.0
+UEDA,otros,0.55,3.0
+ULAB,San-Con,0.1,3.0
+ULAB,otros,0.1,1.5
+UTAC,San-Con,0.55,6.0
+UTAC,otros,0.55,3.0

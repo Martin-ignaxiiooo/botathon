@@ -1,0 +1,34 @@
+tipo,horas_semana,requiere_dmn,descripcion
+Coordinacion nacional WeeFIM,,True,Definidos DMN
+Capacitación,,True,Autorizado DMN
+Acreditación,,True,Definidos DMN- Según plan de calidad
+Actividades Coordinación ULAB,,False,Definidos por GP
+Coordinador Kinesiologia,,False,Definidos por GP
+Docencia DMN,,True,Definidos DMN
+Responsable Tecnico (2do Programa),,False,Definidos por GP
+Actividades de Coordinacion,,False,Definidos por GP
+Musica (DMN),,False,Definidos por GP
+Desarrollo técnico,,False,Definidos por GP
+Dirigente Sindical,,False,Definidos por GP
+Responsable Tecnico Gestiona Inclusion,,False,Definidos por Programa Local
+Atenciones Otro IT,,True,Definidos DMN GP
+Coordinacion Casa acogida,,True,Definidos DMN GP
+Responsable técnico,1.0,False,Hora semana por programa de voluntariado
+Comité paritario,0.5,False,Semana
+Casa de acogida Santiago,1.0,False,Semana
+Coordinación WeeFIM (Local) por IT,1.0,False,Semanal
+GMFM (Local) Por IT,1.0,False,Semanal
+Tutor docente,1.0,False,Semanal
+Coordinador docente,1.0,False,Semanal
+Coordinador docente,1.0,False,Semanal
+Coordinación Tetca/tetco/ Uta(Local) por IT,1.0,False,Semanal
+Líder Equipo,2.0,False,Semanales para actividades de rol de lider. 
+Investigación,2.0,False,Semanales una vez aprobado por CEC
+Desarrollo técnico AM,5.0,False,Arlette Moraga  - Contrato
+Investigación AM,4.0,False,Arlette Moraga  - Contrato
+Traslado inter clinica,,False,Semanal
+CEA,0.25,False,Semanal
+Mesas Tecnicas SSYC,0.5,False,Semanal
+Mesas Tecnicas SDM,0.5,False,Semanal
+Mesas Tecnicas SDM,0.5,False,Semanal
+Reunion Sindical (Dentro de contrato),0.25,False,Semanal

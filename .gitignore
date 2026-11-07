@@ -1,0 +1,8 @@
+.env
+node_modules/
+logs/
+*.bak
+~$*.xlsx
+__pycache__/
+.vscode/
+pgdata/
