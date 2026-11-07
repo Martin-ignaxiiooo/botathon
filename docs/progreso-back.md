@@ -1,6 +1,6 @@
 # Progreso BACK (Andrés · Claude Code)
 Última actualización: 2026-11-07 · por: Claude Code
-Rama actual: feat/demo-reinicio (desde main con #10 y #11)
+Rama actual: docs/cierre-back-demo (desde main 275847b)
 Reparto 7-nov: B-09 (vistas api.*, database\views\) lo hace el Codex de César en feat/B-09-vistas; el BACK revisa
 y fusiona su PR. El BACK no toca database\views\ mientras tanto.
 
@@ -179,6 +179,109 @@ Notas:
   `bot_carga` tiene search_path `api, stg, public`, así que llama las funciones sin prefijo. Para ver la clave en
   la VM: `Select-String BOT_CARGA_PASSWORD .env`.
 - **PostgREST:** se conecta como `web_lectura` (`WEB_LECTURA_PASSWORD`), en `api\postgrest.conf`.
+
+## Guía SQL para Blue Prism (database\demo\llamadas_robot.sql)
+Sentencias ODBC exactas en orden (registrar carga, stg.buk_fila con sus 17 columnas y tipos, stg.error_fila,
+cargar_dotacion, contadores, mes_minimo_afectado, recalcular con motivo, cuadratura, marcar error). El archivo es
+también un ensayo ejecutable como bot_carga con ROLLBACK (tests\sql\100_llamadas_robot.sql lo corre en cada prueba).
+- Parámetros psqlODBC: marcadores `?`. Number de BP llega como decimal → en llamadas a funciones siempre
+  `CAST(? AS bigint)` (carga_id) y `CAST(? AS integer)` (mes); sin CAST, PostgreSQL busca `api.cargar_dotacion(numeric)`
+  y responde "la función no existe". En los INSERT de Carga Masiva no hace falta CAST. Fechas como DateTime, DBNull real.
+- **Para Lucas** (bluePrism\codigo\guia_procesos.md, diferencias con el contrato/permisos):
+  1. **Q08 no va.** bot_carga no tiene UPDATE de leidas/validas/con_error, y cargar_dotacion ya deja
+     `estado='cargada'` y los tres contadores (con_error incluye los rechazos de la base). Leerlos con:
+     `SELECT leidas, validas, con_error, estado FROM stg.carga WHERE carga_id = CAST(? AS bigint);`
+  2. **Q09 sí funciona** desde V009 (`GRANT UPDATE (estado) ON stg.carga TO bot_carga`); antes daba permiso denegado:
+     `UPDATE stg.carga SET estado = 'error' WHERE carga_id = CAST(? AS bigint);`
+  3. P06 cuadratura es opcional: recalcular() ya la rehace. Si se quiere el % en el informe:
+     `SELECT api.cuadratura() AS pct_coincidencia;`
+  4. Motivos del robot en stg.error_fila sin el prefijo `cargar_dotacion:` (ese prefijo marca los de la base).
+  Q01–Q07 calzan con el contrato tal como están.
+- Variable de contraseña que exige el instalador en .env (o en el entorno): `PG_SUPER_PASSWORD`.
+
+## Resultados esperados en la demo
+Ensayo local del 7-nov (04:14) con scripts\reiniciar_demo.ps1 y database\demo\consultas_demo.sql; 02 = versión
+regenerada por Codex (traslado con Área y Centro de Costo del IT nuevo).
+- **Antes (reiniciar_demo):** 1 carga BUK 01_original (3.123 leídas / 3.123 válidas / 0 con error), 5.338 filas de
+  plan, 621.637 atenciones, meta 557.114, cuadratura 95,55 %, 3 escenarios (pendiente, aprobado, rechazado).
+- **01 → 02_cambios:** 3.125 leídas / 3.125 válidas / 0 con error, 0 errores, 0 alertas, y exactamente 5 cambios:
+
+  | tipo | persona_id | IT | desde mes |
+  |---|---|---|---|
+  | cambio_cargo | 71132 | 131 | 3 (MEDICO FISIATRA → ASISTENTE SOCIAL) |
+  | alta | 999001 | 131 | 4 (KINESIOLOGO, 44 h) |
+  | cambio_jornada | 71555 | 131 | 5 (40 → 30 h) |
+  | baja | 71027 | 101 | 6 |
+  | cambio_it | 71146 | 101 | 7 (131 → 101; queda en Puerto Montt, sin alerta area_distinta_it) |
+
+  Recálculo desde el mes 3: 4.447 filas en ~0,63 s; cuadratura baja a 95,08 % (el Excel es anterior a los cambios).
+- **01 → 03_errores:** 3.124 leídas / 3.119 válidas / 5 con error, **ningún cambio** (mes mínimo NULL: el robot no
+  recalcula). Los 5 errores:
+
+  | fila | persona_id | campo | causa |
+  |---|---|---|---|
+  | 1 | 71027 | horas_semanales | horas 0 |
+  | 8 | 71132 | fecha_termino | término anterior al ingreso |
+  | 15 | 71146 | cargo | cargo sin homologar (CARGO INEXISTENTE) |
+  | 29 | 71232 | persona_id | fila duplicada (persona, IT, periodo) |
+  | 45 | 71247 | horas_semanales | texto en número ("cuarenta") |
+
+  La consulta 4 sigue mostrando el recálculo del reinicio (95,55 %), porque no hubo recálculo nuevo.
+- Ciclo completo local (Excel → stg → dotación → cambios → recálculo → cuadratura): ~3,0–3,6 s; con Blue Prism
+  dependerá de la lectura del Excel en el robot.
+- Al terminar el ensayo la base quedó otra vez en el estado de la demo (reiniciar_demo.ps1).
+
+## Base en la VM (después de tools\vm\levantar_demo.ps1)
+```powershell
+cd C:\dev\botathon
+# 0 · claves de .env en esta sesión, sin mostrarlas (verificar_vm no lee .env por sí solo)
+Get-Content .env | Where-Object { $_ -match '^(POSTGRES_[A-Z_]+|BOT_CARGA_PASSWORD|WEB_LECTURA_PASSWORD|PG_[A-Z_]+)=' } |
+  ForEach-Object { $k, $v = $_ -split '=', 2; Set-Item "Env:$k" $v.Trim() }
+# 1 · verificación: debe terminar en "Resultado: 0 comprobaciones pendientes" y código 0
+.\tools\vm\verificar_vm.ps1 -RaizRepo C:\dev\botathon; "codigo=$LASTEXITCODE"
+# 2 · token de planificador (24 h) al portapapeles, sin mostrarlo
+.\scripts\token_planificador.ps1 2>$null | Set-Clipboard
+# 3 · clave de bot_carga: está en C:\dev\botathon\.env, clave BOT_CARGA_PASSWORD. Copiarla sin mostrarla y
+#     entregarla a Lucas en privado (nunca por el chat del equipo ni en un archivo):
+((Select-String -Path .env -Pattern '^BOT_CARGA_PASSWORD=').Line -split '=', 2)[1].Trim() | Set-Clipboard
+# 4 · base en el estado de la demo (antes de cada ensayo y justo antes de presentar)
+.\scripts\reiniciar_demo.ps1
+# 5 · después de la carga del robot: las 5 consultas en pantalla
+$env:PGPASSWORD = $env:POSTGRES_PASSWORD
+& "$env:PG_BIN\psql.exe" -X -h localhost -U owner_planbot -d planbot -f database\demo\consultas_demo.sql
+```
+Si falla:
+- **LIBPQ.dll / PostgREST no arranca** (C:\PlanBot\runtime\postgrest.err.log): PostgREST necesita la carpeta bin de
+  PostgreSQL en el PATH. Revisar `PG_BIN` en .env (por defecto `C:\Program Files\PostgreSQL\16\bin`) y volver a
+  correr levantar_demo; a mano: `$env:PATH = "$env:PG_BIN;" + $env:PATH`.
+- **Puerto ocupado** (3000 PostgREST, 8080 web, 5432 PostgreSQL):
+  `Get-NetTCPConnection -LocalPort 3000,8080 -State Listen | Select-Object LocalPort, OwningProcess` y
+  `Get-Process -Id <pid>`. Si es un PostgREST/web propio anterior: `.\tools\vm\detener_demo.ps1` y levantar de nuevo.
+  Si es ajeno, no matarlo sin preguntar; el front espera 3000/8080. 5432: `Get-Service postgresql*` debe estar Running.
+- **JWT inválido (401 / "JWSError" / "JWT invalid")**: PostgREST corre con otro secreto que el .env (p. ej. el
+  instalador generó uno nuevo) o el token venció (24 h). `.\tools\vm\detener_demo.ps1`, levantar_demo de nuevo y
+  generar otro token (paso 2). El secreto debe tener 32+ caracteres (el instalador lo corrige solo).
+- **verificar_vm con rojos**: ODBC x64 ausente es de Lucas (driver psqlODBC); "Login bot_carga" en rojo = paso 0 no
+  se hizo o .env cambió; "Filas calc.plan_mes" en rojo = correr el paso 4.
+
+## Cifras para el pitch (verificadas en la base local, 7-nov)
+- **Plan mensual vs Excel (may-dic, atenciones directas):** 100 % (3.752/3.752) con el semanal y las semanas hábiles
+  del Excel (database\evidencia\b06, recalculado hoy); **95,55 %** (3.394/3.552) calculando todo desde el BUK.
+  Meta 99,87 % / 95,52 %. Las diferencias tienen causa probable en api.v_cuadratura (19 ajustes individuales del Excel
+  explican la mayoría; 134744/11 es una diferencia explicada).
+- **Atenciones semanales directas (may-dic) desde el BUK:** 95,78 % (431/450 persona-IT). El 98,66 % lo midió Codex en
+  su capa con insumos del Excel; no es una medición del back de punta a punta.
+- **recalcular(1):** 5.338 filas en ~0,62–0,64 s, incluida la cuadratura (el requisito era < 10 s).
+  Recálculo desde el mes 3 tras 02_cambios: 4.447 filas en ~0,63 s.
+- **Ciclo completo de una carga** (Excel → stg → dotación → cambios → recálculo → cuadratura): ~3–3,6 s en este PC.
+- **Pruebas SQL:** 15 archivos en tests\sql, en verde local y en el CI: humo/esquemas, parámetros versionados,
+  dotación y errores, semanal, plan mensual y FOJA, 8 vistas del contrato, 6 tipos de cambio y recálculo, filas
+  rechazadas que no son cambios, cuadratura con sus 7 causas, auditoría con triggers, 10 casos dorados del Excel,
+  escenarios (simular/decidir/aplicar), permisos JWT, área por IT + cuadratura al recalcular, guía del robot.
+- **Parámetros fuera del código:** 12 constantes en param.general (meta, jornadas, pausas, colación, tramos,
+  asignaciones, minutos indirectos, día en semanas) + 258 filas de distribución por cargo y tramo, 12 meses de
+  calendario, 10 reglas grupales, 33 tipos de asignación, 16 institutos y 15 cargos homologados. Ninguna constante
+  de negocio (0,9 / 44 / 42 / 40 / 22 / 30) escrita en funciones o vistas; todas versionadas con vigencia.
 
 ## Demo: reinicio y consultas en vivo
 ```powershell
