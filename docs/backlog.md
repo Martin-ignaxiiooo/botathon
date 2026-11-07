@@ -37,11 +37,11 @@ Formato: `- [ ] ID · título` y debajo sus criterios. Al terminar una historia,
 - [ ] B-06 · Plan mensual, meta y FOJA (BACK, 5 pts, MODO PLAN)
   - [x] calc.plan_mes con semanas hábiles por zona, atenciones, meta, FOJA, version_param
   - [ ] 100 % en plan_ate_dir may–dic y >= 99 % en meta (capa aislada 100 % / 99,87 %; completo 95,55 % / 95,52 % por el semanal B-05)
-- [ ] B-07 · Detección de cambios (BACK, 3 pts)
-  - [ ] `detectar_cambios(carga_id)`: alta, baja, cambio_jornada, cambio_cargo, cambio_it, cambio_vigencia con mes_vigencia; inserta en core.cambios
-  - [ ] `mes_minimo_afectado(carga_id)`
-- [ ] B-08 · recalcular(desde_mes) (BACK, 3 pts)
-  - [ ] Transaccional, meses anteriores intactos, < 10 s, registra en audit.log, GRANT a bot_carga
+- [x] B-07 · Detección de cambios (BACK, 3 pts)
+  - [x] `detectar_cambios(carga_id)`: alta, baja, cambio_jornada, cambio_cargo, cambio_it, cambio_vigencia con mes_vigencia; inserta en core.cambios
+  - [x] `mes_minimo_afectado(carga_id)`
+- [x] B-08 · recalcular(desde_mes) (BACK, 3 pts)
+  - [x] Transaccional, meses anteriores intactos, < 10 s, registra en audit.log, GRANT a bot_carga
 - [ ] B-09 · Vistas api.* (BACK, 2 pts)
   - [ ] Las 8 vistas con columnas exactas del contrato, GRANT SELECT a web_lectura
   - [ ] Suma de v_instituto_area_mes = v_kpi
