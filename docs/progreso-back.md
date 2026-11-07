@@ -1,6 +1,6 @@
 # Progreso BACK (Andrés · Claude Code)
 Última actualización: 2026-11-07 · por: Claude Code
-Rama actual: feat/B-10-cuadratura (desde main; PR por API de GitHub porque gh no está instalado)
+Rama actual: feat/D-05-casos-dorados (desde main; B-11 va aparte en feat/B-11-auditoria, PR #7)
 Reparto 7-nov: B-09 (vistas api.*, database\views\) lo hace el Codex de César en feat/B-09-vistas; el BACK revisa
 y fusiona su PR. El BACK no toca database\views\ mientras tanto.
 
@@ -95,9 +95,14 @@ y fusiona su PR. El BACK no toca database\views\ mientras tanto.
   - Base real: 1.518 diferencias, 135 personas (ajuste 950, multi_it 338, grupal 88, ene-abr 65, explicada 50, otra 27).
     Las 5 persona-IT del Excel con otro IT que el BUK (p. ej. 71342/61) salen multi_it.
   - instalar_sin_docker.ps1 -CargarBukPrueba ahora corre también api.cuadratura(). tests\sql\040_cuadratura.sql.
+- D-05 · Casos dorados (tests\sql\060_casos_dorados.sql) hecha. 10 persona-IT del Excel que el sistema reproduce
+  exacto, calculadas en CI desde sus 70 filas BUK embebidas (solo persona_id): 71853/12, 72379/51, 76852/11 (arica),
+  73182/51, 71509/101, 132962/41, 72253/81, 125926/131, 71425/91 (grupal 55 %), 71132/131. Cubre cambio de jornada,
+  colación, asignaciones 0,25-6 h, 7 cargos. Usa api.cuadratura(): ninguna diferencia (salvo ate_semana_total grupal).
+  Generador: se armó con una consulta a la carga BUK local 63 (filas copiadas tal cual al test).
 
 ## Siguiente
-- B-11 auditoría con triggers, D-05 casos dorados, B-12 escenarios (si queda tiempo).
+- B-12 escenarios (si queda tiempo). B-11 en PR #7.
 - Si sobra tiempo: usar data\csv\insumos.csv (Codex) para minutos, distribución y asignaciones por persona, como
   excepción documentada, y subir del 95,5 %.
 
