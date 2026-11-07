@@ -1,6 +1,6 @@
 # Progreso BACK (Andrés · Claude Code)
 Última actualización: 2026-11-07 · por: Claude Code
-Rama actual: feat/B-01-B-02-base (push a origin; PR pendiente: gh no está instalado en el PC de laboratorio)
+Rama actual: feat/B-03-parametros (sale de feat/B-01-B-02-base; PR por web porque gh no está instalado)
 
 ## Hecho
 - B-01 · docker-compose.yml, V000__roles.sql, .env.example, scripts\_comun.ps1 (elige docker/nativo),
@@ -12,7 +12,7 @@ Rama actual: feat/B-01-B-02-base (push a origin; PR pendiente: gh no está insta
 - —
 
 ## Siguiente
-- B-03 (parámetros y CSV), B-04 (dotación + proyección ago-dic), B-05, B-06; prioridad B-09 (vistas api.* para César).
+- B-04 (dotación + proyección ago-dic), B-05, B-06; prioridad B-09 (vistas api.* para César).
 
 ## Cómo correr en este PC (laboratorio Duoc, sin admin, NO reiniciar)
 - Repo en `C:\dev\botathon`. Servicio `postgresql-x64-16` (puerto 5432) ya está en Running; superusuario `postgres`.
@@ -24,6 +24,17 @@ Rama actual: feat/B-01-B-02-base (push a origin; PR pendiente: gh no está insta
   Ojo: lanzar pg_ctl start desde PowerShell, no desde Git Bash (bash queda esperando).
 
 ## Errores conocidos / decisiones
+- **Homologación de cargos (B-03):** el BUK 2026 tiene solo 15 cargos y todos calzan por nombre con param_cargo.
+  Dudosos: EDUCADOR (BUK Cod_Esp ULAB; existe EDUCADOR NAS 0.30 y EDUCADOR ULAB NAS 0.50; se eligió EDUCADOR porque la
+  hoja de planificación muestra %NAS ~0.30) y MEDICO GENERAL (igual a MEDICO GENERAL FI). `cod_esp` homologado = el
+  del BUK: la columna cod_esp de param_cargo.csv viene desfasada (p. ej. FONOAUDIOLOGO con FI) y no se usa.
+- **Datos por persona que NO están en los CSV (afecta B-05):** asignaciones 1-4 y sus horas, colación en contrato,
+  otras NAS, licencias/vacaciones. Están en la hoja Dotacion_Asistencial del Excel de planificación. Para B-05/B-06
+  se usará stg.esperado (pct_dir_final, semhab) como fuente temporal o se extraerán a un CSV (pedir a César/Codex,
+  data\ no es del BACK).
+- El BUK trae `Fecha de Nacimiento` (regla de cumpleaños) pero no está en el Contrato 1 de stg.buk_fila.
+- Institutos: nombre = campo Área del BUK (Arica, ..., O'Higgins); 102 Castro no aparece en el BUK 2026.
+- Python del PC: sin pandas; `pip install --user openpyxl` funciona (correr python SIN -I para ver el site de usuario).
 - **Proyección ago-dic (regla de negocio, 6-nov):** stg.buk_fila solo trae ene-jul 2026 (corte de mitad de año).
   En B-04, `cargar_dotacion` genera los meses siguientes al último mes real de cada persona-IT, copiando sus
   condiciones (horas, cargo, área, contrato, días), hasta el mes de `fecha_termino` (incluido) o diciembre si no tiene.

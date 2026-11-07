@@ -18,11 +18,11 @@ Formato: `- [ ] ID · título` y debajo sus criterios. Al terminar una historia,
   - [x] calc.plan_mes pk(persona_id,it,mes), calc.escenario, calc.plan_mes_escenario, calc.cuadratura, audit.log
   - [x] Correr todo dos veces no da error
   - [x] `scripts\test.ps1 -Modulo db` + `tests\sql\000_humo.sql` verifican que existen esquemas y tablas
-- [ ] B-03 · Parámetros iniciales (BACK, 2 pts) — los CSV YA ESTÁN en `data\csv`
-  - [ ] Seed de param.general: meta 0.9, jornada_ene_abr 44, jornada_may_dic 42, pausa_pct_alta 0.10, pausa_pct_baja 0.06, colacion_h_dia 0.25, tramo_limite_bajo 22, tramo_limite_alto 40, max_asignaciones 2, horas_min_para_max 30, min_indirecta 30, dia_en_semanas 0.2
-  - [ ] Carga de los CSV a stg.param_* y stg.excepcion y stg.esperado con un carga_id tipo 'planificacion'
-  - [ ] `cargar_parametros(carga_id)` crea versión, cierra la anterior, valida sumas (inválidas a stg.error_fila)
-  - [ ] param.instituto con los 16 institutos (IT, nombre, zona general/arica/nuble/aysen, grupo_it San-Con u otros) y param.cargo_homologado (cargos BUK → Distribucion_NAC)
+- [x] B-03 · Parámetros iniciales (BACK, 2 pts) — los CSV YA ESTÁN en `data\csv`
+  - [x] Seed de param.general: meta 0.9, jornada_ene_abr 44, jornada_may_dic 42, pausa_pct_alta 0.10, pausa_pct_baja 0.06, colacion_h_dia 0.25, tramo_limite_bajo 22, tramo_limite_alto 40, max_asignaciones 2, horas_min_para_max 30, min_indirecta 30, dia_en_semanas 0.2
+  - [x] Carga de los CSV a stg.param_* y stg.excepcion y stg.esperado con un carga_id tipo 'planificacion'
+  - [x] `cargar_parametros(carga_id)` crea versión, cierra la anterior, valida sumas (inválidas a stg.error_fila)
+  - [x] param.instituto con los 16 institutos (IT, nombre, zona general/arica/nuble/aysen, grupo_it San-Con u otros) y param.cargo_homologado (cargos BUK → Distribucion_NAC)
 - [ ] A-02/A-03 código · C# para Blue Prism (FRONT/César, 1 pt, entregar a Lucas antes de la hora 3) → `bluePrism\codigo\`
   - [ ] `PlanBot_PostgreSQL.cs`: Ejecutar Consulta, Ejecutar Comando, Ejecutar Función, Carga Masiva (lotes de 500, transacción, parámetros, solo tablas stg.*) con System.Data.Odbc, .NET 4.7, instrucciones de Code Options
   - [ ] `PlanBot_Archivos_Hash.cs`: SHA-256 hexadecimal en minúscula, lectura compartida
