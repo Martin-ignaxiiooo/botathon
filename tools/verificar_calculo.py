@@ -6,6 +6,7 @@ Constantes reconstruidas en param_general_verificacion.csv; no son un seed SQL.
 """
 import argparse
 import calendar
+import datetime
 import hashlib
 import json
 import math
@@ -29,6 +30,25 @@ def normalizar(texto):
 
 def abajo(x):
     return math.floor(x + 1e-9)
+
+
+def horas_duracion_excel(valor):
+    """H/Sem Disp.Ate es una duración Excel, no un número de horas decimal.
+
+    Un serial numérico representa días; timedelta preserva duraciones >24 h.
+    Se rechazan textos desconocidos para no convertir silenciosamente errores a 0.
+    """
+    if pd.isna(valor):
+        return math.nan
+    if isinstance(valor, datetime.timedelta):
+        return valor.total_seconds() / 3600
+    if isinstance(valor, datetime.time):
+        return valor.hour + valor.minute / 60 + (valor.second + valor.microsecond / 1e6) / 3600
+    if isinstance(valor, (int, float)):
+        if not math.isfinite(valor):
+            raise ValueError('Duración Excel no finita')
+        return valor * 24
+    raise ValueError('Formato desconocido en H/Sem Disp.Ate: ' + type(valor).__name__)
 
 
 def semanal(horas, promedio, regla, params, dias_jornada=None, colacion=False, asignaciones=0):
@@ -307,6 +327,8 @@ def leer_asistencial(path):
         'ate_ind_semana': 'N° Ate Indirectas (30 min) - Semana may - dic',
         'pct_grupal': '% Atención Grupal Estándar', 'cambio_grupal': 'Cambio %Ate. Grupal V°B° DMN y VP',
         'pacientes_grupo': 'N° Pacientes por Grupo', 'ate_dir_grupal': 'Atención Semanal Directa + Grupal',
+        'disponible_ate_excel': 'H/Sem Disp.Ate',
+        'vigencia_desde': 'Periodo Inicio Jornada', 'vigencia_hasta': 'Perido Fin Jornada',
     }
     for m in range(1, 13):
         campos[f'semhab_{m}'] = f'SemHab{m}'
@@ -324,13 +346,17 @@ def leer_asistencial(path):
         df[c] = pd.to_numeric(df[c], errors='coerce')
     df = df[df['persona_id'].notna() & df['it'].notna()].copy()
     df[['persona_id', 'it']] = df[['persona_id', 'it']].astype('int64')
-    for c in set(campos) - {'persona_id', 'it', 'cargo', 'area', 'asignacion_1', 'asignacion_2'}:
+    df['disponible_ate_excel'] = df['disponible_ate_excel'].map(horas_duracion_excel)
+    for c in ['vigencia_desde', 'vigencia_hasta']:
+        df[c] = pd.to_datetime(df[c], errors='raise')
+    for c in set(campos) - {'persona_id', 'it', 'cargo', 'area', 'asignacion_1', 'asignacion_2', 'disponible_ate_excel', 'vigencia_desde', 'vigencia_hasta'}:
         df[c] = pd.to_numeric(df[c], errors='raise')
     return df
 
 
 def capas_asistencial(df, params, reglas):
     """Diagnóstico por fila física: las dos claves repetidas no se mezclan."""
+    unicos(df, ['fila_excel'], 'Dot_Asistencial: identidad de fila')
     resultados = []
     def registrar(capa, campo, referencia, calculado, mes=0, mascara=None, hipotesis=''):
         for i, r in df.iterrows():
@@ -380,6 +406,14 @@ def capas_asistencial(df, params, reglas):
                       hipotesis='H/S dic=0 puede conservar semanal histórico; en activas revisar jornada/estándar aplicado')
             registrar('b_' + modo + sufijo, 'ate_ind_semana', df['ate_ind_semana'], indirectas, mascara=mascara)
         predicciones[modo] = directas
+    # Variante de diagnóstico: NO reemplaza regla B ni alimenta C.
+    # AX ya descuenta NAS/asignaciones: no multiplicar de nuevo por (1-%NAS).
+    directa_ax = fl(df['disponible_ate_excel'] * df['pct_dir_base'] /
+                    suma.where(suma != 0) * params['minutos_hora'] /
+                    df['min_directa'].where(df['min_directa'] > 0))
+    registrar('b_diagnostico_disponible_ate_excel_activas', 'ate_dir_semana',
+              df['ate_dir_semana'], directa_ax, mascara=df['horas_semana_dic'] > 0,
+              hipotesis='Solo diagnóstico: disponibilidad AX distinta; cambio de insumo requiere confirmar regla/vigencia')
     pct_grupal = df['cambio_grupal'].fillna(df['pct_grupal']).fillna(0)
     factor = 1-pct_grupal+pct_grupal*df['pacientes_grupo'].fillna(1)
     registrar('c_grupal_desde_semanal_excel', 'ate_dir_grupal', df['ate_dir_grupal'], df['ate_dir_semana']*factor,
@@ -400,6 +434,37 @@ def capas_asistencial(df, params, reglas):
     resumen['pct_comparables'] = 100*resumen['coinciden']/resumen['comparables'].replace(0, math.nan)
     resumen['pct_total'] = 100*resumen['coinciden']/resumen['referencias']
     return resumen, detalle
+
+
+def discrepancias_directas_activas(df, detalle, params):
+    """Explicación trazable de los residuos de la regla vigente, sin deduplicar pares."""
+    unicos(df, ['fila_excel'], 'Origen de evidencia B')
+    base = detalle[(detalle['capa'] == 'b_pct_nas_excel_activas') &
+                   (detalle['campo'] == 'ate_dir_semana')].copy()
+    ax = detalle[(detalle['capa'] == 'b_diagnostico_disponible_ate_excel_activas') &
+                 (detalle['campo'] == 'ate_dir_semana')][['fila_excel', 'calculado']].rename(columns={'calculado': 'diagnostico_ax'})
+    unicos(base, ['fila_excel'], 'Resultado B vigente')
+    unicos(ax, ['fila_excel'], 'Diagnóstico B AX')
+    columnas = ['fila_excel', 'horas_semana_dic', 'prom_pond_horas', 'colacion_contrato',
+                'disponible_antes_nas', 'horas_nas_total', 'horas_asignacion',
+                'pct_nas_asignaciones', 'pct_dir_base', 'pct_ind_base', 'min_directa',
+                'disponible_ate_excel', 'vigencia_desde', 'vigencia_hasta']
+    origen = df[columnas].copy()
+    origen['par_repetido'] = df.duplicated(['persona_id', 'it'], keep=False)
+    evidencia = base.merge(origen, on='fila_excel', how='left', validate='one_to_one').merge(ax, on='fila_excel', how='left', validate='one_to_one')
+    evidencia['disponible_ate_segun_diciembre'] = evidencia['disponible_antes_nas'] * (1-evidencia['pct_nas_asignaciones'])
+    razon = evidencia['pct_dir_base'] / (evidencia['pct_dir_base'] + evidencia['pct_ind_base'])
+    evidencia['sin_floor_diciembre'] = evidencia['disponible_ate_segun_diciembre'] * razon * params['minutos_hora'] / evidencia['min_directa']
+    evidencia['sin_floor_ax'] = evidencia['disponible_ate_excel'] * razon * params['minutos_hora'] / evidencia['min_directa']
+    evidencia['causa_demostrada'] = 'No demostrada'
+    distintos = (evidencia['disponible_ate_excel'] - evidencia['disponible_ate_segun_diciembre']).abs() > 1e-9
+    corregible_ax = distintos & (evidencia['diagnostico_ax'] == evidencia['referencia'])
+    evidencia.loc[corregible_ax, 'causa_demostrada'] = 'Disponibilidades distintas en Excel; AX reproduce el semanal, la regla de diciembre no'
+    mismo_residuo = (evidencia['diagnostico_ax'] == evidencia['calculado']) & ~evidencia['coincide']
+    evidencia.loc[mismo_residuo & ~distintos, 'causa_demostrada'] = 'El objetivo semanal no se deriva de los insumos coherentes entre AD/AT y AX; no es frontera de floor'
+    evidencia['pendiente'] = 'Confirmar qué disponibilidad/vigencia debe alimentar la regla B antes de sustituirla'
+    evidencia.loc[mismo_residuo & ~distintos, 'pendiente'] = 'Revisar objetivo de origen o excepción de negocio; no cambiar floor ni el esperado'
+    return evidencia[evidencia['comparable'] & ~evidencia['coincide']].sort_values('fila_excel')
 
 
 def main(argv=None):
@@ -471,6 +536,7 @@ def main(argv=None):
         errores_capas['abs_diferencia'] = errores_capas['diferencia'].abs()
         errores_capas.sort_values('abs_diferencia', ascending=False).groupby(['capa', 'campo']).head(20).to_csv(args.salida / 'capas_top20.csv', index=False)
         asistencial[asistencial.duplicated(['persona_id', 'it'], keep=False)].to_csv(args.salida / 'capas_claves_repetidas.csv', index=False)
+        discrepancias_directas_activas(asistencial, detalle_capas, p).to_csv(args.salida / 'b_directas_activas_discrepancias.csv', index=False)
         print('\nCAPAS A/B/C (diagnóstico condicionado a insumos Excel; no es BUK independiente):\n' + resumen_capas.to_string(index=False))
     fuentes = [args.buk, args.param_generales, *sorted(args.csv.glob('param_*.csv')), args.csv / 'esperado.csv']
     if args.plan:

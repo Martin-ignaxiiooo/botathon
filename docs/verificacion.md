@@ -4,6 +4,82 @@ Ejecución: **7 de noviembre de 2026**, Windows/Python 3.12, pandas 3.1.1 y open
 
 **Actualización Tarea 10:** al incorporar los insumos individuales del Excel se confirma la hipótesis: **A: 99.788 %** por cargo+área y tramo por promedio (variante de homologación candidata); **B: 100 % de ambos porcentajes finales, 98.658 % de directas semanales en 447 filas activas; C: 100 % del plan mensual aislado y 99.867 % de meta**. Los resultados están condicionados a los insumos explícitos de cada capa, no son la exactitud de un cálculo alimentado solo por BUK ni de la base de Andrés. Detalle y exportación de insumos a continuación.
 
+## Revisión desde d69cdd8 · Directas activas B
+
+Se partió de `d69cdd8` en `codex/trabajo`, sin cambios locales pendientes. Se leyeron las instrucciones, reglas y contratos y se consultaron las referencias remotas sin fusionarlas sobre el worktree. El contrato local y el de origin/main no identifican una versión **v1.1**; se solicitó su ubicación. Esta revisión no cambia contratos, SQL, arquitectura, fuentes Excel ni CSV de datos.
+
+### Reproducción y denominadores
+
+Las 12 pruebas anteriores pasaron antes de editar. La reproducción conserva exactamente los conteos del estado reportado:
+
+| Medida | Numerador / denominador | % | Qué mide |
+|---|---:|---:|---|
+| A, cargo+área candidato y promedio | 470/471 por cada porcentaje base | 99.788 | Fila física de la tabla; incluye los dos pares con varios tramos |
+| B, porcentajes finales usando %NAS Excel | 456/456 por cada final | 100.000 | Solo valores numéricos comparables; 15 de 471 filas sin final calculable |
+| B, directas semanales activas | 441/447 | 98.658 | Filas con H/S dic > 0; todas tienen comparación numérica |
+| B, directas incluyendo históricos | 441/456 | 96.711 | 456 comparables de 471; diciembre cero no representa necesariamente toda la vigencia histórica |
+| C aislada, plan mayo–diciembre | 3.768/3.768 | 100.000 | 471 filas × 8 meses, usando BF y SemHab Excel |
+| C aislada, meta | 3.763/3.768 | 99.867 | Misma población mensual |
+
+El 100 % de finales es condicionado a `%NAS + Asig. Especiales` del propio Excel. El 100 % de C es condicionado a BF y SemHab. No son métricas de una cadena independiente de extremo a extremo.
+
+### Las seis diferencias y la evidencia de disponibilidad
+
+Se añadió lectura de **AX, H/Sem Disp.Ate**, que es una **duración Excel**. Ejemplo: 1 día y 15 minutos representa **24.25 horas**, no 0.25. Se decodifica sin perder días; números seriales se convierten de días a horas, y formatos desconocidos producen error en lugar de un cero. AX ya expresa disponibilidad **después de NAS/asignaciones**; multiplicarlo otra vez por `(1−%NAS)` duplicaría el descuento.
+
+Se contrastan dos disponibilidades después de NAS:
+
+```text
+Disponibilidad según regla vigente = AD × (1−AT)
+AD = H/Sem Disponible antes NAS dic; AT = %NAS + Asig. Especiales
+
+Diagnóstico alternativo = AX × (%Directo / (%Directo+%Indirecto)) × 60 / min_directa
+```
+
+La segunda expresión es **solo un diagnóstico** y luego aplica floor(x+1e-9). No reemplaza la fórmula B, no alimenta las variantes C y no usa el objetivo BA para elegir un valor. Los seis casos se identifican por fila_excel; ninguno pertenece a los pares repetidos.
+
+| Fila Excel | persona_id / IT | Objetivo BA | B vigente | AX diagnóstico | Disponibilidad AD×(1−AT), h | AX, h | Causa comprobada / pendiente |
+|---:|---|---:|---:|---:|---:|---:|---|
+| 18 | 134744 / 11 | 15 | 14 | 14 | 16.500000 | 16.50 | Ambas disponibilidades coinciden; el objetivo no se deriva de estos insumos con la regla escrita. Revisar origen/excepción. |
+| 115 | 72365 / 41 | 16 | 17 | 16 | 14.177215 | 14.00 | AX y diciembre difieren; solo AX reproduce BA. Confirmar disponibilidad/vigencia correcta. |
+| 219 | 73206 / 81 | 29 | 30 | 29 | 25.756627 | 25.45 | Misma diferencia de insumos; no error de frontera numérica. |
+| 383 | 79740 / 131 | 30 | 29 | 30 | 22.656000 | 23.60 | La disponibilidad AX es mayor que la reconstruida de diciembre. |
+| 384 | 73258 / 131 | 31 | 29 | 31 | 22.384615 | 24.25 | AX conserva más de 24 h; no se recorta a una hora del día. |
+| 464 | 72210 / 141 | 33 | 32 | 33 | 24.476190 | 25.70 | Disponibilidades distintas; AX reproduce el objetivo. |
+
+Sin floor, los valores de la regla vigente son respectivamente **14.558824, 17.012658, 30.356024, 29.736000, 29.379808 y 32.125000**. Con AX son **14.558824, 16.800000, 29.994643, 30.975000, 31.828125 y 33.731250**. No se corrigen con un epsilon mayor: la regla es floor(x+1e-9), no redondeo al entero más cercano.
+
+En particular, 134744 tiene H/S=20, %Directo=0.75, %Indirecto=0.10, %NAS+asignaciones=0.175 y min_directa=60. La operación es `20×0.75×(1−0.175)/0.85 = 14.5588235294`, cuyo floor es **14**. El objetivo **15** puede ser un valor no actualizado o una excepción, pero la causa de origen no está demostrada y no se modifica ni el Excel ni esperado.csv.
+
+Las cinco filas restantes están marcadas como cambios de jornada en la planilla; eso es compatible con un desajuste temporal entre disponibilidad semanal may–dic y la de diciembre. **No demuestra por sí solo cómo debe calcularse la vigencia de AX.** Las celdas relevantes están pegadas como valores: no hay una fórmula viva que permita certificar su procedencia. Se solicitó confirmación antes de sustituir el insumo de la regla B.
+
+### Pares repetidos: tramos consecutivos, no cruces que deban colapsarse
+
+La lectura de T/U (Periodo Inicio Jornada / Perido Fin Jornada) demuestra:
+
+| Persona / IT | Fila | Inicio | Fin | H/S dic |
+|---|---:|---|---|---:|
+| 137356 / 22 | 59 | 2026-01-01 | 2026-06-30 | 0 |
+| 137356 / 22 | 60 | 2026-07-01 | 2026-12-31 | 30 |
+| 72190 / 41 | 112 | 2026-01-01 | 2026-03-31 | 0 |
+| 72190 / 41 | 113 | 2026-04-01 | 2026-12-31 | 35 |
+
+Las 471 filas y 469 pares se mantienen. Se incorporó una validación de unicidad de **fila_excel** y cruces `validate='one_to_one'` por esa fila para la evidencia, sin cruzar por persona/IT ni tomar máximos. Ninguna de las seis diferencias activas proviene de estos cuatro registros. Las vigencias se leen únicamente para diagnóstico; **insumos.csv conserva sus 31 columnas y contenido**, sin introducir una dimensión nueva en contratos.
+
+### Antes/después y decisiones pendientes
+
+| Resultado | Antes | Después |
+|---|---:|---:|
+| B vigente, directas activas | 441/447 = 98.658 % | **441/447 = 98.658 %**, no se cambió la regla |
+| Diagnóstico separado con AX | No disponible | 446/447 = **99.776 %**, cinco casos explicados, no aprobados como sustitución |
+| A, finales B, indirectas B y variantes C existentes | Resultados originales | **Idénticos, fila por fila**, incluidos aciertos y discrepancias |
+
+Se conservaron los CSV de la reproducción en `tools/resultados/revision_antes` y los nuevos en `tools/resultados/revision_despues` (artefactos locales excluidos de Git). Se contrastaron con `pandas.testing.assert_frame_equal` **todo el detalle y todo el resumen preexistentes**, excluyendo únicamente la nueva capa de diagnóstico. No se perdió ninguno de los 441 aciertos originales al evaluar AX como alternativa. El nuevo `b_directas_activas_discrepancias.csv` permite reproducir la tabla y sus causas, sin codificar excepciones por persona.
+
+**17 pruebas en verde**: las 12 originales y cinco pruebas nuevas que cubren duraciones >24 h, formatos ambiguos, seis residuos, ausencia de regresiones en AX y mantenimiento de vigencias/identidad de filas. No está disponible scripts/test.ps1; no se modificaron los datos ni carpetas del back/front.
+
+Pendientes concretos: confirmar si B debe usar la disponibilidad de AX y cuál es su vigencia; revisar 134744/11 con el responsable del Excel; facilitar la referencia del contrato v1.1. Siguen sin cambiar los residuos ya documentados de A (71613/131), NAS reconstruido (nueve jornadas), reconstrucción grupal y las cinco metas. No se aplican reglas nuevas ni ajustes para alcanzar 100 %.
+
 ## Tarea 10 · Diagnóstico por capas
 
 ```powershell

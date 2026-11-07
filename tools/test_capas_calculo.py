@@ -1,5 +1,7 @@
 """Contrastes de capas y de fidelidad de insumos contra el cuerpo de la tabla Excel."""
 import unittest
+import datetime
+import math
 
 import pandas as pd
 import verificar_calculo as v
@@ -46,6 +48,52 @@ class CapasTests(unittest.TestCase):
         for campo in ['cargo', 'area', 'asignacion_1', 'asignacion_2']:
             esperado[campo] = esperado[campo].str.strip()
         pd.testing.assert_frame_equal(x, esperado, check_dtype=False, atol=1e-12, rtol=0)
+
+    def test_directas_ax_es_diagnostico_sin_regresiones(self):
+        detalle = self.detalle[self.detalle.campo.eq('ate_dir_semana')]
+        base = detalle[detalle.capa.eq('b_pct_nas_excel_activas')].set_index('fila_excel')
+        ax = detalle[detalle.capa.eq('b_diagnostico_disponible_ate_excel_activas')].set_index('fila_excel')
+        self.assertEqual(len(base), 447)
+        self.assertEqual(int(ax.coincide.sum()), 446)
+        self.assertTrue(ax.loc[base[base.coincide].index, 'coincide'].all())
+        self.assertEqual(int((ax.coincide & ~base.coincide).sum()), 5)
+        # El diagnóstico no reemplaza el resultado normativo original.
+        self.assertEqual(int(base.coincide.sum()), 441)
+
+    def test_seis_residuos_trazables_sin_cruce_por_persona(self):
+        x = v.discrepancias_directas_activas(self.df, self.detalle, self.params)
+        self.assertEqual(list(x.fila_excel), [18, 115, 219, 383, 384, 464])
+        self.assertEqual(list(x.referencia), [15, 16, 29, 30, 31, 33])
+        self.assertEqual(list(x.calculado), [14, 17, 30, 29, 29, 32])
+        self.assertEqual(list(x.diagnostico_ax), [14, 16, 29, 30, 31, 33])
+        self.assertFalse(x.par_repetido.any())
+        self.assertTrue(x.iloc[0].causa_demostrada.startswith('El objetivo semanal'))
+        self.assertTrue(x.iloc[1:].causa_demostrada.str.startswith('Disponibilidades distintas').all())
+        self.assertAlmostEqual(x.iloc[0].sin_floor_ax, 14.558823529411764)
+
+    def test_repetidos_son_tramos_distintos_y_no_se_deduplican(self):
+        for persona, corte in [(137356, '2026-07-01'), (72190, '2026-04-01')]:
+            x = self.df[self.df.persona_id.eq(persona)].sort_values('vigencia_desde')
+            self.assertEqual(len(x), 2)
+            self.assertEqual(x.iloc[1].vigencia_desde, pd.Timestamp(corte))
+            self.assertEqual(x.iloc[0].vigencia_hasta + pd.Timedelta(days=1), pd.Timestamp(corte))
+        repetida = pd.concat([self.df, self.df.iloc[[0]]], ignore_index=True)
+        with self.assertRaisesRegex(ValueError, 'identidad de fila'):
+            v.capas_asistencial(repetida, self.params, self.reglas)
+
+
+class DuracionExcelTests(unittest.TestCase):
+    def test_conserva_horas_mayores_a_un_dia(self):
+        self.assertEqual(v.horas_duracion_excel(datetime.timedelta(hours=25, minutes=30)), 25.5)
+        self.assertEqual(v.horas_duracion_excel(datetime.time(16, 30)), 16.5)
+        self.assertEqual(v.horas_duracion_excel(0.6875), 16.5)
+
+    def test_no_inventa_cero_ni_acepta_formato_ambiguo(self):
+        self.assertTrue(math.isnan(v.horas_duracion_excel(None)))
+        with self.assertRaises(ValueError):
+            v.horas_duracion_excel('16:30')
+        with self.assertRaises(ValueError):
+            v.horas_duracion_excel(float('inf'))
 
 
 if __name__ == '__main__':

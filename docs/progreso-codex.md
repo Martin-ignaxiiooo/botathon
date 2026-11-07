@@ -4,6 +4,11 @@ Rama: `codex/trabajo`. Tareas 1–9 con commits locales; Tarea 10 autoriza push 
 
 ## Hecho
 
+- Revisión desde d69cdd8: worktree inicialmente limpio; fetch de referencias sin merge ni cambios al trabajo paralelo. Reproducidas 12 pruebas y todos los porcentajes originales. Conservados 471 registros/469 pares; T/U demuestran tramos consecutivos (137356/22 enero–junio y julio–dic; 72190/41 enero–marzo y abril–dic), sin deduplicar.
+- B activas: seis residuos trazados por fila Excel. Cinco se explican por disponibilidad AX (H/Sem Disp.Ate, después de NAS) distinta de AD×(1−AT); el diagnóstico AX reproduce 446/447 = 99.776 % y conserva los 441 aciertos anteriores. La regla vigente se mantiene en 441/447 = 98.658 % hasta confirmar insumo/vigencia. 134744/11 permanece inconsistente: ambos métodos dan floor(14.5588235)=14, frente al objetivo 15; no se inventó una excepción.
+- Añadidos lector de duraciones Excel sin perder días, vigencias solo diagnósticas, validación de fila_excel y cruces uno-a-uno para el informe b_directas_activas_discrepancias.csv. Sin cambios a insumos.csv, esperado.csv, fórmulas normativas, arquitectura, SQL ni contratos.
+- Verificación de revisión: 17 pruebas verdes. Todo el resumen y detalle anteriores idénticos antes/después, incluidos A, finales B, indirectas y C. Evidencia y denominadores en docs/verificacion.md. Contrato local/origin/main sin identificación v1.1; se consultó su ubicación y la autorización de cambiar el insumo de B, sin aplicar cambios dependientes.
+
 - Tarea 10.1: --capas lee solo columnas del cuerpo Dot_Asistencial (filas 5–475), con clave fila_excel. A: cargo exacto + promedio 98.938/99.151/99.151 % en bases; candidato cargo+área + promedio 470/471 = 99.788 % en las tres. H/S dic empeora tramo. B: usando %NAS individual, 456/456 = 100 % de ambos finales; directas 441/447 activas = 98.658 %, indirectas 444/447 = 99.329 %. NAS reconstruido desde horas alcanza 438/447 = 97.987 %, con nueve residuos de jornada cambiante.
 - Tarea 10.1 C: plan mensual aislado con semanal directa+grupal y SemHab Excel 3768/3768 = 100 %; meta 3763/3768 = 99.867 %. Cadena completa desde B/grupos ~98 %, sin afirmar 100 % independiente. Residuo A: jefe TO 71613/131; meta: 136947/131 julio y 72458/51 agosto–noviembre. Detalles, denominadores y fórmulas en docs/verificacion.md.
 - Tarea 10.2: extractor genera data/csv/insumos.csv, 471 filas/31 columnas exactamente pedidas, con asignaciones y semhab_1..12. Regenerados CSV anteriores sin cambios de contenido. Cotejo independiente de todas las columnas con la tabla Excel; 12 pruebas en verde y git diff --check correcto. Se conserva fielmente el origen: 469 pares únicos, dos contratos repetidos sin agregación (aviso del extractor y documentación).
@@ -29,6 +34,8 @@ Rama: `codex/trabajo`. Tareas 1–9 con commits locales; Tarea 10 autoriza push 
 - Tras integración paralela del dashboard, ESLint 9.39.1 ejecutado sobre los 12 módulos de web\js: correcto. Se añadieron Node/Element como globales del navegador. Git permanece en codex/trabajo; no se modificó web.
 
 ## Siguiente
+
+- Resolver con César la consulta sobre disponibilidad AX frente a diciembre y su vigencia antes de cambiar B. Revisar el objetivo 15 de 134744/11 y localizar el contrato v1.1. La mejora AX es diagnóstica, no una corrección normativa aprobada.
 
 - Acordar cómo consolidar/identificar los contratos repetidos 137356/22 y 72190/41 antes de exigir unicidad persona/IT en insumos. Se consultó a César; se conservaron las 471 filas para no perder información de origen.
 - Validar homologación cargo+área y la excepción 71613/131 con Andrés; revisar nueve residuos NAS, seis semanales activas y cinco metas. El CSV de 31 campos no incluye %NAS+asignaciones ni overrides grupales/BF: no sustituye todos los insumos de las capas aisladas.
